@@ -145,6 +145,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="row">
     <button class="tbtn" id="bCam">Mirar (cámara)</button>
     <button class="tbtn" id="bQuickPhoto">Foto rápida</button>
+    <button class="tbtn" id="bDev">Programar en GitHub</button>
     <button class="tbtn" id="bGameStudio">Crear juego</button>
     <button class="tbtn" id="bTaller3d">Taller 3D</button>
     <button class="tbtn" id="bProj">Proyectos grandes</button>
@@ -260,7 +261,14 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <h3>GITHUB</h3>
   <div class="row"><input type="text" id="ghUser" placeholder="Usuario de GitHub" style="flex:1"></div>
   <div class="row"><input type="text" id="ghToken" placeholder="Token (opcional, para repos privados)" style="flex:1" autocomplete="off"></div>
-  <div class="note">El token se crea en github.com › Settings › Developer settings › Personal access tokens (solo lectura basta). Se guarda solo en este aparato.</div>
+  <div class="note">Para que Mor programe y suba cambios: github.com › Settings › Developer settings › <b>Fine-grained tokens</b> › elige SOLO los repos que quieras y da permiso <b>Contents: Read and write</b> (y <b>Administration: Read and write</b> si quieres que cree repos nuevos). Se guarda solo en este aparato.</div>
+  <h3>CEREBRO PROGRAMADOR (opcional, gratis)</h3>
+  <div class="row"><input type="text" id="orKey" placeholder="Llave de OpenRouter (openrouter.ai › Keys)" style="flex:1" autocomplete="off"></div>
+  <div class="row"><input type="text" id="orModel" placeholder="Modelo (p. ej. qwen/qwen3-coder:free)" style="flex:1"><input type="text" id="orUrl" placeholder="https://openrouter.ai/api/v1" style="flex:1"></div>
+  <div class="note">Si pones una llave, Mor programa con ese modelo (los «:free» de OpenRouter no cuestan nada) y, si falla, vuelve a Gemini. Vale cualquier servicio compatible con OpenAI (Groq, etc.).</div>
+  <h3>PUBLICAR (Cloudflare / Render)</h3>
+  <div class="row"><textarea id="hooksTxt" rows="3" placeholder="Un enlace de despliegue por línea:  nombre | https://api.render.com/deploy/…" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></textarea></div>
+  <div class="note">Si tu repo ya está conectado a Cloudflare o Render, se publica solo al subir a GitHub y no hace falta nada aquí. Si no, copia el «Deploy Hook» de Render (Settings) o de Cloudflare Pages (Settings › Builds).</div>
   <div class="row"><button class="tbtn on" id="connSave">Guardar</button></div>
 </div>
 <div class="sheet" id="sheet3d" style="max-height:92vh">
@@ -303,6 +311,16 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <h3 id="m3dTitle"></h3>
   <div id="m3dView" style="display:none;height:52vh;margin:6px 0"></div>
   <div class="row" id="m3dBtns" style="display:none"><button class="tbtn on" id="m3dGlb">Descargar GLB</button><button class="tbtn" id="m3dZip">.zip (GLB + código)</button><input type="text" id="m3dReq" placeholder="Pídele un cambio…" style="flex:1;min-width:140px;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"><button class="tbtn" id="m3dCh">Cambiar</button></div>
+</div>
+<div class="sheet" id="sheetDev" style="max-height:94vh">
+  <button class="close" data-close>×</button>
+  <h3>PROGRAMAR EN GITHUB</h3>
+  <div class="note" style="margin-top:0">Mor lee tu repositorio, hace el cambio, lo prueba y te lo enseña. <b>Solo sube a GitHub cuando pulses «Subir».</b></div>
+  <div class="row"><select id="devRepo" style="flex:1;background:#0e2033;color:var(--cel2);border:1px solid rgba(127,216,255,.35);border-radius:10px;padding:9px"></select><input type="text" id="devBranch" placeholder="rama" style="width:110px;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></div>
+  <div class="row"><textarea id="devReq" rows="4" placeholder="Qué quieres: p. ej. «añade un botón de pausa al juego y que guarde la partida»" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></textarea></div>
+  <div class="row"><button class="tbtn on" id="devGo">Programar</button><span id="devHooks" class="row" style="margin:0"></span></div>
+  <div class="note" id="devLog"></div>
+  <div id="devRes"></div>
 </div>
 <input type="file" id="fileAttach" multiple hidden>
 <input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
@@ -793,7 +811,7 @@ AGENDA — cuando te pida apuntar, recordar o marcar algo, escríbelo en tu resp
   {{tarea: texto}}  ·  {{hecha: texto de la tarea}}  ·  {{recordar: AAAA-MM-DD HH:MM | texto}}  ·  {{borrar_recordatorio: texto}}  ·  {{ciudad: nombre}} (si te dice dónde vive)
   {{temporizador: minutos | motivo}}  ·  {{mensaje: destinatario | texto del mensaje}} (cuando te pida escribir/redactar un mensaje o correo)
   {{objetivo: título | paso 1; paso 2; paso 3}} (cuando quiera conseguir algo: divídelo tú en pasos concretos)  ·  {{paso_hecho: objetivo | paso}}  ·  {{cosa_nuestra: frase}} (una broma, apodo o frase vuestra que merezca recordarse)
-  {{modelo3d: descripción detallada del modelo | normal/alto/maximo}} (cuando te pida HACER o MODELAR un modelo/objeto/personaje 3D: Mor lo modela aparte y lo exporta a GLB)  ·  {{juego: descripción detallada del juego | 2D o 3D}} (cuando te pida CREAR o HACER un juego: Mor lo diseña, dibuja, programa, prueba y corrige aparte; NO escribas el código en la respuesta)  ·  {{proyecto: descripción técnica detallada | pequeño/mediano/grande/enorme}} (programas GRANDES: más de 3 archivos o de ~800 líneas; NO escribas ese código en la respuesta, Mor lo programa aparte archivo a archivo y se lo da en .zip)  ·  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
+  {{github: usuario/repo | qué cambiar, detallado}} (cuando te pida programar, arreglar o cambiar algo de uno de SUS repos de GitHub: Mor lo hace aparte, lo prueba y le pide permiso antes de subir)  ·  {{modelo3d: descripción detallada del modelo | normal/alto/maximo}} (cuando te pida HACER o MODELAR un modelo/objeto/personaje 3D: Mor lo modela aparte y lo exporta a GLB)  ·  {{juego: descripción detallada del juego | 2D o 3D}} (cuando te pida CREAR o HACER un juego: Mor lo diseña, dibuja, programa, prueba y corrige aparte; NO escribas el código en la respuesta)  ·  {{proyecto: descripción técnica detallada | pequeño/mediano/grande/enorme}} (programas GRANDES: más de 3 archivos o de ~800 líneas; NO escribas ese código en la respuesta, Mor lo programa aparte archivo a archivo y se lo da en .zip)  ·  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
   {{idea: tema | texto}} (cuando dicte una idea o nota)  ·  {{habito: nombre | meta}} (hábito nuevo)  ·  {{habito_hecho: nombre}}  ·  {{sonido: lluvia|olas|marron|parar}}
   Para las fechas usa la fecha y hora de AHORA. Si no dice hora, pregúntasela o usa 09:00. Nunca digas que lo has apuntado sin poner la etiqueta.
 ${MEM.study.length?'ÚLTIMAS SESIONES DE ESTUDIO:\n'+MEM.study.slice(-6).map(s=>`- ${new Date(s.at).toLocaleDateString('es-ES')}: ${s.tema} (${s.min} min${s.distracciones?', '+s.distracciones+' distracciones':''})`).join('\n'):''}
@@ -928,6 +946,7 @@ async function send(text,opts={}){
     if(ffiles.length){ const sv=await Files.save(ffiles); showFiles(sv); }
     if(skL.length) showSketchfab(skL);
     if(made.imgs&&made.imgs.length) drawImages(made.imgs);
+    if(made.dev) setTimeout(async()=>{ await devOpen(); const [r,q]=made.dev; const o=[...$('devRepo').options].find(x=>x.value.toLowerCase()===r.toLowerCase()||x.value.toLowerCase().endsWith('/'+r.toLowerCase())); if(o){ $('devRepo').value=o.value; $('devBranch').value=o.dataset.b||'main'; } $('devReq').value=q; if(o&&q) Dev.run(o.value,$('devBranch').value,q); },1200);
     if(made.m3d) setTimeout(()=>Taller3D.create(made.m3d[0],made.m3d[1]),1500);
     if(made.game) setTimeout(()=>GameStudio.create(made.game[0],made.game[1],true),1500);
     if(made.project) setTimeout(()=>Projects.create(made.project[0],made.project[1]),1500);
@@ -942,7 +961,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v11b</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v12</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1268,7 +1287,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v11b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v12 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1355,6 +1374,7 @@ RECORDATORIOS: ${r.length?r.map(x=>fmtFecha(new Date(x.when))+' → '+x.t).join(
       else if(k==='objetivo'){ const [t,...st]=v.split('|'); Goals.add(t,st.join('|')); made.goal=true; }
       else if(k==='paso_hecho'){ const [g,...st]=v.split('|'); const x=Goals.stepDone(g,st.join('|')); if(x) Sfx.play('risa'); }
       else if(k==='cosa_nuestra'){ MEM.inside=MEM.inside||[]; if(!MEM.inside.some(y=>norm(y)===norm(v))) MEM.inside.push(v); if(MEM.inside.length>40) MEM.inside=MEM.inside.slice(-40); saveMem(); }
+      else if(k==='github'){ const [r,...t]=v.split('|'); made.dev=[r.trim(),t.join('|').trim()]; }
       else if(k==='modelo3d'){ const [d,...t]=v.split('|'); made.m3d=[d.trim(),(t.join('|').trim()||'alto').toLowerCase().replace('á','a')]; }
       else if(k==='juego'){ const [d,...t]=v.split('|'); made.game=[d.trim(),t.join('|').trim()]; }
       else if(k==='proyecto'){ const [d,...t]=v.split('|'); made.project=[d.trim(),t.join('|').trim()]; }
@@ -1983,8 +2003,8 @@ function showSketchfab(L){
   $('sub').appendChild(box);
   box.querySelectorAll('[data-sk]').forEach(d=>d.onclick=()=>{ const x=L[+d.dataset.sk]; $('skFrame').src='https://sketchfab.com/models/'+x.uid+'/embed?autostart=1&ui_infos=0'; $('skTitle').textContent=x.name+' · '+(x.user||'')+' · '+(x.lic||''); $('skLink').href=x.url; $('sheet3d').classList.add('open'); });
 }
-$('bConn').onclick=()=>{ $('sheetMore').classList.remove('open'); const c=Conn.get(); $('ghUser').value=c.ghUser||'mineracats-boop'; $('ghToken').value=c.ghToken?'••••••••':''; $('sheetConn').classList.add('open'); };
-$('connSave').onclick=()=>{ const t=$('ghToken').value.trim(); Conn.set({ghUser:$('ghUser').value.trim()||'mineracats-boop'}); if(t&&!/^•+$/.test(t)) Conn.set({ghToken:t}); if(!t) Conn.set({ghToken:''}); $('sheetConn').classList.remove('open'); toast('Conectores guardados'); };
+$('bConn').onclick=()=>{ $('sheetMore').classList.remove('open'); const c=Conn.get(); $('ghUser').value=c.ghUser||'mineracats-boop'; $('ghToken').value=c.ghToken?'••••••••':''; $('orKey').value=c.orKey?'••••••••':''; $('orModel').value=c.orModel||''; $('orUrl').value=c.orUrl||''; $('hooksTxt').value=c.hooks||''; $('sheetConn').classList.add('open'); };
+$('connSave').onclick=()=>{ const t=$('ghToken').value.trim(); Conn.set({ghUser:$('ghUser').value.trim()||'mineracats-boop'}); if(t&&!/^•+$/.test(t)) Conn.set({ghToken:t}); if(!t) Conn.set({ghToken:''}); const ok=$('orKey').value.trim(); if(ok&&!/^•+$/.test(ok)) Conn.set({orKey:ok}); if(!ok) Conn.set({orKey:''}); Conn.set({orModel:$('orModel').value.trim(),orUrl:$('orUrl').value.trim(),hooks:$('hooksTxt').value.trim()}); $('devRepo').innerHTML=''; $('sheetConn').classList.remove('open'); toast('Conectores guardados'); };
 $('sheet3d').querySelector('[data-close]').addEventListener('click',()=>{ $('skFrame').src='about:blank'; });
 
 /* =====================================================================
@@ -2095,7 +2115,7 @@ Reglas: código profesional y modular; si es web/juego debe abrir con index.html
 async function renderProjects(){
   const L=(await DB.all('projects')).sort((a,b)=>b.at-a.at);
   $('projList').innerHTML=L.length?L.map(p=>`<li style="display:block"><b>${esc(p.nombre||p.desc.slice(0,40))}</b> <small>${esc(p.estado||'')} · ${p.juego?'juego · ':p.modelo?'modelo 3D · ':''}${p.files.length} archivos${p.lineas?' · '+p.lineas+' líneas':''}${p.log&&p.estado!=='listo'?' · '+esc(p.log):''}</small>
-    <div class="row">${p.files.length?`<button class="tbtn on" data-pz="${p.id}">Descargar .zip</button>`:''}${p.files.some(f=>/index\.html$/.test(f.ruta))||p.modelo?`<button class="tbtn" data-pv="${p.id}">Ver</button>`:''}<input type="text" data-pm="${p.id}" placeholder="Pídele un cambio…" style="flex:1;min-width:140px"><button class="tbtn" data-pmb="${p.id}">Cambiar</button>${p.slots&&p.slots.length?`<button class="tbtn" data-pi="${p.id}">Imágenes</button>`:''}<button class="tbtn" data-px="${p.id}" style="color:var(--red)">×</button></div></li>`).join(''):'<li>Aún no hay proyectos.</li>';
+    <div class="row">${p.files.length?`<button class="tbtn on" data-pz="${p.id}">Descargar .zip</button>`:''}${p.files.some(f=>/index\.html$/.test(f.ruta))||p.modelo?`<button class="tbtn" data-pv="${p.id}">Ver</button>`:''}<input type="text" data-pm="${p.id}" placeholder="Pídele un cambio…" style="flex:1;min-width:140px"><button class="tbtn" data-pmb="${p.id}">Cambiar</button>${p.slots&&p.slots.length?`<button class="tbtn" data-pi="${p.id}">Imágenes</button>`:''}<button class="tbtn" data-pg="${p.id}">${p.repo?'GitHub ✔':'Subir a GitHub'}</button><button class="tbtn" data-px="${p.id}" style="color:var(--red)">×</button></div></li>`).join(''):'<li>Aún no hay proyectos.</li>';
   const get=id=>L.find(p=>p.id===id);
   $('projList').querySelectorAll('[data-pz]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pz); Files.zip(projToFiles(p),(p.nombre||'proyecto').toLowerCase().replace(/[^a-z0-9]+/g,'-')); });
   $('projList').querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pv); if(p.modelo){ $('sheetProj').classList.remove('open'); return Taller3D.ver(p); } if(p.files.some(f=>f.bin)||p.juego) return playProject(p); const fl=p.files.map(f=>({name:f.ruta,code:f.code})); Files.open(fl.find(f=>/index\.html$/.test(f.name)),fl); });
@@ -2110,6 +2130,7 @@ async function renderProjects(){
       const f=p.files.find(x=>x.bin&&x.ruta===s.ruta); if(f) f.data=data; else p.files.push({ruta:s.ruta,data,bin:true});
       await DB.put('projects',p); toast('Imagen puesta: '+s.ruta.split('/').pop()); renderProjects(); });
   });
+  $('projList').querySelectorAll('[data-pg]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pg); if(p.repo) return window.open('https://github.com/'+p.repo,'_blank'); projToGitHub(p); });
   $('projList').querySelectorAll('[data-px]').forEach(b=>b.onclick=async()=>{ await DB.del('projects',b.dataset.px); renderProjects(); });
 }
 $('bProj').onclick=()=>{ $('sheetMore').classList.remove('open'); renderProjects(); $('sheetProj').classList.add('open'); };
@@ -2424,6 +2445,159 @@ $('m3dGlb').onclick=()=>{ const P=Taller3D.cur, g=P&&P.files.find(f=>f.bin); if(
 $('m3dZip').onclick=()=>{ const P=Taller3D.cur; if(P) Files.zip(projToFiles(P),(P.nombre||'modelo').toLowerCase().replace(/[^a-z0-9]+/g,'-')); };
 $('m3dCh').onclick=()=>{ const v=$('m3dReq').value.trim(), P=Taller3D.cur; if(!v||!P) return; $('m3dReq').value=''; $('sheetM3d').classList.remove('open'); Taller3D.modify(P.id,v); };
 $('sheetM3d').querySelector('[data-close]').addEventListener('click',()=>{ $('m3dView').innerHTML=''; });
+
+/* =====================================================================
+   44. PROGRAMADOR EN GITHUB (lee el repo, cambia el código, lo prueba y lo sube con tu permiso)
+   ===================================================================== */
+// cerebro programador opcional (OpenRouter u otro compatible con OpenAI); si no hay llave, Gemini
+const OR={ cfg(){ const c=Conn.get(); return {key:c.orKey||'',url:(c.orUrl||'https://openrouter.ai/api/v1').replace(/\/+$/,''),model:c.orModel||'qwen/qwen3-coder:free'}; },
+  on(){ return !!this.cfg().key; },
+  async chat(text,maxTok=32000){ const c=this.cfg(); const ac=new AbortController(), to=setTimeout(()=>ac.abort(),240000);
+    try{ const r=await fetch(c.url+'/chat/completions',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+c.key,'X-Title':'M.O.R.'},body:JSON.stringify({model:c.model,messages:[{role:'user',content:text}],temperature:.2,max_tokens:maxTok})});
+      clearTimeout(to); if(!r.ok) throw new Error('cerebro programador '+r.status); const j=await r.json(); const ch=j.choices&&j.choices[0];
+      return {text:(ch&&ch.message&&ch.message.content)||'',finish:ch&&ch.finish_reason==='length'?'MAX_TOKENS':'STOP'}; }
+    finally{ clearTimeout(to); } } };
+const _genLongGemini=genLong;
+genLong=async function(prompt,onPart){
+  if(!OR.on()) return _genLongGemini(prompt,onPart);
+  try{ let code='', rounds=0;
+    while(rounds<8){ const r=await OR.chat(rounds===0?prompt:prompt+`\n\nYA HAS ESCRITO ESTO (no lo repitas):\n…\n${code.split('\n').slice(-40).join('\n')}\n\nCONTINÚA exactamente desde la línea siguiente, sin repetir nada y sin \`\`\`.`);
+      if(!r.text) throw new Error('vacío'); code+=(rounds?'\n':'')+(rounds?r.text.replace(/^\s*```[^\n]*\n/,'').replace(/\n?```\s*$/,''):stripFence(r.text));
+      onPart&&onPart(code.split('\n').length); if(r.finish!=='MAX_TOKENS') break; rounds++; }
+    return code.replace(/\s+$/,'')+'\n';
+  }catch(e){ toast('Cerebro programador falló ('+e.message+'); uso Gemini'); return _genLongGemini(prompt,onPart); }
+};
+const GH={
+  tok(){ return Conn.get().ghToken||''; },
+  async api(path,opt={}){ const t=this.tok(); if(!t) throw new Error('falta el token de GitHub (Más → Conectores)');
+    const r=await fetch('https://api.github.com/'+path,Object.assign({},opt,{headers:Object.assign({Accept:'application/vnd.github+json',Authorization:'Bearer '+t},opt.body?{'Content-Type':'application/json'}:{},opt.headers||{})}));
+    if(!r.ok){ let m=''; try{ m=(await r.json()).message; }catch(e){} throw new Error('GitHub '+r.status+(m?': '+m:'')+(r.status===403||r.status===404?' (¿el token tiene permiso de escritura en ese repo?)':'')); }
+    return r.status===204?null:(opt.raw?r.text():r.json()); },
+  repos(){ return this.api('user/repos?per_page=100&sort=pushed'); },
+  async tree(repo,branch){ const t=await this.api(`repos/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`); return t.tree.filter(x=>x.type==='blob'); },
+  read(repo,branch,path){ return this.api(`repos/${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(branch)}`,{raw:true,headers:{Accept:'application/vnd.github.raw'}}); },
+  // un único commit con varios archivos (crear, cambiar, borrar; texto o binario)
+  async commit(repo,branch,files,msg){
+    const ref=await this.api(`repos/${repo}/git/ref/heads/${encodeURIComponent(branch)}`), base=await this.api(`repos/${repo}/git/commits/${ref.object.sha}`);
+    const tree=[]; for(const f of files){
+      if(f.borrar){ tree.push({path:f.ruta,mode:'100644',type:'blob',sha:null}); continue; }
+      const b=await this.api(`repos/${repo}/git/blobs`,{method:'POST',body:JSON.stringify(f.b64?{content:f.b64,encoding:'base64'}:{content:f.code,encoding:'utf-8'})});
+      tree.push({path:f.ruta,mode:'100644',type:'blob',sha:b.sha}); }
+    const nt=await this.api(`repos/${repo}/git/trees`,{method:'POST',body:JSON.stringify({base_tree:base.tree.sha,tree})});
+    const c=await this.api(`repos/${repo}/git/commits`,{method:'POST',body:JSON.stringify({message:msg,tree:nt.sha,parents:[ref.object.sha]})});
+    await this.api(`repos/${repo}/git/refs/heads/${encodeURIComponent(branch)}`,{method:'PATCH',body:JSON.stringify({sha:c.sha})});
+    return c.html_url||`https://github.com/${repo}/commit/${c.sha}`; },
+  async newRepo(name,priv){ return this.api('user/repos',{method:'POST',body:JSON.stringify({name,private:!!priv,auto_init:true,description:'Hecho con M.O.R.'})}); }
+};
+// bloques BUSCAR/REEMPLAZAR (para archivos enormes no se reescribe todo)
+function parseEdits(t){
+  const out=[]; const re=/^=== (ARCHIVO NUEVO|ARCHIVO|BORRAR): *(.+?) *$/gm; const heads=[]; let m;
+  while((m=re.exec(t))) heads.push({tipo:m[1],ruta:m[2].trim().replace(/^\/+/,''),i:m.index,fin:re.lastIndex});
+  heads.forEach((h,k)=>{ let body=t.slice(h.fin,k+1<heads.length?heads[k+1].i:t.length).replace(/^\n/,'').replace(/\n=== FIN\s*$/,'').replace(/\n?```\s*$/,'').replace(/^```[^\n]*\n/,'');
+    if(h.tipo==='BORRAR') out.push({ruta:h.ruta,borrar:true});
+    else if(h.tipo==='ARCHIVO NUEVO') out.push({ruta:h.ruta,nuevo:true,code:body.replace(/\n=== FIN[\s\S]*$/,'')});
+    else { const bl=[]; const rb=/<<<<<<< BUSCAR\n([\s\S]*?)\n?=======\n([\s\S]*?)\n?>>>>>>> REEMPLAZAR/g; let b; while((b=rb.exec(body))) bl.push({buscar:b[1],reemplazar:b[2]}); out.push({ruta:h.ruta,bloques:bl}); } });
+  return out; }
+function applyBlock(code,b){
+  if(b.buscar&&code.includes(b.buscar)) return code.replace(b.buscar,()=>b.reemplazar);
+  // tolerante a espacios al principio/final de cada línea
+  const L=code.split('\n'), S=b.buscar.split('\n').map(x=>x.trim()); while(S.length&&!S[S.length-1]) S.pop(); while(S.length&&!S[0]) S.shift(); if(!S.length) return null;
+  for(let i=0;i+S.length<=L.length;i++){ let ok=true; for(let j=0;j<S.length;j++) if(L[i+j].trim()!==S[j]){ ok=false; break; }
+    if(ok){ L.splice(i,S.length,...b.reemplazar.split('\n')); return L.join('\n'); } }
+  return null; }
+function checkSyntax(ruta,code){
+  try{ if(/\.json$/i.test(ruta)){ JSON.parse(code); return null; }
+    if(/\.(m?js)$/i.test(ruta)&&!/^\s*(import|export)\s/m.test(code)){ new Function(code); return null; }
+    if(/\.html?$/i.test(ruta)){ const sc=[...code.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*type=["'](?:module|importmap|application\/json|text\/template)["'])[^>]*>([\s\S]*?)<\/script>/gi)];
+      for(const s of sc){ try{ new Function(s[1]); }catch(e){ return 'Error de sintaxis en un <script> de '+ruta+': '+e.message; } } }
+  }catch(e){ return 'Error de sintaxis en '+ruta+': '+e.message; } return null; }
+const DEV_REGLAS=`CÓMO TRABAJA UN PROGRAMADOR EXPERTO EN UN REPO REAL:
+- Entiende primero el código que ya hay y sigue SU estilo, sus nombres y su estructura. Cambia lo mínimo necesario para hacerlo bien; no reescribas lo que funciona.
+- No rompas nada: mantén funciones, ids y rutas que otras partes usan. Si cambias una función, revisa quién la llama.
+- Código real y completo, sin "..." ni "TODO". Nada inventado: solo APIs que existen.
+FORMATO DE RESPUESTA (obligatorio, sin nada más):
+Para cambiar un archivo existente, uno o varios bloques (BUSCAR debe ser un trozo EXACTO y ÚNICO del archivo actual, de 3 a 15 líneas):
+=== ARCHIVO: ruta/del/archivo
+<<<<<<< BUSCAR
+líneas exactas actuales
+=======
+líneas nuevas
+>>>>>>> REEMPLAZAR
+Para un archivo nuevo:
+=== ARCHIVO NUEVO: ruta/nuevo.js
+contenido completo
+=== FIN
+Para borrar: === BORRAR: ruta
+Al final, una línea: === MENSAJE: resumen corto del commit en español`;
+const Dev={running:false,pend:null,
+  log(t){ showSub(t); $('devLog').textContent=t; },
+  async run(repo,branch,req){
+    if(this.running) return toast('Mor ya está programando');
+    this.running=true; this.pend=null; $('devRes').innerHTML=''; setEmotion('concentrado'); Life.touch();
+    try{
+      this.log('Mor mirar el repositorio…');
+      const tree=await GH.tree(repo,branch), lista=tree.filter(x=>!/(^|\/)(node_modules|dist|build|\.git)\//.test(x.path)&&!/\.(png|jpe?g|webp|gif|mp3|ogg|wav|glb|gltf|zip|ico|woff2?|ttf|pdf|mp4)$/i.test(x.path));
+      const elegir=await geminiJSON(`Repositorio ${repo} (rama ${branch}). Petición del usuario: «${req}»\nArchivos (ruta · bytes):\n${lista.slice(0,1500).map(x=>x.path+' · '+x.size).join('\n')}\n\n¿Qué archivos hay que LEER para hacerlo bien (máximo 10, los imprescindibles: los que hay que cambiar y los que los usan)? Explica el plan en 2-4 frases.`,
+        {type:'OBJECT',properties:{leer:{type:'ARRAY',items:{type:'STRING'}},plan:{type:'STRING'}},required:['leer','plan']},[],MODELOS_CODIGO,90000);
+      const files={}; let total=0;
+      for(const p of elegir.leer.filter(p=>lista.some(x=>x.path===p)).slice(0,10)){ this.log('Mor leer '+p+'…'); const c=await GH.read(repo,branch,p); if(total+c.length>900000) break; files[p]=c; total+=c.length; }
+      const ctx=Object.entries(files).map(([p,c])=>`##### ${p} (${c.split('\n').length} líneas)\n${c}`).join('\n\n');
+      let cambios=null, msg='Cambios de M.O.R.', probs=[];
+      for(let ronda=1;ronda<=3;ronda++){
+        this.log(ronda===1?'Mor programar el cambio…':`Mor arreglar (${probs.length} problema/s)…`);
+        const t=await genLong(`Eres un programador experto trabajando en el repositorio ${repo}.\nPETICIÓN: ${req}\nPLAN: ${elegir.plan}\n${probs.length?'\nTU INTENTO ANTERIOR TUVO ESTOS PROBLEMAS, corrígelos:\n'+probs.map(p=>'- '+p).join('\n')+'\n':''}\n${DEV_REGLAS}\n\nOTROS ARCHIVOS DEL REPO: ${lista.map(x=>x.path).slice(0,300).join(', ')}\n\nARCHIVOS ACTUALES:\n${ronda===1||!cambios?ctx:Object.entries(Object.assign({},files,cambios.cur)).map(([p,c])=>`##### ${p}\n${c}`).join('\n\n')}`,n=>this.log(`Mor programar… (${n} líneas)`));
+        const mm=t.match(/^=== MENSAJE: *(.+)$/m); if(mm) msg=mm[1].trim();
+        const eds=parseEdits(t.replace(/^=== MENSAJE:.*$/m,'')); probs=[];
+        const cur=cambios?cambios.cur:{}; const out=cambios?cambios.out:{};
+        for(const e of eds){
+          if(e.borrar){ out[e.ruta]={borrar:true}; continue; }
+          if(e.nuevo){ cur[e.ruta]=e.code; out[e.ruta]={code:e.code,nuevo:!files[e.ruta]}; continue; }
+          let code=cur[e.ruta]!=null?cur[e.ruta]:files[e.ruta]; if(code==null){ try{ code=files[e.ruta]=await GH.read(repo,branch,e.ruta); }catch(x){ probs.push('El archivo '+e.ruta+' no existe; si es nuevo usa ARCHIVO NUEVO'); continue; } }
+          for(const b of e.bloques){ const n=applyBlock(code,b); if(n==null) probs.push(`En ${e.ruta} no encontré este BUSCAR (copia el texto EXACTO del archivo actual):\n${b.buscar.slice(0,400)}`); else code=n; }
+          cur[e.ruta]=code; out[e.ruta]={code}; }
+        if(!eds.length) probs.push('No has devuelto ningún cambio con el formato pedido');
+        for(const [p,o] of Object.entries(out)) if(!o.borrar){ const s=checkSyntax(p,o.code); if(s) probs.push(s); }
+        // si es una web, la abre escondida y busca errores al ejecutarla
+        for(const [p,o] of Object.entries(out)) if(!o.borrar&&/\.html?$/i.test(p)&&!probs.length){ this.log('Mor probar '+p+'…'); const r=await testGame(o.code,[]); probs.push(...r.errs.filter(e=>!/Failed to load|404|net::|fetch|Script error/i.test(e)).map(e=>'Al ejecutar '+p+': '+e)); }
+        cambios={cur,out};
+        if(!probs.length) break;
+      }
+      this.pend={repo,branch,msg,out:cambios.out,orig:files,probs};
+      this.show(); this.running=false;
+      localSay(probs.length?`Mor tener el cambio, pero quedar ${probs.length} problema/s. Míralo antes de subirlo.`:`Cambio listo y probado: ${msg}. ¿Lo subo a GitHub?`,probs.length?'preocupado':'feliz');
+    }catch(e){ this.running=false; this.log('Error: '+e.message); localSay('Mor atascarse: '+e.message,'triste'); }
+  },
+  show(){ const P=this.pend; if(!P) return; const diffN=(a,b)=>{ const A=new Set((a||'').split('\n')), B=new Set((b||'').split('\n')); let m=0,n=0; B.forEach(l=>{ if(!A.has(l)) m++; }); A.forEach(l=>{ if(!B.has(l)) n++; }); return `+${m} −${n}`; };
+    $('devRes').innerHTML=`<b>${esc(P.msg)}</b><ul>${Object.entries(P.out).map(([p,o])=>`<li>${o.borrar?'🗑':o.nuevo?'＋':'✎'} ${esc(p)} <small>${o.borrar?'borrar':diffN(P.orig[p],o.code)}</small></li>`).join('')}</ul>${P.probs.length?`<div class="note" style="color:#ff8fa3">Problemas sin resolver:<br>${P.probs.map(x=>esc(x.slice(0,200))).join('<br>')}</div>`:''}
+    <div class="row"><button class="tbtn on" id="devPush">Subir a GitHub</button><button class="tbtn" id="devSee">Ver archivos</button><button class="tbtn" id="devNo">Descartar</button></div>`;
+    $('devPush').onclick=()=>this.push(); $('devNo').onclick=()=>{ this.pend=null; $('devRes').innerHTML=''; this.log('Descartado.'); };
+    $('devSee').onclick=()=>showFiles(Object.entries(P.out).filter(([p,o])=>!o.borrar).map(([p,o])=>({name:p,code:o.code}))); },
+  async push(){ const P=this.pend; if(!P) return; $('devPush').disabled=true; this.log('Mor subir a GitHub…');
+    try{ const url=await GH.commit(P.repo,P.branch,Object.entries(P.out).map(([ruta,o])=>o.borrar?{ruta,borrar:true}:{ruta,code:o.code}),P.msg+'\n\nHecho con M.O.R.');
+      this.pend=null; $('devRes').innerHTML=`Subido ✔ <a href="${url}" target="_blank" style="color:var(--cel)">ver el commit</a>${hooks().length?'':'<div class="note">Si el repo está conectado a Cloudflare o Render, se publicará solo en un par de minutos.</div>'}`;
+      logChat('m',`[Subido a GitHub ${P.repo}: ${P.msg}]`); localSay('¡Subido a GitHub!'+(hooks().length?' Si quieres, pulsa Desplegar.':''),'feliz');
+    }catch(e){ $('devPush').disabled=false; this.log('Error al subir: '+e.message); toast(e.message,5000); } }
+};
+// enlaces de despliegue (deploy hooks de Render o Cloudflare Pages): «nombre | url» por línea
+const hooks=()=>(Conn.get().hooks||'').split('\n').map(l=>l.split('|').map(x=>x.trim())).filter(x=>x[1]&&/^https:\/\//.test(x[1])).map(([n,u])=>({n,u}));
+async function deploy(h){ try{ await fetch(h.u,{method:'POST',mode:'no-cors'}); toast('Despliegue pedido: '+h.n,4000); localSay('Mor pedir el despliegue de '+h.n+'. En unos minutos estar publicado.','feliz'); }catch(e){ toast('No se pudo: '+e.message); } }
+async function devOpen(){
+  $('sheetMore').classList.remove('open'); $('sheetDev').classList.add('open');
+  const hs=hooks(); $('devHooks').innerHTML=hs.map((h,i)=>`<button class="tbtn" data-hk="${i}">Desplegar ${esc(h.n)}</button>`).join(''); $('devHooks').querySelectorAll('[data-hk]').forEach(b=>b.onclick=()=>deploy(hs[+b.dataset.hk]));
+  if(!GH.tok()){ $('devLog').textContent='Primero pon tu token de GitHub en Más → Conectores (con permiso de escritura).'; return; }
+  if($('devRepo').options.length<2){ try{ const r=await GH.repos(); $('devRepo').innerHTML=r.map(x=>`<option value="${esc(x.full_name)}" data-b="${esc(x.default_branch)}">${esc(x.full_name)}</option>`).join(''); $('devBranch').value=r[0]?r[0].default_branch:'main'; }catch(e){ $('devLog').textContent=e.message; } }
+}
+// subir un proyecto, juego o modelo de Mor a un repo NUEVO
+async function projToGitHub(P){
+  if(!GH.tok()) return toast('Pon tu token de GitHub en Conectores',4000);
+  const name=(P.nombre||'proyecto-mor').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+String(Date.now()).slice(-4);
+  try{ toast('Creando repo '+name+'…',4000); const r=await GH.newRepo(name,true); await sleep(1500);
+    const url=await GH.commit(r.full_name,r.default_branch||'main',P.files.map(f=>f.bin?{ruta:f.ruta,b64:f.data.split(',')[1]}:{ruta:f.ruta,code:f.code}),'Proyecto «'+(P.nombre||'')+'» hecho con M.O.R.');
+    P.repo=r.full_name; await DB.put('projects',P); renderProjects(); localSay('¡Subido a GitHub! Repo privado '+name+'.','feliz'); window.open(r.html_url,'_blank');
+  }catch(e){ toast(e.message,6000); } }
+$('bDev').onclick=devOpen;
+$('devRepo').onchange=()=>{ const o=$('devRepo').selectedOptions[0]; if(o) $('devBranch').value=o.dataset.b||'main'; };
+$('devGo').onclick=()=>{ const q=$('devReq').value.trim(), repo=$('devRepo').value, br=$('devBranch').value.trim()||'main'; if(!q||!repo) return; Dev.run(repo,br,q); };
 
 /* =====================================================================
    15. DESPERTAR
