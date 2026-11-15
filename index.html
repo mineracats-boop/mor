@@ -448,9 +448,9 @@ const KEYS=(()=>{ try{
   return JSON.parse(localStorage.getItem('mor_claves')||'{}'); }catch(e){ return {}; } })();
 let GEMINI_KEY = (KEYS.g||'').trim();
 addEventListener('hashchange',()=>{ if(/claves=/.test(location.hash)) location.reload(); });
-const MODELOS = ['gemini-3.5-flash','gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.8-flash'];   // conversación: el listo primero
-const MODELOS_RAPIDOS = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];             // vigilancia
-const MODELOS_MEMORIA = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];            // memoria y apuntes
+const MODELOS = ['gemini-3.5-flash','gemini-3-flash-preview','gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3.1-flash-lite-preview','gemini-3.8-flash'];   // conversación: el listo primero
+const MODELOS_RAPIDOS = ['gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3.1-flash-lite-preview','gemini-3-flash-preview','gemini-3.5-flash'];             // vigilancia
+const MODELOS_MEMORIA = ['gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3.1-flash-lite-preview','gemini-3-flash-preview','gemini-3.5-flash'];            // memoria y apuntes
 // el plan gratis da pocas respuestas al día del modelo listo: si se agota, se salta hasta mañana
 // un modelo «agotado» se salta solo hasta que vuelve a tener cupo: 1 minuto si es el límite por minuto, hasta el reinicio diario (9:00 en España) si es el diario
 const agotado=m=>{ const v=+localStorage.getItem('mor_agotado_'+m); return v>Date.now(); };
@@ -849,12 +849,20 @@ async function gemini(body,models=MODELOS_RAPIDOS,timeout=20000){
       if(t) return t; last='vacío';
     }catch(e){ clearTimeout(to); last=e.name; }
   }
+  const rs=await orRespaldo(body); if(rs) return rs;
   throw new Error('gemini '+last);
 }
 async function geminiJSON(prompt,schema,parts=[],models=MODELOS_RAPIDOS,timeout=20000){
   const t=await gemini({contents:[{role:'user',parts:[...parts,{text:prompt}]}],generationConfig:{temperature:.2,responseMimeType:'application/json',responseSchema:schema}},models,timeout);
   return JSON.parse(t);
 }
+// si Google no tiene cupo, Mor sigue con el cerebro de OpenRouter (gratis)
+function orMsgs(body){ const txt=c=>(c.parts||[]).map(p=>p.text||(p.inline_data?'[imagen adjunta: no la puedo ver ahora]':'')).join('\n');
+  const m=[]; const sys=body.systemInstruction?txt(body.systemInstruction):''; if(sys) m.push({role:'system',content:sys});
+  (body.contents||[]).forEach(c=>m.push({role:c.role==='model'?'assistant':'user',content:txt(c)||'…'}));
+  const gc=body.generationConfig||{}; if(gc.responseMimeType==='application/json') m.push({role:'system',content:'Responde SOLO con un JSON válido (sin ``` ni texto extra) que siga este esquema: '+JSON.stringify(gc.responseSchema||{})});
+  return m; }
+async function orRespaldo(body){ if(typeof OR==='undefined'||!OR.on()) return null; try{ const r=await OR.chat(orMsgs(body),8000); let t=(r.text||'').trim(); if((body.generationConfig||{}).responseMimeType==='application/json'){ const a=t.indexOf('{'), b=t.lastIndexOf('}'); if(a>=0) t=t.slice(a,b+1); } if(t) toast('Google sin cupo: Mor usa su cerebro de reserva',3000); return t||null; }catch(e){ return null; } }
 async function geminiStream(body,onText){
   const order=vivos(MODELOS);
   let last='';
@@ -881,6 +889,7 @@ async function geminiStream(body,onText){
       last='vacío';
     }catch(e){ clearTimeout(to); last=(last?last+' | ':'')+m.replace('gemini-','')+' '+(e.name==='AbortError'?'sin respuesta en 15 s':e.message); if(lastStreamHadText) throw e; }
   }
+  const rs=await orRespaldo(body); if(rs){ onText(rs); return rs; }
   throw new Error(last||'sin respuesta');
 }
 
@@ -1074,7 +1083,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15c</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15d</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1400,7 +1409,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v15c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v15d · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2163,7 +2172,7 @@ $('bChat').onclick=()=>{ renderChat(); $('sheetChat').classList.add('open'); };
 /* =====================================================================
    41. PROYECTOS GRANDES (Mor programa como un equipo: plan → archivo a archivo → .zip)
    ===================================================================== */
-const MODELOS_CODIGO=['gemini-3.5-flash','gemini-3.8-flash','gemini-3.5-flash-lite','gemini-flash-lite-latest'];
+const MODELOS_CODIGO=['gemini-3.5-flash','gemini-3-flash-preview','gemini-3.8-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-lite-latest'];
 const stripFence=t=>{ t=String(t||''); const m=t.match(/^\s*```[^\n]*\n([\s\S]*?)\n?```\s*$/); return (m?m[1]:t.replace(/^\s*```[^\n]*\n/,'').replace(/\n?```\s*$/,'')); };
 async function genLong(prompt,onPart){ // escribe un archivo entero; si se corta, sigue donde lo dejó
   let code='', rounds=0;
@@ -2604,7 +2613,7 @@ const OR={ cfg(){ const c=Conn.get(); return {key:c.orKey||'',url:(c.orUrl||'htt
   // prueba el modelo elegido y, si ya no existe o está saturado, otros gratis (los :free cambian a menudo)
   async chat(text,maxTok=32000){ const c=this.cfg(); const lista=[...new Set([c.model,'nvidia/nemotron-3-ultra-550b-a55b:free','cohere/north-mini-code:free','google/gemma-4-31b-it:free'].filter(Boolean))]; let err='';
     for(const model of lista){ if(this['bad_'+model]) continue; const ac=new AbortController(), to=setTimeout(()=>ac.abort(),240000);
-      try{ const r=await fetch(c.url+'/chat/completions',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+c.key,'X-Title':'M.O.R.'},body:JSON.stringify({model,messages:[{role:'user',content:text}],temperature:.2,max_tokens:maxTok})});
+      try{ const r=await fetch(c.url+'/chat/completions',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+c.key,'X-Title':'M.O.R.'},body:JSON.stringify({model,messages:Array.isArray(text)?text:[{role:'user',content:text}],temperature:.2,max_tokens:maxTok})});
         clearTimeout(to); if(!r.ok){ err=r.status+''; if(r.status===401) throw new Error('llave del cerebro programador no válida'); if(r.status===400||r.status===404||r.status===429) this['bad_'+model]=1; continue; }
         const j=await r.json(); const ch=j.choices&&j.choices[0]; const t=(ch&&ch.message&&ch.message.content)||''; if(!t){ err='vacío'; continue; }
         this.last=model; return {text:t,finish:ch.finish_reason==='length'?'MAX_TOKENS':'STOP'}; }
