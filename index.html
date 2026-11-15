@@ -107,14 +107,38 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
 .hcard{background:rgba(127,216,255,.07);border:1px solid rgba(127,216,255,.25);border-radius:14px;padding:10px 12px;margin-top:10px}
 .sheet input[type=time]{background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:8px 10px;color-scheme:dark}
 .sheet select{background:#0e2033;color:var(--cel2);border:1px solid rgba(127,216,255,.35);border-radius:8px;padding:6px}
-.sheet{inset:0 auto 0 260px;width:min(480px,100vw);max-height:none;height:100dvh;border-radius:0 18px 18px 0;border-top:none;border-right:1px solid rgba(127,216,255,.3);transform:translateX(-120%);padding-top:calc(18px + env(safe-area-inset-top));box-shadow:8px 0 30px rgba(0,0,0,.4);z-index:15}
+.sheet{inset:0 auto 0 260px;width:min(480px,100vw);max-height:none;height:100dvh;border-radius:0 18px 18px 0;border-top:none;border-right:1px solid rgba(127,216,255,.3);transform:translateX(calc(-100% - 300px));padding-top:calc(18px + env(safe-area-inset-top));box-shadow:8px 0 30px rgba(0,0,0,.4);z-index:15}
 .sheet.open{transform:none}
 #login{z-index:40;cursor:default}
 #login form{display:flex;flex-direction:column;gap:10px;width:min(320px,86vw)}
 #login input{background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:12px;color:var(--cel2);font:inherit;font-size:16px;padding:12px 14px;outline:none}
 #login button{background:var(--cel);color:var(--bg);border:none;border-radius:12px;font:700 15px system-ui;padding:12px;cursor:pointer}
 #lgErr{color:var(--red);font-size:13px;min-height:1.2em;text-align:center}
+#gameProg,#m3dProg{display:none!important}
+#bSend.stop{background:#ff6b81;color:#fff;font-size:16px}
+.fm.step{color:var(--cel2);font-size:12.5px;display:flex;align-items:center;gap:8px;margin:4px 0;padding:4px 8px}
+.fm.step.ok{color:var(--dim)}
+.spin{width:11px;height:11px;border:2px solid rgba(127,216,255,.3);border-top-color:var(--cel);border-radius:50%;animation:gira .8s linear infinite;flex:none}
+@keyframes gira{to{transform:rotate(360deg)}}
+.fm.card{width:min(100%,560px);max-width:100%;border:1px solid rgba(127,216,255,.25)}
+.fm.card .ctit{font-weight:700;margin-bottom:2px}.fm.card ul{margin:6px 0;padding-left:18px}.fm.card .row{margin-top:8px}
+.m3dIn{height:260px;margin:8px 0;border-radius:12px;overflow:hidden}
+.rtGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}.rtGrid table{width:100%;font-size:13px;border-collapse:collapse}.rtGrid td{padding:2px 4px;border-bottom:1px solid rgba(127,216,255,.1)}
+.sugs{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px}
+.sug{background:none;border:1px solid rgba(127,216,255,.4);color:var(--cel2);border-radius:999px;padding:5px 12px;font:500 13px system-ui;cursor:pointer}.sug:hover{background:rgba(127,216,255,.12)}
+#slash{display:none;position:relative;margin:0 10px;background:#0b1a2a;border:1px solid rgba(127,216,255,.35);border-radius:12px;max-height:40vh;overflow:auto;z-index:6}
+#slash .sl{padding:7px 12px;cursor:pointer;font-size:14px}#slash .sl.on,#slash .sl:hover{background:rgba(127,216,255,.14)}#slash small{color:var(--dim)}
+#art{display:none;flex:1;min-height:0;flex-direction:column;width:100%;border-top:1px solid rgba(127,216,255,.15);margin-top:8px}
+.arthead{display:flex;align-items:center;gap:6px;padding:6px 8px}.arthead b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#artBody{flex:1;min-height:0;position:relative}.artCode{margin:0;height:100%;overflow:auto;background:#06101a;color:#cfefff;font:12px/1.45 ui-monospace,monospace;padding:10px;white-space:pre}
+body.artOpen .stage{width:min(52%,900px);padding-top:6px}body.artOpen #face{max-height:13vh}body.artOpen #art{display:flex}body.artOpen #nowCard{display:none!important}
+#vozExit{display:none;position:fixed;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:20;background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:50%;width:44px;height:44px;font-size:20px;cursor:pointer}
+body.vozFull #side,body.vozFull #feed,body.vozFull .main .bottom,body.vozFull #attachBar,body.vozFull .top,body.vozFull #slash{display:none!important}
+body.vozFull .stage{width:100%;padding-top:8vh}body.vozFull #face{max-height:58vh}body.vozFull #vozExit{display:block}
+body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area-inset-bottom));border:0;z-index:5;pointer-events:none}body.vozFull .col .sub{text-align:center;border:0;font-size:18px;margin:0 6vw}
 @media (max-width:760px){
+  body.artOpen #art{position:fixed;inset:0;z-index:14;background:var(--bg);margin:0;padding-top:env(safe-area-inset-top)}
+  .rtGrid{grid-template-columns:1fr}
   #side{position:fixed;left:0;top:0;bottom:0;width:min(290px,84vw);transform:translateX(-105%);transition:transform .25s ease;box-shadow:8px 0 30px rgba(0,0,0,.5)}
   body.sideOpen #side{transform:none} body.sideOpen #sideShade{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:16}
   #bSideT{display:inline-block}
@@ -182,14 +206,18 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="grade" id="grade"><button class="tbtn" data-g="no">No lo sabía</button><button class="tbtn" data-g="casi">Casi</button><button class="tbtn" data-g="si">Lo sabía</button></div>
   <div class="hear" id="hear"></div>
   <div id="nowCard"></div>
+  <div id="art"><div class="arthead"><b id="artTitle"></b><button class="tbtn" id="artCopy">Copiar</button><button class="tbtn" id="artTab">Pestaña nueva</button><button class="tbtn" id="artClose">×</button></div><div id="artBody"></div></div>
   <div class="cam" id="camBox"><canvas id="camView" width="160" height="120"></canvas></div>
 </div>
 </div>
 
 <div id="attachBar"></div>
+<div id="slash"></div>
+<button id="vozExit" title="Salir del modo voz">✕</button>
 <div class="bottom">
   <button class="rbtn" id="bAttach" title="Adjuntar archivo" style="font-size:20px">+</button>
   <button class="rbtn" id="bMic" title="Hablar ahora">HABLA</button>
+  <button class="rbtn" id="bVozFull" title="Modo voz" style="font-size:18px">🎧</button>
   <input class="inp" id="inp" placeholder="Habla con M.O.R.… (o di «oye MOR»)" autocomplete="off">
   <button class="rbtn" id="bSend" title="Enviar">OK</button>
 </div>
@@ -426,6 +454,12 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="note" style="margin-top:0">Di la frase (o escríbela) y Mor hace todo a la vez. Cámbialos o crea los tuyos.</div>
   <div id="prList"></div>
   <div class="row"><button class="tbtn on" id="prAdd">＋ Protocolo nuevo</button></div>
+</div>
+<div class="sheet" id="sheetSkills"><button class="close" data-close>×</button>
+  <h3>SKILLS</h3>
+  <div class="note" style="margin-top:0">Instrucciones que Mor carga solo cuando hacen falta (como las skills de Claude): en el chat cuando aparecen sus palabras, al crear juegos o al programar en GitHub. También puedes decirle en el chat «crea una skill para…».</div>
+  <div id="skList"></div>
+  <div class="row"><button class="tbtn on" id="skAdd">＋ Skill nueva</button></div>
 </div>
 <input type="file" id="fileAttach" multiple hidden>
 <input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
@@ -1100,12 +1134,15 @@ async function send(text,opts={}){
     await Voice.flush();
     Ears.followUp();
   }catch(e){
-    clearTimeout(slow); console.warn('Gemini:',e.message); window._lastErr=new Date().toLocaleTimeString('es-ES')+' '+e.message;
+    clearTimeout(slow);
+    if(typeof PARAR!=='undefined'&&PARAR.on){ busy=false; $('bSend').disabled=false; const part=shown.trim(); if(text) logChat('u',text);
+      if(part){ MEM.history.push({r:'u',t:text||'',at:Date.now()},{r:'m',t:part+' …(parado)',at:Date.now()}); logChat('m',part+' …(parado)'); } showSub(''); saveMem(); return; }
+    console.warn('Gemini:',e.message); window._lastErr=new Date().toLocaleTimeString('es-ES')+' '+e.message;
     if(!raw && !opts.retry){ busy=false; $('bSend').disabled=false; await sleep(2500); return send(text,Object.assign({},opts,{retry:true})); }
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v16b</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v17</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1431,7 +1468,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v16b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v17 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2468,7 +2505,7 @@ IMÁGENES DISPONIBLES (cárgalas con esas rutas exactas; si alguna falla, el jue
 ${lista}
 ${listaMod}`;
       const usaBase=!es3d;
-      const rules=GAMEDEV_GUIA+(es3d?`\n\nMOTOR BASE 3D PROBADO (OBLIGATORIO: copia esta base y complétala; conserva el import map, la carga de modelos, la entrada, la física, la cámara, las pantallas y el bucle; rellena MODELOS, crea el mundo en preparar() con cargarModelo/cargarPersonaje y obstaculo(), y la lógica en update(); cambia el suelo/cielo/niebla al ambiente del juego; sustituye JUEGO por el título):\n${GAME_BASE_3D}`:'')+(usaBase?`\n\nMOTOR BASE PROBADO (OBLIGATORIO en 2D: copia esta base y complétala; conserva su estructura, el bucle, la entrada, el escalado y la interfaz; cambia W×H a horizontal 960×540 si el juego lo pide; añade los botones táctiles .tb que hagan falta; sustituye JUEGO por el título):\n${GAME_BASE}`:'')+`\n\nREGLAS DE CALIDAD (como un estudio profesional):
+      const rules=(GameStudio._skills?GameStudio._skills(desc):'')+GAMEDEV_GUIA+(es3d?`\n\nMOTOR BASE 3D PROBADO (OBLIGATORIO: copia esta base y complétala; conserva el import map, la carga de modelos, la entrada, la física, la cámara, las pantallas y el bucle; rellena MODELOS, crea el mundo en preparar() con cargarModelo/cargarPersonaje y obstaculo(), y la lógica en update(); cambia el suelo/cielo/niebla al ambiente del juego; sustituye JUEGO por el título):\n${GAME_BASE_3D}`:'')+(usaBase?`\n\nMOTOR BASE PROBADO (OBLIGATORIO en 2D: copia esta base y complétala; conserva su estructura, el bucle, la entrada, el escalado y la interfaz; cambia W×H a horizontal 960×540 si el juego lo pide; añade los botones táctiles .tb que hagan falta; sustituye JUEGO por el título):\n${GAME_BASE}`:'')+`\n\nREGLAS DE CALIDAD (como un estudio profesional):
 - Un único index.html completo, que funcione al abrirlo, sin compilar. Librerías solo por CDN (p. ej. Three.js desde unpkg/jsdelivr con import map).
 - Pantalla de inicio, juego, pausa, fin de partida con puntuación, botón de reiniciar y récord guardado en localStorage.
 - Controles táctiles visibles en móvil y teclado en ordenador. Se adapta a cualquier tamaño de pantalla (resize).
@@ -2734,7 +2771,7 @@ const Dev={running:false,pend:null,
       let cambios=null, msg='Cambios de M.O.R.', probs=[];
       for(let ronda=1;ronda<=3;ronda++){
         this.log(ronda===1?'Mor programar el cambio…':`Mor arreglar (${probs.length} problema/s)…`);
-        const t=await genLong(`Eres un programador experto trabajando en el repositorio ${repo}.\nPETICIÓN: ${req}\nPLAN: ${elegir.plan}\n${probs.length?'\nTU INTENTO ANTERIOR TUVO ESTOS PROBLEMAS, corrígelos:\n'+probs.map(p=>'- '+p).join('\n')+'\n':''}\n${DEV_REGLAS}\n\nOTROS ARCHIVOS DEL REPO: ${lista.map(x=>x.path).slice(0,300).join(', ')}\n\nARCHIVOS ACTUALES:\n${ronda===1||!cambios?ctx:Object.entries(Object.assign({},files,cambios.cur)).map(([p,c])=>`##### ${p}\n${c}`).join('\n\n')}`,n=>this.log(`Mor programar… (${n} líneas)`));
+        const t=await genLong(`Eres un programador experto trabajando en el repositorio ${repo}.\nPETICIÓN: ${req}\nPLAN: ${elegir.plan}\n${probs.length?'\nTU INTENTO ANTERIOR TUVO ESTOS PROBLEMAS, corrígelos:\n'+probs.map(p=>'- '+p).join('\n')+'\n':''}\n${DEV_REGLAS}${Dev._skills?Dev._skills(repo+' '+req):''}\n\nOTROS ARCHIVOS DEL REPO: ${lista.map(x=>x.path).slice(0,300).join(', ')}\n\nARCHIVOS ACTUALES:\n${ronda===1||!cambios?ctx:Object.entries(Object.assign({},files,cambios.cur)).map(([p,c])=>`##### ${p}\n${c}`).join('\n\n')}`,n=>this.log(`Mor programar… (${n} líneas)`));
         const mm=t.match(/^=== MENSAJE: *(.+)$/m); if(mm) msg=mm[1].trim();
         const eds=parseEdits(t.replace(/^=== MENSAJE:.*$/m,'')); probs=[];
         const cur=cambios?cambios.cur:{}; const out=cambios?cambios.out:{};
@@ -3199,6 +3236,197 @@ const _localSay55=localSay; localSay=function(text,...r){ return _localSay55(ser
 const _showSub55=showSub; showSub=function(text,you){ return _showSub55(serio(text),you); };
 SIDE[5][1].unshift(['🎭 Personalidad',()=>{ MEM.personalidad=MEM.personalidad==='graciosa'?'seria':'graciosa'; saveMem(); toast(MEM.personalidad==='seria'?'Personalidad: seria (asistente)':'Personalidad: graciosa (Mor torpe)',3000); renderSide(); }]);
 const _renderSide55=renderSide; renderSide=function(){ _renderSide55(); const b=[...$('side').querySelectorAll('.sitem')].find(x=>/Personalidad/.test(x.textContent)); if(b) b.textContent='🎭 Personalidad: '+(MEM.personalidad==='graciosa'?'graciosa':'seria'); };
+renderSide();
+
+/* =====================================================================
+   60. BOTÓN DE PARAR (■ en el botón de enviar, como Claude o ChatGPT)
+   ===================================================================== */
+const PARAR={on:false,ctrls:new Set(),
+  parar(){ this.on=true; this.ctrls.forEach(c=>{ try{ c.abort(); }catch(e){} }); this.ctrls.clear(); try{ Voice.stop(); }catch(e){}
+    [GameStudio,Taller3D,Dev,Projects].forEach(T=>{ if(T&&T.running){ T.running=false; } });
+    ['gameProg','m3dProg'].forEach(id=>{ if($(id)) $(id).style.display='none'; });
+    Paso.cerrarTodos('⏹ Parado'); setEmotion('neutral'); setTimeout(()=>{ busy=false; botonEnviar(); },250); }
+};
+// todas las llamadas a cerebros/lectores pasan por aquí para poder pararlas
+const _fetch60=window.fetch.bind(window);
+window.fetch=function(u,o={}){ const url=String(u&&u.url||u);
+  if(!/generativelanguage|openrouter|r\.jina\.ai|pollinations|sketchfab|duckduckgo/.test(url)) return _fetch60(u,o);
+  if(PARAR.on) return Promise.reject(new DOMException('Parado por ti','AbortError'));
+  const ac=new AbortController(); if(o.signal){ if(o.signal.aborted) ac.abort(); else o.signal.addEventListener('abort',()=>ac.abort()); }
+  PARAR.ctrls.add(ac); const p=_fetch60(u,Object.assign({},o,{signal:ac.signal})); p.then(()=>{},()=>{}).finally(()=>{}); return p; };
+const trabajando=()=>busy||!!(GameStudio.running||Taller3D.running||Dev.running||Projects.running);
+function botonEnviar(){ const w=trabajando(), b=$('bSend'); b.disabled=false; b.classList.toggle('stop',w); b.textContent=w?'■':'OK'; b.title=w?'Parar':'Enviar'; }
+setInterval(botonEnviar,300);
+document.querySelector('.main .bottom').addEventListener('click',e=>{ if(e.target.closest('#bSend')&&trabajando()){ e.stopImmediatePropagation(); e.preventDefault(); PARAR.parar(); } },true);
+$('inp').addEventListener('keydown',e=>{ if(e.key==='Enter'&&trabajando()&&!busy){ /* las tareas largas siguen; el chat sí se puede usar */ } },true);
+
+/* =====================================================================
+   61. PASOS VISIBLES EN EL CHAT («🔎 Buscando…», «🎮 Programando…»)
+   ===================================================================== */
+const Paso={els:{},
+  nota(txt){ const el=document.createElement('div'); el.className='fm note step ok'; el.textContent=txt; $('feed').appendChild(el); $('feed').scrollTop=1e9; },
+  set(id,txt){ let el=this.els[id]; if(!el||!el.isConnected){ el=document.createElement('div'); el.className='fm note step'; $('feed').appendChild(el); this.els[id]=el; }
+    el.innerHTML='<span class="spin"></span>'+esc(serio(txt)); el.classList.remove('ok'); $('feed').scrollTop=1e9; return el; },
+  fin(id,txt){ const el=this.els[id]; if(!el) return; el.innerHTML=esc(serio(txt||'✓ Hecho')); el.classList.add('ok'); delete this.els[id]; },
+  cerrarTodos(txt){ Object.keys(this.els).forEach(k=>this.fin(k,txt)); } };
+
+/* =====================================================================
+   62. TARJETAS EN EL CHAT y PANEL DE LA DERECHA (como los artefactos de Claude)
+   ===================================================================== */
+function chatCard(html){ const d=document.createElement('div'); d.className='fm m card'; d.innerHTML=html; $('feed').querySelector('.fempty')?.remove(); $('feed').appendChild(d); $('feed').scrollTop=1e9; return d; }
+const Art={
+  open(title,{html,el,code,name}={}){ $('artTitle').textContent=title; const b=$('artBody'); b.innerHTML=''; this.cur={html,code,name,title};
+    if(html){ const f=document.createElement('iframe'); f.style.cssText='width:100%;height:100%;border:0;background:#000'; f.allow='autoplay; fullscreen; gamepad'; f.srcdoc=html; b.appendChild(f); }
+    else if(el) b.appendChild(el);
+    else if(code!=null){ const pre=document.createElement('pre'); pre.className='artCode'; pre.textContent=code; b.appendChild(pre); }
+    $('artTab').style.display=html?'':'none'; $('artCopy').style.display=code!=null?'':'none'; document.body.classList.add('artOpen'); },
+  close(){ document.body.classList.remove('artOpen'); $('artBody').innerHTML=''; this.cur=null; } };
+$('artClose').onclick=()=>Art.close();
+$('artTab').onclick=()=>{ const c=Art.cur; if(c&&c.html){ const w=window.open(URL.createObjectURL(new Blob([c.html],{type:'text/html'})),'_blank'); if(!w) toast('Permite las ventanas emergentes'); } };
+$('artCopy').onclick=()=>{ const c=Art.cur; if(c&&c.code!=null) navigator.clipboard.writeText(c.code).then(()=>toast('Código copiado')); };
+const gameHtml=P=>{ const idx=P.files.find(f=>/index\.html$/.test(f.ruta)); return idx?htmlWithAssets(idx.code,P.files.filter(f=>f.bin)):null; };
+// juegos: tarjeta en el chat y se juegan en el panel de la derecha
+showGame=function(P){ const faltan=(P.slots||[]).filter(s=>!P.files.some(f=>f.bin&&f.ruta===s.ruta)).length;
+  const c=chatCard(`<div class="ctit">🎮 ${esc(P.nombre)}</div><small>${P.lineas||'?'} líneas · ${(P.files||[]).filter(f=>f.bin).length} imágenes/modelos${faltan?` · faltan ${faltan}`:''}</small>
+    <div class="row"><button class="tbtn on" data-a="p">▶ Jugar</button><button class="tbtn" data-a="t">Pestaña nueva</button><button class="tbtn" data-a="z">.zip</button>${(P.slots||[]).length?'<button class="tbtn" data-a="i">Imágenes y modelos</button>':''}<button class="tbtn" data-a="g">Subir a GitHub</button></div>`);
+  c.querySelector('[data-a=p]').onclick=()=>{ const h=gameHtml(P); if(h) Art.open('🎮 '+P.nombre,{html:h}); };
+  c.querySelector('[data-a=t]').onclick=()=>playProject(P);
+  c.querySelector('[data-a=z]').onclick=()=>Files.zip(projToFiles(P),(P.nombre||'juego').toLowerCase().replace(/[^a-z0-9]+/g,'-'));
+  c.querySelector('[data-a=g]').onclick=()=>projToGitHub(P);
+  const bi=c.querySelector('[data-a=i]'); if(bi) bi.onclick=()=>{ renderProjects(); $('sheetProj').classList.add('open'); setTimeout(()=>{ const b=document.querySelector(`[data-pi="${P.id}"]`); b&&b.click(); },200); }; };
+// modelos 3D: visor dentro del chat
+Taller3D.ver=function(P){ this.cur=P; const code=(P.files.find(f=>f.ruta==='modelo.js')||{}).code;
+  const c=chatCard(`<div class="ctit">🧊 ${esc(P.nombre)}${P.piezas?` <small>· ${P.piezas} piezas</small>`:''}</div><div class="m3dIn"></div><div class="row"><button class="tbtn on" data-a="glb">Descargar GLB</button><button class="tbtn" data-a="z">.zip</button><button class="tbtn" data-a="big">Ampliar</button></div><small>Para cambiarlo, pídemelo aquí en el chat.</small>`);
+  if(code) frame3d(code,c.querySelector('.m3dIn'));
+  c.querySelector('[data-a=glb]').onclick=()=>{ const g=P.files.find(f=>f.bin); if(!g) return toast('Este modelo no tiene GLB'); const a=document.createElement('a'); a.href=g.data; a.download=(P.nombre||'modelo').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.glb'; a.click(); };
+  c.querySelector('[data-a=z]').onclick=()=>Files.zip(projToFiles(P),(P.nombre||'modelo').toLowerCase().replace(/[^a-z0-9]+/g,'-'));
+  c.querySelector('[data-a=big]').onclick=()=>{ const d=document.createElement('div'); d.style.cssText='width:100%;height:100%'; Art.open('🧊 '+P.nombre,{el:d}); if(code) frame3d(code,d); }; };
+// cambios en GitHub: tarjeta para revisar y subir desde el chat
+const _devShow62=Dev.show.bind(Dev);
+Dev.show=function(){ _devShow62(); const P=this.pend; if(!P) return;
+  const c=chatCard(`<div class="ctit">🐙 ${esc(P.msg)}</div><small>${esc(P.repo)} · rama ${esc(P.branch)}</small><ul>${Object.entries(P.out).map(([p,o])=>`<li>${o.borrar?'🗑':o.nuevo?'＋':'✎'} ${esc(p)}</li>`).join('')}</ul>${P.probs.length?`<small style="color:#ff8fa3">⚠ ${P.probs.length} problema(s) sin resolver</small>`:'<small>✓ Probado</small>'}
+    <div class="row"><button class="tbtn on" data-a="s">Subir a GitHub</button><button class="tbtn" data-a="v">Ver código</button><button class="tbtn" data-a="n">Descartar</button></div>`);
+  c.querySelector('[data-a=s]').onclick=async()=>{ c.querySelector('[data-a=s]').disabled=true; await this.push(); c.querySelector('.row').innerHTML=`<small>${$('devRes').innerHTML}</small>`; };
+  c.querySelector('[data-a=v]').onclick=()=>{ const t=Object.entries(P.out).filter(([p,o])=>!o.borrar).map(([p,o])=>`// ===== ${p} =====\n${o.code}`).join('\n\n'); Art.open('🐙 '+P.msg,{code:t}); };
+  c.querySelector('[data-a=n]').onclick=()=>{ this.pend=null; $('devRes').innerHTML=''; c.querySelector('.row').innerHTML='<small>Descartado.</small>'; }; };
+// «Hoy» y «rutina» como tarjetas
+function cardHoy(){ const {cur,sig,L}=Rutina.ahora(), m=new Date().getHours()*60+new Date().getMinutes(), pend=(MEM.tasks||[]).filter(t=>!t.done);
+  const fin=new Date(); fin.setHours(23,59,59,999); const recs=(MEM.reminders||[]).filter(r=>!r.fired&&r.when<=fin.getTime()&&r.when>=Date.now()-3600000);
+  const c=chatCard(`<div class="ctit">☀️ Hoy · ${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</div>
+    <div>${cur?`<b>Ahora:</b> ${esc(cur.t)}`:'<b>Ahora:</b> libre'}${sig?` · <b>Luego:</b> ${esc(sig.t)} (${esc(sig.i)})`:''}</div>
+    ${L.length?'<ul>'+L.map(b=>`<li>${hm(b.f||b.i)<=m?'✓':b===cur?'▶':'·'} ${esc(b.i)} ${esc(b.t)}</li>`).join('')+'</ul>':''}
+    ${pend.length?'<b>Tareas:</b><ul>'+pend.slice(0,8).map(t=>`<li>${esc(t.t)}</li>`).join('')+'</ul>':''}
+    ${recs.length?'<b>Recordatorios:</b><ul>'+recs.map(r=>`<li>${new Date(r.when).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} ${esc(r.t)}</li>`).join('')+'</ul>':''}
+    ${Habits.list().length?'<b>Hábitos:</b> '+Habits.list().map(h=>(h.log[hoyKey()]?'✅ ':'⬜ ')+esc(h.n)).join(' · '):''}
+    <div class="row"><button class="tbtn" data-a="h">Abrir panel Hoy</button></div>`); c.querySelector('[data-a=h]').onclick=()=>Hoy.open(); }
+function cardRutina(){ const d=Rutina.data(), t=L=>(L||[]).slice().sort((a,b)=>hm(a.i)-hm(b.i)).map(b=>`<tr><td>${esc(b.i)}${b.f?'–'+esc(b.f):''}</td><td>${esc(b.t)}</td></tr>`).join('')||'<tr><td colspan=2>(vacía)</td></tr>';
+  const c=chatCard(`<div class="ctit">🕒 Tu rutina</div><div class="rtGrid"><div><b>Entre semana</b><table>${t(d.lab)}</table></div><div><b>Fin de semana</b><table>${t(d.fin)}</table></div></div><div class="row"><button class="tbtn" data-a="e">Editar</button><button class="tbtn" data-a="c">Añadir a mi calendario</button></div>`);
+  c.querySelector('[data-a=e]').onclick=()=>Rutina.open(); c.querySelector('[data-a=c]').onclick=()=>Rutina.ics(); }
+
+/* =====================================================================
+   63. PASOS DE LAS TAREAS LARGAS DENTRO DEL CHAT
+   ===================================================================== */
+const _showSub63=showSub;
+showSub=function(text,you){ const t=String(text||'');
+  if(GameStudio.running&&!you&&/juego|dibuj|program|prob|arregl|diseñ/i.test(t)) Paso.set('juego','🎮 '+t);
+  else if(Taller3D.running&&!you&&/model|export|mir|planea|mejor/i.test(t)) Paso.set('m3d','🧊 '+t);
+  else if(Dev.running&&!you&&/repo|le[ey]|program|prob|sub|estudi|busc|mira|carg|jug/i.test(t)) Paso.set('dev','🐙 '+t);
+  else if(/^Mor buscar en internet|^Buscando en internet/i.test(t)) Paso.set('web','🔎 '+t.replace(/^Mor buscar/,'Buscando'));
+  else if(Paso.els.web&&!/internet/i.test(t)&&t.length>40) Paso.fin('web','🔎 Búsqueda hecha');
+  return _showSub63(text,you); };
+setInterval(()=>{ if(Paso.els.juego&&!GameStudio.running) Paso.fin('juego','🎮 Juego terminado'); if(Paso.els.m3d&&!Taller3D.running) Paso.fin('m3d','🧊 Modelo terminado'); if(Paso.els.dev&&!Dev.running) Paso.fin('dev','🐙 Listo'); },1000);
+
+/* =====================================================================
+   64. OJOS: pequeños con el panel abierto y MODO VOZ a pantalla completa
+   ===================================================================== */
+function modoVoz(on){ document.body.classList.toggle('vozFull',on); if(on){ MEM.voice=true; Voice.on=true; try{ if(!Ears.on) Ears.start(); }catch(e){} try{ modoTextoUI(); }catch(e){} } }
+$('bVozFull').onclick=()=>modoVoz(true); $('vozExit').onclick=()=>{ modoVoz(false); if(typeof Live!=='undefined'&&Live.on) $('bLive').click(); };
+setInterval(()=>{ const l=typeof Live!=='undefined'&&Live.on; if(l&&!document.body.classList.contains('vozFull')) document.body.classList.add('vozFull'); },800);
+
+/* =====================================================================
+   65. SKILLS (instrucciones que Mor carga solo cuando hacen falta, como las de Claude)
+   ===================================================================== */
+const Skills={
+  list(){ if(!MEM.skills){ MEM.skills=[
+      {id:'s1',n:'Juegos de Rocket Jam',donde:'juegos',siempre:true,on:true,cuando:'',instr:`- No dibujes decoraciones ni personajes con formas de código cuando hay imágenes: usa los huecos de imágenes/modelos y di qué imágenes hacen falta (él las hace en ChatGPT).\n- Los personajes SIEMPRE apoyados en el suelo; nada flotando.\n- En juegos de apuntar y hacer clic (point-and-click), marca con una X pequeña en el suelo el sitio donde hay que dejar un objeto.\n- Avisa claramente de problemas de calidad: fondos borrosos o de baja resolución, personajes cortados o mal colocados.`},
+      {id:'s2',n:'Imágenes con ChatGPT',donde:'chat',siempre:false,on:true,cuando:'imagen, imágenes, sprite, poses, skin, chatgpt, dibujo, fondo, personaje nuevo',instr:`Cuando haya que pedir imágenes a ChatGPT:\n- Una conversación NUEVA de ChatGPT por imagen; di qué imágenes adjuntar y en qué orden.\n- Para una hoja de poses: «Redibuja ESTA MISMA hoja»: mismas poses, mismo orden, mismo tamaño; MISMO personaje (cara, colores, proporciones, estilo cartoon con contorno negro grueso); el cambio idéntico en todas las poses.\n- Fondo blanco liso, MUCHO espacio entre poses, ninguna pegada ni cortada por el borde, sin texto.\n- Para un solo cambio: «EXACTAMENTE la misma imagen con un único cambio… no muevas al personaje ni cambies el encuadre».\n- Recuérdale que luego puede preparar el resultado en el Taller de imágenes.`},
+      {id:'s3',n:'Cambios en juegos publicados',donde:'codigo',siempre:true,on:true,cuando:'',instr:`- Trabaja con cambios pequeños y seguros; no rompas lo que ya funciona ni cambies nombres que se usan en otros sitios.\n- Si el repo se publica solo (Minera Cats, MDG 27), recomiéndale usar la rama «pruebas» y pasarlo a main cuando lo haya probado.\n- En MDG 27, subir a main reinicia el servidor online: avísale.`}]; saveMem(); }
+    return MEM.skills; },
+  activas(text,donde){ const n=' '+norm(text||'')+' ';
+    return this.list().filter(s=>s.on!==false&&(s.donde==='todo'||s.donde===donde)&&(s.siempre||String(s.cuando||'').split(/[,|]/).map(x=>norm(x).trim()).filter(x=>x.length>2).some(k=>n.includes(k)))); },
+  prompt(L){ return L.length?`\n\nSKILLS ACTIVAS (síguelas al pie de la letra):\n${L.map(s=>`### ${s.n}\n${s.instr}`).join('\n\n')}`:''; },
+  open(){ cierraPaneles(); this.render(); $('sheetSkills').classList.add('open'); },
+  render(){ const L=this.list();
+    $('skList').innerHTML=L.map((s,i)=>`<div class="hcard" data-si="${i}"><div class="row" style="margin-top:0"><label><input type="checkbox" data-k="on" ${s.on!==false?'checked':''}></label><input type="text" data-k="n" value="${esc(s.n)}" style="flex:1;font-weight:700"><button class="tbtn" data-sdel="${i}" style="color:var(--red)">×</button></div>
+      <div class="row"><label>Dónde <select data-k="donde">${[['chat','En el chat'],['juegos','Al crear juegos'],['codigo','Al programar en GitHub'],['todo','En todo']].map(([a,b])=>`<option value="${a}" ${s.donde===a?'selected':''}>${b}</option>`).join('')}</select></label><label><input type="checkbox" data-k="siempre" ${s.siempre?'checked':''}> siempre</label></div>
+      <div class="row"><input type="text" data-k="cuando" value="${esc(s.cuando||'')}" placeholder="Cuándo usarla: palabras separadas por comas" style="flex:1"></div>
+      <div class="row"><textarea data-k="instr" rows="5" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:8px">${esc(s.instr||'')}</textarea></div></div>`).join('');
+    $('skList').querySelectorAll('[data-si]').forEach(box=>box.querySelectorAll('[data-k]').forEach(x=>x.onchange=()=>{ const s=L[+box.dataset.si]; s[x.dataset.k]=x.type==='checkbox'?x.checked:x.value; saveMem(); }));
+    $('skList').querySelectorAll('[data-sdel]').forEach(b=>b.onclick=()=>{ L.splice(+b.dataset.sdel,1); saveMem(); this.render(); }); }
+};
+$('skAdd').onclick=()=>{ Skills.list().push({id:'s'+Date.now(),n:'Nueva skill',donde:'chat',siempre:false,on:true,cuando:'',instr:''}); saveMem(); Skills.render(); };
+// en el chat: las skills que tocan según lo que dice
+let ultimoTexto='';
+const _sys65=systemPrompt; systemPrompt=function(extra){ const L=Skills.activas(ultimoTexto+' '+Convs.info().title+' '+((Convs.proj()||{}).name||''),'chat'); if(L.length&&ultimoTexto&&ultimoTexto!==Skills._nota){ Skills._nota=ultimoTexto; Paso.nota('📘 Usando skill: '+L.map(s=>s.n).join(', ')); }
+  return _sys65(extra)+Skills.prompt(L)+`\nMÁS ETIQUETAS: {{hoy}} enseña su día en una tarjeta (úsala si pregunta qué tiene hoy) · {{ver_rutina}} enseña su rutina · {{skill: nombre | cuándo usarla (palabras) | instrucciones}} crea una skill si te pide que recuerdes una forma de trabajar · {{sugerencias: opción | opción | opción}} al final, 2-3 siguientes pasos MUY cortos (máx. 5 palabras) que él podría pedirte, solo si aportan algo.`; };
+// al crear juegos y al programar, también
+GameStudio._skills=d=>Skills.prompt(Skills.activas(d,'juegos'));
+Dev._skills=t=>Skills.prompt(Skills.activas(t,'codigo'));
+
+/* =====================================================================
+   66. SUGERENCIAS (botoncitos debajo de la respuesta) y etiquetas nuevas
+   ===================================================================== */
+let sugPend=null;
+const _apply66=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply66(acts);
+  for(const a of acts){ const m=String(a).match(/^\s*(hoy|ver[_ ]rutina|skill|sugerencias)\s*(?::\s*([\s\S]*))?$/i); if(!m) continue; const k=norm(m[1]).replace(/\s/g,'_'), v=(m[2]||'').trim();
+    if(k==='hoy') setTimeout(cardHoy,300);
+    else if(k==='ver_rutina') setTimeout(cardRutina,300);
+    else if(k==='skill'){ const [n,cuando,...ins]=v.split('|').map(x=>x.trim()); if(n&&ins.length){ Skills.list().push({id:'s'+Date.now(),n,donde:'chat',siempre:!cuando,on:true,cuando:cuando||'',instr:ins.join(' | ')}); saveMem(); toast('Skill creada: '+n,3000); } }
+    else if(k==='sugerencias') sugPend=v.split('|').map(x=>x.trim()).filter(Boolean).slice(0,3); }
+  return made; };
+const _log66=logChat;
+logChat=(r,t)=>{ const p=_log66(r,t); if(r==='m'&&sugPend&&sugPend.length){ const L=sugPend; sugPend=null; const last=[...$('feed').querySelectorAll('.fm.m')].pop(); if(last){ const d=document.createElement('div'); d.className='sugs';
+    d.innerHTML=L.map(s=>`<button class="sug">${esc(s)}</button>`).join(''); d.querySelectorAll('.sug').forEach(b=>b.onclick=()=>{ d.remove(); if(!trabajando()) send(b.textContent); }); last.after(d); $('feed').scrollTop=1e9; } } return p; };
+
+/* =====================================================================
+   67. COMANDOS CON «/»
+   ===================================================================== */
+const CMDS=[
+  ['/juego','Crear un juego (escribe la idea detrás)',r=>r?GameStudio.create(r,/3d/i.test(r)?'Three.js 3D':'',true):$('bGameStudio').click()],
+  ['/3d','Modelo 3D (escribe qué)',r=>r?Taller3D.create(r,'alto'):$('bTaller3d').click()],
+  ['/imagenes','Taller de imágenes',()=>$('bImgT').click()],
+  ['/github','Programar en GitHub',r=>{ devOpen(); if(r) setTimeout(()=>$('devReq').value=r,300); }],
+  ['/hoy','Tu día en una tarjeta',()=>cardHoy()],
+  ['/rutina','Ver tu rutina',()=>cardRutina()],
+  ['/estudiar','Sesión de estudio',()=>$('bStudy').click()],
+  ['/repasar','Repasar flashcards',()=>$('bReview').click()],
+  ['/apuntes','Tus apuntes',()=>$('bNotes').click()],
+  ['/buscar','Buscar en internet',r=>r&&send('busca en internet: '+r)],
+  ['/protocolos','Protocolos',()=>Proto.open()],
+  ['/skills','Skills',()=>Skills.open()],
+  ['/nuevo','Chat nuevo',()=>$('sNew')&&$('sNew').click()],
+  ['/voz','Modo voz',()=>modoVoz(true)],
+  ['/texto','Modo texto',()=>$('bTexto').click()],
+  ['/memoria','Lo que Mor sabe de ti',()=>$('bMem').click()],
+  ['/ajustes','Conectores y llaves',()=>$('bConn').click()],
+  ['/parar','Parar lo que esté haciendo',()=>PARAR.parar()]];
+let slashSel=0;
+function slashMenu(){ const v=$('inp').value; if(!v.startsWith('/')){ $('slash').style.display='none'; return; }
+  const q=v.split(' ')[0].toLowerCase(), L=CMDS.filter(c=>c[0].startsWith(q)); if(!L.length){ $('slash').style.display='none'; return; } slashSel=Math.min(slashSel,L.length-1);
+  $('slash').innerHTML=L.map((c,i)=>`<div class="sl${i===slashSel?' on':''}" data-c="${c[0]}"><b>${c[0]}</b> <small>${esc(c[1])}</small></div>`).join(''); $('slash').style.display='block';
+  $('slash').querySelectorAll('[data-c]').forEach(d=>d.onmousedown=e=>{ e.preventDefault(); runSlash(d.dataset.c+' '+v.split(' ').slice(1).join(' ')); }); }
+function runSlash(v){ const [c,...r]=v.trim().split(' '); const cmd=CMDS.find(x=>x[0]===c.toLowerCase())||CMDS.find(x=>x[0].startsWith(c.toLowerCase())); $('inp').value=''; $('slash').style.display='none'; if(cmd){ logChat('u',v.trim()); cmd[2](r.join(' ').trim()); } }
+$('inp').addEventListener('input',()=>{ slashSel=0; slashMenu(); });
+$('inp').addEventListener('keydown',e=>{ if(!$('inp').value.startsWith('/')||$('slash').style.display==='none') return;
+  const n=$('slash').querySelectorAll('[data-c]').length;
+  if(e.key==='ArrowDown'){ slashSel=(slashSel+1)%n; slashMenu(); e.preventDefault(); } else if(e.key==='ArrowUp'){ slashSel=(slashSel-1+n)%n; slashMenu(); e.preventDefault(); }
+  else if(e.key==='Enter'){ e.preventDefault(); e.stopImmediatePropagation(); const sel=$('slash').querySelectorAll('[data-c]')[slashSel]; const v=$('inp').value; runSlash((v.split(' ').length>1?v.split(' ')[0]:sel.dataset.c)+' '+v.split(' ').slice(1).join(' ')); } else if(e.key==='Escape'){ $('slash').style.display='none'; } },true);
+$('inp').addEventListener('blur',()=>setTimeout(()=>$('slash').style.display='none',150));
+$('inp').placeholder='Escribe a Mor…  (/ para atajos)';
+// el último texto del usuario, para elegir skills
+const _send66=send; send=async function(text,opts={}){ if(text&&!opts.event) { ultimoTexto=String(text); PARAR.on=false; } else if(opts.event) PARAR.on=false; return _send66(text,opts); };
+SIDE[5][1].unshift(['📘 Skills',()=>Skills.open()]);
 renderSide();
 
 /* =====================================================================
