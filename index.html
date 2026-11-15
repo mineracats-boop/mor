@@ -264,7 +264,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="note">Para que Mor programe y suba cambios: github.com › Settings › Developer settings › <b>Fine-grained tokens</b> › elige SOLO los repos que quieras y da permiso <b>Contents: Read and write</b> (y <b>Administration: Read and write</b> si quieres que cree repos nuevos). Se guarda solo en este aparato.</div>
   <h3>CEREBRO PROGRAMADOR (opcional, gratis)</h3>
   <div class="row"><input type="text" id="orKey" placeholder="Llave de OpenRouter (openrouter.ai › Keys)" style="flex:1" autocomplete="off"></div>
-  <div class="row"><input type="text" id="orModel" placeholder="Modelo (p. ej. qwen/qwen3-coder:free)" style="flex:1"><input type="text" id="orUrl" placeholder="https://openrouter.ai/api/v1" style="flex:1"></div>
+  <div class="row"><input type="text" id="orModel" placeholder="Modelo (vacío = el mejor gratis disponible)" style="flex:1"><input type="text" id="orUrl" placeholder="https://openrouter.ai/api/v1" style="flex:1"></div>
   <div class="note">Si pones una llave, Mor programa con ese modelo (los «:free» de OpenRouter no cuestan nada) y, si falla, vuelve a Gemini. Vale cualquier servicio compatible con OpenAI (Groq, etc.).</div>
   <h3>PUBLICAR (Cloudflare / Render)</h3>
   <div class="row"><textarea id="hooksTxt" rows="3" placeholder="Un enlace de despliegue por línea:  nombre | https://api.render.com/deploy/…" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></textarea></div>
@@ -961,7 +961,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v12b</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v12c</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1287,7 +1287,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v12b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v12c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2450,13 +2450,13 @@ $('sheetM3d').querySelector('[data-close]').addEventListener('click',()=>{ $('m3
    44. PROGRAMADOR EN GITHUB (lee el repo, cambia el código, lo prueba y lo sube con tu permiso)
    ===================================================================== */
 // cerebro programador opcional (OpenRouter u otro compatible con OpenAI); si no hay llave, Gemini
-const OR={ cfg(){ const c=Conn.get(); return {key:c.orKey||'',url:(c.orUrl||'https://openrouter.ai/api/v1').replace(/\/+$/,''),model:c.orModel||'qwen/qwen3-coder:free'}; },
+const OR={ cfg(){ const c=Conn.get(); return {key:c.orKey||'',url:(c.orUrl||'https://openrouter.ai/api/v1').replace(/\/+$/,''),model:c.orModel||''}; },
   on(){ return !!this.cfg().key; },
   // prueba el modelo elegido y, si ya no existe o está saturado, otros gratis (los :free cambian a menudo)
-  async chat(text,maxTok=32000){ const c=this.cfg(); const lista=[...new Set([c.model,'qwen/qwen3-coder:free','openrouter/free'])]; let err='';
+  async chat(text,maxTok=32000){ const c=this.cfg(); const lista=[...new Set([c.model,'nvidia/nemotron-3-ultra-550b-a55b:free','cohere/north-mini-code:free','google/gemma-4-31b-it:free'].filter(Boolean))]; let err='';
     for(const model of lista){ if(this['bad_'+model]) continue; const ac=new AbortController(), to=setTimeout(()=>ac.abort(),240000);
       try{ const r=await fetch(c.url+'/chat/completions',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+c.key,'X-Title':'M.O.R.'},body:JSON.stringify({model,messages:[{role:'user',content:text}],temperature:.2,max_tokens:maxTok})});
-        clearTimeout(to); if(!r.ok){ err=r.status+''; if(r.status===401) throw new Error('llave del cerebro programador no válida'); if(r.status===400||r.status===404) this['bad_'+model]=1; continue; }
+        clearTimeout(to); if(!r.ok){ err=r.status+''; if(r.status===401) throw new Error('llave del cerebro programador no válida'); if(r.status===400||r.status===404||r.status===429) this['bad_'+model]=1; continue; }
         const j=await r.json(); const ch=j.choices&&j.choices[0]; const t=(ch&&ch.message&&ch.message.content)||''; if(!t){ err='vacío'; continue; }
         this.last=model; return {text:t,finish:ch.finish_reason==='length'?'MAX_TOKENS':'STOP'}; }
       catch(e){ clearTimeout(to); if(/no válida/.test(e.message)) throw e; err=e.message; } }
