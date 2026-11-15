@@ -1223,7 +1223,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v21</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v21b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1549,7 +1549,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v21 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v21b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3951,7 +3951,7 @@ const Apps={
       this.frames[k].contentWindow.postMessage(Object.assign({__mor:1,id,cmd},extra),'*'); }); },
   // modelo de Mor -> app
   async enviar(k,dataUrl,nombre){ k=this.clave(k)||k; this.abrir(k); const b64=String(dataUrl).split(',')[1]||dataUrl;
-    try{ await this.pedir(k,'importar',{data:b64,name:(nombre||'modelo').replace(/[^\w\-]+/g,'_')+'.glb'}); toast('Modelo enviado a '+this.L[k].nombre); }catch(e){ toast(e.message,5000); } },
+    try{ await this.pedir(k,'importar',{data:b64,name:(nombre||'modelo').replace(/[^\p{L}\p{N}\- ]+/gu,'_')+'.glb'}); toast('Modelo enviado a '+this.L[k].nombre); }catch(e){ toast(e.message,5000); } },
   // Vértice -> tus modelos de Mor
   async aMor(){ try{ const r=await this.pedir('vertice','exportar'); const nombre=prompt('Nombre del modelo','Modelo de Vértice')||'Modelo de Vértice';
       await SkChat.guardar({name:nombre,user:'Guille (Vértice 3D)',lic:'Propio',url:''},new Blob([r.glb],{type:'model/gltf-binary'})); this.minimizar();
@@ -3988,7 +3988,7 @@ Responde en español, muy concreto, máximo 4 frases: qué tecla o botón pulsar
       a.download=(x.app==='vertice'?'proyecto-vertice3d':'proyecto-ultimate3d')+'-'+new Date(x.at).toISOString().slice(0,16).replace(/[:T]/g,'-')+'.json'; a.click(); }); },
   elegir(){ const c=chatCard(`<div class="ctit">🧊 Estudio 3D</div><small>Tus apps, dentro de Mor. Mor te pasa los modelos, te guía mirando la pantalla y guarda copias solo.</small>
     <div class="row" style="margin-top:6px"><button class="tbtn on" data-a="vertice">🧊 Vértice 3D (modelar)</button><button class="tbtn on" data-a="ultimate">🎮 ULTIMATE3D (juegos)</button><button class="tbtn" data-a="copias">💾 Copias</button></div>`);
-    c.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>b.dataset.a==='copias'?this.copias():this.abrir(b.dataset.a)); }
+    c.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>b.dataset.a==='copias'?this.copias():this.abrir(b.dataset.a)); return c; }
 };
 window.addEventListener('message',e=>{ const d=e.data||{}; if(!d.__app||!Apps.L[d.__app]) return; const f=Apps.frames[d.__app]; if(!f||e.source!==f.contentWindow) return;
   if(d.listo){ Apps.listo[d.__app]=true; return; }
@@ -4024,6 +4024,103 @@ Agenda.apply=function(acts){ const made=_apply86(acts); for(const a of acts){ co
 const _sys86=systemPrompt; systemPrompt=function(extra){ return _sys86(extra)+`\n· Guille tiene dos apps suyas dentro de Mor: Vértice 3D (editor 3D estilo Blender, con curso de modelado) y ULTIMATE3D (motor de juegos 3D estilo Unreal). {{app: vertice}} o {{app: ultimate}} las abre; {{guia_app: pregunta}} mira su pantalla y le dice qué pulsar; {{copias}} enseña las copias de seguridad (Mor las hace solas mientras trabaja). Para modelar personajes o editar un modelo, propón Vértice; para montar escenas y juegos 3D, ULTIMATE3D.${Apps.cur?' Ahora tiene abierto '+Apps.L[Apps.cur].nombre+'.':''}`; };
 CMDS.splice(10,0,['/vertice','Abrir Vértice 3D (tu Blender)',()=>Apps.abrir('vertice')],['/ultimate','Abrir ULTIMATE3D (tu motor de juegos)',()=>Apps.abrir('ultimate')],['/copias','Copias de seguridad de tus apps',()=>Apps.copias()]);
 ATAJOS.splice(2,0,['🧊 Estudio 3D',()=>Apps.elegir()]); renderSide();
+
+/* =====================================================================
+   87. MIXAMO: animaciones para tus personajes
+   Mixamo (Adobe) no deja que otras webs entren con tu cuenta, así que Mor
+   te lo abre, te guía y luego junta los FBX que bajas en un solo GLB animado.
+   ===================================================================== */
+function mixamoHtml(){ return `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#0b1622;overflow:hidden;font:13px system-ui;color:#cfefff}canvas{display:block}#b{position:fixed;left:8px;right:8px;bottom:8px;display:flex;flex-wrap:wrap;gap:6px}#b button{background:#12324d;color:#cfefff;border:1px solid #2f6a94;border-radius:14px;padding:5px 10px;cursor:pointer}#b button.on{background:#7fd8ff;color:#06121e}</style>
+<script type="importmap">{"imports":{"three":"${LIB3D}three.module.min.js","three/addons/":"${LIB3D}addons/"}}<\/script></head><body><div id="b"></div>
+<script type="module">
+import * as THREE from 'three'; import {OrbitControls} from 'three/addons/controls/OrbitControls.js'; import {FBXLoader} from 'three/addons/loaders/FBXLoader.js'; import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js'; import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+const post=m=>parent.postMessage(Object.assign({__mx:1},m),'*');
+const R=new THREE.WebGLRenderer({antialias:true}); R.setPixelRatio(Math.min(devicePixelRatio,2)); R.setSize(innerWidth,innerHeight); document.body.appendChild(R.domElement);
+const S=new THREE.Scene(); S.add(new THREE.HemisphereLight(0xffffff,0x334455,1.4)); const L=new THREE.DirectionalLight(0xffffff,1.6); L.position.set(3,6,4); S.add(L);
+const g=new THREE.GridHelper(10,20,0x2f6a94,0x18324a); S.add(g);
+const C=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.01,500); C.position.set(0,1.4,4); const O=new OrbitControls(C,R.domElement); O.target.set(0,1,0); O.update();
+let mixer=null, clock=new THREE.Clock(); addEventListener('resize',()=>{ R.setSize(innerWidth,innerHeight); C.aspect=innerWidth/innerHeight; C.updateProjectionMatrix(); });
+R.setAnimationLoop(()=>{ if(mixer) mixer.update(clock.getDelta()); R.render(S,C); });
+const nombre=n=>String(n).replace(/\\.fbx$/i,'').replace(/[_-]+/g,' ').trim()||'Animacion';
+addEventListener('message',async e=>{ const d=e.data||{}; if(!d.__mx) return;
+  try{ const ld=new FBXLoader(); const objs=d.files.map(f=>({name:f.name,o:ld.parse(f.buf,'')}));
+    let base=objs.find(x=>{ let s=false; x.o.traverse(m=>{ if(m.isSkinnedMesh) s=true; }); return s; }); if(!base) throw new Error('Ninguno de los FBX trae el personaje (baja al menos uno «With Skin»)');
+    const clips=[]; objs.forEach(x=>{ const v=(x.o.animations||[]).filter(c=>c.tracks.length&&c.duration>.05); v.forEach((c,i)=>{ c=c.clone(); c.name=nombre(x.name)+(v.length>1?' '+(i+1):''); clips.push(c); }); });
+    if(!clips.length) throw new Error('Los FBX no traen animaciones');
+    const P=base.o; const bb=new THREE.Box3().setFromObject(P); const h=bb.max.y-bb.min.y; if(h>20) P.scale.setScalar(.01);
+    P.name='Personaje'; let huesos=0; P.traverse(m=>{ if(m.isBone) huesos++; if(m.isMesh){ m.castShadow=true; m.frustumCulled=false; } });
+    S.add(P); P.updateMatrixWorld(true);
+    // todas las piezas del personaje al mismo esqueleto (el que mueve la animación)
+    const sk=[]; P.traverse(m=>{ if(m.isSkinnedMesh) sk.push(m); });
+    sk.forEach(m=>{ const bones=m.skeleton.bones.map(b=>P.getObjectByName(b.name)||b); m.bind(new THREE.Skeleton(bones,m.skeleton.boneInverses),m.bindMatrix); });
+    mixer=new THREE.AnimationMixer(P);
+    const b=document.getElementById('b'); b.innerHTML=''; clips.forEach((c,i)=>{ const x=document.createElement('button'); x.textContent=c.name; x.onclick=()=>{ mixer.stopAllAction(); mixer.clipAction(c).play(); b.querySelectorAll('button').forEach(y=>y.classList.toggle('on',y===x)); }; b.appendChild(x); if(!i) x.click(); });
+    await new Promise(r=>setTimeout(r,600));
+    const glb=await new GLTFExporter().parseAsync(P,{binary:true,animations:clips,onlyVisible:true});
+    // ULTIMATE3D solo lee una malla con esqueleto: preparo otra versión con todas las piezas juntas
+    let glbU=null, unidas=sk.length;
+    if(sk.length>1){ try{ const ref=sk[0], idx=new Map(ref.skeleton.bones.map((b,i)=>[b.name,i]));
+        const eq=(a,b)=>a.elements.every((x,i)=>Math.abs(x-b.elements[i])<1e-4);
+        if(sk.every(m=>eq(m.bindMatrix,ref.bindMatrix)&&eq(m.matrixWorld,ref.matrixWorld)&&m.skeleton.bones.every(b=>idx.has(b.name)))){
+          let geos=sk.map(m=>{ const g0=m.geometry, g=new THREE.BufferGeometry(); g.setAttribute('position',g0.attributes.position.clone());
+            if(g0.attributes.normal) g.setAttribute('normal',g0.attributes.normal.clone());
+            g.setAttribute('uv',g0.attributes.uv?g0.attributes.uv.clone():new THREE.Float32BufferAttribute(new Float32Array(g0.attributes.position.count*2),2));
+            const si=g0.attributes.skinIndex, ni=new Uint16Array(si.count*4); for(let i=0;i<si.count;i++) for(let k=0;k<4;k++){ const b=m.skeleton.bones[si.getComponent(i,k)]; ni[i*4+k]=b?idx.get(b.name):0; }
+            g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(ni,4)); g.setAttribute('skinWeight',g0.attributes.skinWeight.clone()); if(g0.index) g.setIndex(g0.index.clone()); if(!g.attributes.normal) g.computeVertexNormals(); return g; });
+          if(geos.some(g=>!g.index)) geos=geos.map(g=>g.index?g.toNonIndexed():g);
+          const mg=mergeGeometries(geos,false); const mat=(Array.isArray(ref.material)?ref.material[0]:ref.material).clone();
+          const U=new THREE.SkinnedMesh(mg,mat); U.name='Personaje_unido'; U.position.copy(ref.position); U.quaternion.copy(ref.quaternion); U.scale.copy(ref.scale); ref.parent.add(U); U.bind(ref.skeleton,ref.bindMatrix);
+          sk.forEach(m=>m.visible=false); glbU=await new GLTFExporter().parseAsync(P,{binary:true,animations:clips,onlyVisible:true}); sk.forEach(m=>m.visible=true); U.removeFromParent(); } else unidas=0;
+      }catch(err){ glbU=null; unidas=0; } }
+    post({glb,glbU,piezas:sk.length,unidas,clips:clips.map(c=>c.name),huesos,altura:+(h>20?h/100:h).toFixed(2)},glbU?[glb,glbU]:[glb]);
+  }catch(err){ post({error:String(err&&err.message||err)}); } });
+post({listo:true});
+<\/script></body></html>`; }
+const Mixamo={
+  frame:null, listo:false,
+  guia(){ if(Date.now()-(this._g||0)<4000) return; this._g=Date.now(); const c=chatCard(`<div class="ctit">🕺 Mixamo · animaciones para tus personajes</div>
+    <small>Mixamo es de Adobe y no deja que otras apps entren con tu cuenta, así que lo abres tú y yo hago el resto.</small>
+    <ol style="margin:6px 0 6px 18px;padding:0;line-height:1.55">
+      <li><button class="tbtn on" data-a="abrir">Abrir Mixamo</button> y entra con tu cuenta de Adobe (es gratis).</li>
+      <li>Personaje: usa uno de Mixamo (pestaña <b>Characters</b>) o sube el tuyo con <b>Upload Character</b>. <button class="tbtn" data-a="obj">Preparar mi personaje de Vértice</button><br><small>Tiene que ser humanoide, de pie y con los brazos en cruz (pose en T). Luego marcas barbilla, muñecas, codos, rodillas e ingle.</small></li>
+      <li>Pestaña <b>Animations</b>: elige una (correr, saltar, atacar…) y pulsa <b>Download</b>: formato <b>FBX Binary</b>, <b>With Skin</b>. Repite con todas las que quieras.</li>
+      <li>Trae aquí los FBX: <button class="tbtn on" data-a="sub">📂 Elegir los FBX</button> (o arrástralos al chat). Los junto en <b>un solo personaje con todas las animaciones</b>.</li></ol>`);
+    c.querySelector('[data-a=abrir]').onclick=()=>window.open('https://www.mixamo.com/#/?page=1&type=Character','_blank');
+    c.querySelector('[data-a=obj]').onclick=()=>this.prepararVertice();
+    c.querySelector('[data-a=sub]').onclick=()=>this.elegir(); return c; },
+  elegir(){ const i=document.createElement('input'); i.type='file'; i.accept='.fbx'; i.multiple=true; i.onchange=()=>i.files.length&&this.juntar([...i.files]); i.click(); },
+  async prepararVertice(){ try{ const r=await Apps.pedir('vertice','obj'); Apps.minimizar(); const a=document.createElement('a'); a.href=URL.createObjectURL(r.blob); a.download='personaje-para-mixamo.zip'; a.click();
+      toast('Descargado personaje-para-mixamo.zip: súbelo en Mixamo con «Upload Character»',6000); }catch(e){ toast('Abre tu personaje en Vértice primero ('+e.message+')',6000); } },
+  async juntar(files){ files=files.filter(f=>/\.fbx$/i.test(f.name)); if(!files.length) return toast('Tienen que ser archivos .fbx de Mixamo');
+    if(files.reduce((a,f)=>a+f.size,0)>150e6) return toast('Son demasiado grandes (más de 150 MB)');
+    Paso.set('mx','🕺 Juntando '+files.length+' animación'+(files.length>1?'es':'')+' de Mixamo…');
+    const f=document.createElement('iframe'); f.style.cssText='width:100%;height:100%;border:0'; f.srcdoc=mixamoHtml(); Art.open('🕺 Personaje de Mixamo',{el:f}); this.frame=f;
+    const res=await new Promise(async res=>{ const on=e=>{ const d=e.data||{}; if(!d.__mx||e.source!==f.contentWindow) return;
+        if(d.listo){ Promise.all(files.map(async x=>({name:x.name,buf:await x.arrayBuffer()}))).then(L=>f.contentWindow.postMessage({__mx:1,files:L},'*',L.map(x=>x.buf))); return; }
+        removeEventListener('message',on); res(d); }; addEventListener('message',on); setTimeout(()=>{ removeEventListener('message',on); res({error:'tarda demasiado'}); },90000); });
+    if(res.error){ Paso.fin('mx','🕺 No he podido juntarlo: '+res.error); return; }
+    Paso.fin('mx',`🕺 Personaje listo: ${res.clips.length} animaciones, ${res.huesos} huesos`);
+    const nombre=prompt('Nombre del personaje','Personaje animado')||'Personaje animado';
+    const P=await SkChat.guardar({name:nombre,user:'Mixamo (Adobe)',lic:'Mixamo: libre para tus juegos',url:'https://www.mixamo.com'},new Blob([res.glb],{type:'model/gltf-binary'}));
+    P.anims=res.clips; P.desc='Personaje con animaciones de Mixamo: '+res.clips.join(', ');
+    const aData=b=>new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(new Blob([b],{type:'model/gltf-binary'})); });
+    if(res.glbU) P.files.push({ruta:'modelo-ultimate3d.glb',data:await aData(res.glbU),bin:true}); await DB.put('projects',P);
+    const g=P.files.find(x=>x.bin), gU=P.files.find(x=>x.ruta==='modelo-ultimate3d.glb')||g;
+    const c=chatCard(`<div class="ctit">🕺 ${esc(nombre)}</div><small>${res.clips.length} animaciones: ${res.clips.map(esc).join(', ')} · ${res.huesos} huesos · ${res.piezas} pieza${res.piezas>1?'s':''} · ${res.altura} m de alto${res.piezas>1&&!res.unidas?' <b style="color:#ffdf9e">· en ULTIMATE3D solo entrará la primera pieza</b>':''}${res.altura<.5||res.altura>3?' <b style="color:#ffdf9e">· ojo: el tamaño es raro, revísalo</b>':''}</small>
+      <div class="row" style="margin-top:6px"><button class="tbtn on" data-a="u">🎮 Llevar a ULTIMATE3D</button><button class="tbtn" data-a="d">⬇ Descargar GLB</button><button class="tbtn" data-a="m">➕ Añadir más animaciones</button></div>`);
+    c.querySelector('[data-a=u]').onclick=()=>Apps.enviar('ultimate',gU.data,nombre);
+    c.querySelector('[data-a=d]').onclick=()=>{ const a=document.createElement('a'); a.href=g.data; a.download=SkChat.nombre({name:nombre})+'.glb'; a.click(); };
+    c.querySelector('[data-a=m]').onclick=()=>{ toast('Elige el FBX del personaje (With Skin) junto con las animaciones nuevas',6000); this.elegir(); }; return P; }
+};
+// FBX soltados en el chat -> Mixamo
+document.addEventListener('drop',e=>{ const L=[...(e.dataTransfer&&e.dataTransfer.files||[])].filter(f=>/\.fbx$/i.test(f.name)); if(L.length){ e.preventDefault(); e.stopImmediatePropagation(); Mixamo.juntar(L); } },true);
+document.addEventListener('dragover',e=>{ if([...(e.dataTransfer&&e.dataTransfer.items||[])].some(i=>i.kind==='file')) e.preventDefault(); });
+const _apply87=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply87(acts); for(const a of acts) if(/^\s*mixamo\s*$/i.test(String(a))) setTimeout(()=>Mixamo.guia(),300); return made; };
+const _sys87=systemPrompt; systemPrompt=function(extra){ return _sys87(extra)+`\n· {{mixamo}} cuando quiera animar un personaje (andar, correr, saltar, bailar, atacar…): Mor le abre Mixamo, le guía y junta los FBX que baje en un solo personaje GLB con todas las animaciones, listo para ULTIMATE3D o sus juegos. Mixamo solo anima personajes humanoides.`; };
+CMDS.splice(13,0,['/mixamo','Animar personajes con Mixamo',()=>Mixamo.guia()]);
+const _eleg87=Apps.elegir.bind(Apps);
+Apps.elegir=function(){ const c=_eleg87(); const b=document.createElement('button'); b.className='tbtn'; b.textContent='🕺 Animar con Mixamo'; b.onclick=()=>Mixamo.guia(); c.querySelector('.row').appendChild(b); return c; };
 
 /* =====================================================================
    15. DESPERTAR

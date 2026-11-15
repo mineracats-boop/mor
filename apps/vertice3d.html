@@ -1325,6 +1325,8 @@ C.start=evLog.length;renderCourse();
       if(d.cmd==='importar'){ if(S.mode==='EDIT') setMode('OBJECT'); fileMode='gltf'; dar(new Blob([b64(d.data)]),d.name||'modelo.glb'); ok({hecho:true}); }
       else if(d.cmd==='exportar'){ if(S.mode==='EDIT') setMode('OBJECT'); const {sc,anims}=buildExport(); if(!sc.children[0].children.length) return ok({error:'No hay mallas visibles para exportar'});
         new THREE.GLTFExporter().parse(sc,res=>ok({glb:res}),{binary:true,animations:anims,onlyVisible:true}); }
+      else if(d.cmd==='obj'){ if(S.mode==='EDIT') setMode('OBJECT'); const {sc}=buildExport(); if(!sc.children[0].children.length) return ok({error:'No hay mallas visibles en Vértice'}); sc.updateMatrixWorld(true);
+        const z=new JSZip(); z.file('personaje.obj',new THREE.OBJExporter().parse(sc)); z.generateAsync({type:'blob'}).then(blob=>ok({blob})); }
       else if(d.cmd==='ver'){ renderer.render(scene,viewCam); ok({img:canvas.toDataURL('image/jpeg',.7),estado:estado()}); }
       else if(d.cmd==='manual'){ ok({manual:COURSE.map((l,i)=>`${i}. ${l.title}: `+l.steps.map(s=>String(s.t).replace(/<[^>]+>/g,'')).join(' / ')).join('\n').slice(0,9000)}); }
       else if(d.cmd==='restaurar'){ if(S.mode==='EDIT') setMode('OBJECT',true); restore(d.snap); pushUndo(); toast('Copia de seguridad recuperada'); ok({hecho:true}); }
