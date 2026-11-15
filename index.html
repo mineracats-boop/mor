@@ -123,6 +123,16 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
 #ulBar{flex:1}body.ultima #ulTop{display:flex}body.ultima .app{padding-top:40px;box-sizing:border-box}body.ultima #side,body.ultima #bSideT,body.ultima #sideShade{display:none!important}
 .conds{display:flex;flex-direction:column;gap:8px;margin-top:6px}.conds label{display:flex;gap:8px;align-items:flex-start;color:var(--cel2);font-size:14px;line-height:1.35}.conds input{margin-top:3px;flex:none}
 #ulGo:disabled{opacity:.45}
+.exBox{padding:14px;height:100%;overflow:auto;box-sizing:border-box}.exQ{font-size:17px;line-height:1.45;margin:10px 0 14px}
+.exOp{display:block;width:100%;text-align:left;margin:6px 0;padding:11px 14px;border-radius:12px;border:1px solid rgba(127,216,255,.3);background:rgba(127,216,255,.05);color:var(--cel2);font:inherit;font-size:15px;cursor:pointer}.exOp.sel{background:rgba(127,216,255,.22);border-color:var(--cel);color:#fff}
+.exTxt{width:100%;box-sizing:border-box;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:10px}
+.exDots{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.exDots span{width:14px;height:14px;border-radius:50%;background:rgba(127,216,255,.15);cursor:pointer}.exDots span.ok{background:var(--cel)}.exDots span.cur{outline:2px solid #fff}
+.exRes{margin:6px 0;padding:8px 10px;border-radius:10px;font-size:13.5px;line-height:1.4}.exRes.ok{background:rgba(125,255,176,.08)}.exRes.mal{background:rgba(255,143,163,.1)}
+.stTot{display:flex;gap:10px;margin:8px 0}.stTot div{flex:1;background:rgba(127,216,255,.07);border-radius:10px;padding:8px;text-align:center}.stTot b{display:block;font-size:18px;color:var(--cel)}.stTot small{color:var(--dim)}
+.stBars{display:flex;align-items:flex-end;gap:4px;height:110px;margin:6px 0 12px}.stBars div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}.stBars span{width:100%;background:linear-gradient(var(--cel),#3b82f6);border-radius:4px 4px 0 0;min-height:2px}.stBars small{font-size:10px;color:var(--dim)}
+.stRow{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px}.stRow span{width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stRow i{height:8px;border-radius:4px;background:var(--cel);min-width:2px}.stRow small{color:var(--dim)}
+.stAviso{margin-top:8px;padding:8px;border-radius:10px;background:rgba(255,207,107,.12);color:#ffdf9e;font-size:13px}
+.pzBox{height:100%;display:flex;flex-direction:column;padding:8px;box-sizing:border-box}.pzBox svg{flex:1;min-height:0;width:100%;height:auto;border-radius:12px;background:#0f2a22}.pzN{flex:1;text-align:center;color:var(--dim);font-size:13px}
 #bSend.stop{background:#ff6b81;color:#fff;font-size:16px}
 .fm.step{color:var(--cel2);font-size:12.5px;display:flex;align-items:center;gap:8px;margin:4px 0;padding:4px 8px}
 .fm.step.ok{color:var(--dim)}
@@ -491,6 +501,35 @@ body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area
     <p><b>iPhone:</b> Ajustes › Accesibilidad › <b>Acceso guiado</b> › actívalo y pon un código. En Mor, pulsa 3 veces el botón lateral › Iniciar.</p></details>
   <div class="row"><button class="tbtn" id="ulGo" disabled>Acepto las condiciones y empiezo</button></div>
 </div>
+<div class="sheet" id="sheetSync"><button class="close" data-close>×</button>
+  <h3 style="margin-top:0">☁️ SINCRONIZAR Y COPIA DE SEGURIDAD</h3>
+  <div class="note" style="margin-top:0">Mor guarda su memoria, tus chats, rutina, apuntes, flashcards, skills y llaves en un repo <b>privado</b> de tu GitHub («mor-datos»), <b>cifrado</b> con tu contraseña: nadie más puede leerlo, ni GitHub. Así eres el mismo Mor en el móvil y en el ordenador, y si se borra el navegador no pierdes nada.</div>
+  <div class="note">Usa la misma contraseña en todos tus aparatos (la de entrar a Mor). Necesita tu token de GitHub en Conectores.</div>
+  <div class="row"><input type="password" id="syncPass" placeholder="Contraseña (la de entrar a Mor)" style="flex:1" autocomplete="current-password"><button class="tbtn on" id="syncGo">Guardar y sincronizar</button></div>
+  <div class="row"><button class="tbtn" id="syncNow">Sincronizar ahora</button><span class="note" id="syncEstado" style="margin:0"></span></div>
+</div>
+<div class="sheet" id="sheetExamen"><button class="close" data-close>×</button>
+  <h3 style="margin-top:0">📝 MODO EXAMEN</h3>
+  <div class="note" style="margin-top:0">Mor te pone un examen de verdad (test + desarrollo), con tiempo, te corrige y te pone nota. Los fallos los puedes convertir en flashcards.</div>
+  <div class="row"><select id="exDoc" style="flex:1"></select></div>
+  <div class="row"><input type="text" id="exTema" placeholder="…o escribe el tema (p. ej. «la célula», «ecuaciones de 2º grado»)" style="flex:1"></div>
+  <div class="row"><label>Preguntas <select id="exN"><option>5</option><option selected>10</option><option>15</option><option>20</option></select></label><label>Tiempo <select id="exMin"><option value="10">10 min</option><option value="20" selected>20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hora</option></select></label><label>Nivel <select id="exDif"><option value="fácil">Fácil</option><option value="normal" selected>Normal</option><option value="difícil">Difícil</option></select></label></div>
+  <div class="row"><button class="tbtn on" id="exGo">Empezar examen</button></div>
+</div>
+<div class="sheet" id="sheetAvisos"><button class="close" data-close>×</button>
+  <h3 style="margin-top:0">🔔 AVISOS CON MOR CERRADO</h3>
+  <div class="note" style="margin-top:0">Para que el móvil te avise de recordatorios y de tu rutina aunque Mor esté cerrado, hace falta un pequeño servidor tuyo, gratis, en Cloudflare. Solo guarda <b>las horas</b> de los avisos (nunca el texto) y gasta unas 1.440 de las 100.000 ejecuciones gratis al día: no afecta a tus juegos.</div>
+  <details class="note" open><summary><b>Montarlo (una vez, 5 minutos)</b></summary>
+    <p>1. dash.cloudflare.com › Workers &amp; Pages › Create › <b>Start with Hello World!</b> › nombre <b>mor-avisos</b> › Deploy.</p>
+    <p>2. <b>Edit code</b> › borra todo › pega el código <button class="tbtn" id="avCopy">📋 Copiar código</button> › Deploy.</p>
+    <p>3. Storage &amp; databases › Workers KV › <b>Create</b> › nombre mor-avisos. Vuelve al Worker › Settings › <b>Bindings</b> › Add › KV namespace › nombre de variable <b>AVISOS</b> › elige mor-avisos.</p>
+    <p>4. Worker › Settings › <b>Trigger events</b> › Add › Cron trigger › cada minuto (<code>* * * * *</code>).</p>
+    <p>5. Copia la dirección del Worker (https://mor-avisos.…workers.dev) y pégala aquí.</p></details>
+  <div class="row"><input type="text" id="avUrl" placeholder="https://mor-avisos.tu-usuario.workers.dev" style="flex:1"></div>
+  <div class="row"><button class="tbtn on" id="avGo">Activar avisos en este aparato</button><button class="tbtn" id="avTest">Probar</button></div>
+  <div class="note" id="avEstado"></div>
+  <div class="note">En iPhone solo funciona con Mor instalado en la pantalla de inicio (iOS 16.4 o más).</div>
+</div>
 <input type="file" id="fileAttach" multiple hidden>
 <input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
 <div class="toast" id="toast"></div>
@@ -551,7 +590,7 @@ const blank=()=>({facts:[],exams:[],summary:'',history:[],study:[],trust:40,firs
   listen:true,voice:true,lastProactive:0,tasks:[],reminders:[],ciudad:'',lastBrief:''});
 let MEM=blank();
 try{ const d=JSON.parse(localStorage.getItem(MKEY)); if(d) MEM=Object.assign(blank(),d); }catch(e){}
-const saveMem=()=>{ try{ localStorage.setItem(MKEY,JSON.stringify(MEM)); }catch(e){} };
+let saveMem=()=>{ try{ localStorage.setItem(MKEY,JSON.stringify(MEM)); }catch(e){} };
 function addFacts(list){ (list||[]).forEach(f=>{ f=String(f).trim(); if(!f) return;
   const low=f.toLowerCase(); if(MEM.facts.some(x=>x.toLowerCase()===low)) return; MEM.facts.push(f); });
   if(MEM.facts.length>150) MEM.facts=MEM.facts.slice(-150); }
@@ -1172,7 +1211,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v19</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v20</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1498,7 +1537,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v19 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v20 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3642,6 +3681,196 @@ CMDS.splice(7,0,['/ultima','Modo última hora (bloqueo)',r=>Ultima.open(r)]);
 const _apply74=Agenda.apply.bind(Agenda);
 Agenda.apply=function(acts){ const made=_apply74(acts); for(const a of acts){ const m=String(a).match(/^\s*ultima[_ ]hora\s*:\s*([\s\S]*)$/i); if(m){ const [t,mi]=m[1].split('|').map(x=>x.trim()); setTimeout(()=>Ultima.open(t,parseInt(mi)||60),600); } } return made; };
 const _sys74=systemPrompt; systemPrompt=function(extra){ return _sys74(extra)+`\n· {{ultima_hora: tema | minutos}} abre el MODO ÚLTIMA HORA (estudio intensivo en el que se queda bloqueado en Mor; él tiene que aceptar las condiciones) cuando tenga un examen muy cerca o te pida concentrarse a tope.${Ultima.on?' AHORA ESTÁ EN MODO ÚLTIMA HORA: respuestas cortas y solo sobre lo que estudia.':''}`; };
+
+/* =====================================================================
+   80. MOR SINCRONIZADO (móvil ↔ ordenador) Y COPIA DE SEGURIDAD — cifrado con tu contraseña, en un repo PRIVADO de tu GitHub
+   ===================================================================== */
+const b64e=u8=>{ let s=''; for(let i=0;i<u8.length;i+=32768) s+=String.fromCharCode.apply(null,u8.subarray(i,i+32768)); return btoa(s); };
+const b64d=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const Sync={repo:'mor-datos',file:'mor.enc',busy:false,dirty:false,
+  async clave(pass){ const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveBits']);
+    const b=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:new TextEncoder().encode('mor-sync-v1'),iterations:200000},k,256); localStorage.setItem('mor_synckey',b64e(new Uint8Array(b))); },
+  async key(){ const r=localStorage.getItem('mor_synckey'); if(!r) return null; return crypto.subtle.importKey('raw',b64d(r),'AES-GCM',false,['encrypt','decrypt']); },
+  async cifrar(obj){ const k=await this.key(); const gz=await new Response(new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+    const iv=crypto.getRandomValues(new Uint8Array(12)), ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,gz)); return JSON.stringify({v:1,iv:b64e(iv),ct:b64e(ct)}); },
+  async descifrar(txt){ const k=await this.key(), o=JSON.parse(txt); const gz=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(o.iv)},k,b64d(o.ct));
+    return JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text()); },
+  async usuario(){ if(!this.user) this.user=(await GH.api('user')).login; return this.user; },
+  async paquete(){ const hs={}; Convs.list().forEach(c=>{ try{ hs[c.id]=JSON.parse(localStorage.getItem('mor_h_'+c.id)||'null'); }catch(e){} }); hs[Convs.cur]=MEM.history;
+    let claves={},con={}; try{ claves=JSON.parse(localStorage.getItem('mor_claves')||'{}'); con=JSON.parse(localStorage.getItem('mor_conectores')||'{}'); }catch(e){}
+    return {at:Date.now(),mem:MEM,convs:Convs.list(),cproj:Convs.projs(),hist:hs,chats:(await DB.all('chats')).map(({id,...c})=>c),docs:await DB.all('docs'),cards:await DB.all('cards'),people:await DB.all('people'),claves,con}; },
+  // une lo de los dos aparatos sin perder nada
+  async unir(R){ if(!R) return; const L=MEM, nuevo=(R.mem._upd||0)>(L._upd||0);
+    const union=(a=[],b=[],k)=>{ const m=new Map(); [...a,...b].forEach(x=>{ const id=k(x); const p=m.get(id); m.set(id,p?Object.assign({},p,x,{done:p.done||x.done,fired:p.fired||x.fired}):x); }); return [...m.values()]; };
+    const M=Object.assign({},nuevo?R.mem:L);
+    M.facts=[...new Set([...(L.facts||[]),...(R.mem.facts||[])])];
+    M.tasks=union(L.tasks,R.mem.tasks,x=>x.id||x.t); M.reminders=union(L.reminders,R.mem.reminders,x=>x.id||(x.t+x.when));
+    M.exams=union(L.exams,R.mem.exams,x=>x.asignatura+x.fecha); M.study=union(L.study,R.mem.study,x=>x.at); M.ultimas=union(L.ultimas,R.mem.ultimas,x=>x.at); M.examenes=union(L.examenes,R.mem.examenes,x=>x.at);
+    if(L.habits||R.mem.habits){ const hb=new Map(); [...(L.habits||[]),...(R.mem.habits||[])].forEach(h=>{ const p=hb.get(h.n); hb.set(h.n,p?Object.assign({},p,{log:Object.assign({},p.log,h.log)}):h); }); M.habits=[...hb.values()]; }
+    M._upd=Math.max(L._upd||0,R.mem._upd||0); MEM=M; localStorage.setItem(MKEY,JSON.stringify(MEM));
+    const cv=new Map(); [...(R.convs||[]),...Convs.list()].forEach(c=>{ const p=cv.get(c.id); cv.set(c.id,!p||c.at>p.at?c:p); }); Convs.save([...cv.values()]);
+    const pj=new Map(); [...(R.cproj||[]),...Convs.projs()].forEach(p=>pj.set(p.id,p)); Convs.saveProjs([...pj.values()]);
+    Object.entries(R.hist||{}).forEach(([id,h])=>{ if(!h||id===Convs.cur) return; const l=JSON.parse(localStorage.getItem('mor_h_'+id)||'[]'); if((h.length||0)>l.length) localStorage.setItem('mor_h_'+id,JSON.stringify(h)); });
+    if(R.hist&&R.hist[Convs.cur]&&R.hist[Convs.cur].length>MEM.history.length) MEM.history=R.hist[Convs.cur];
+    const ya=new Set((await DB.all('chats')).map(c=>c.at+'|'+c.r)); for(const c of R.chats||[]) if(!ya.has(c.at+'|'+c.r)) await DB.put('chats',c);
+    for(const st of ['docs','people']){ const have=new Set((await DB.all(st)).map(x=>x.id)); for(const x of R[st]||[]) if(!have.has(x.id)) await DB.put(st,x); }
+    const cards=new Map((await DB.all('cards')).map(c=>[c.id,c])); for(const c of R.cards||[]){ const p=cards.get(c.id); if(!p||(c.hits+c.miss)>(p.hits+p.miss)) await DB.put('cards',c); }
+    // llaves: solo rellena las que falten en este aparato
+    try{ const lc=JSON.parse(localStorage.getItem('mor_claves')||'{}'); let ch=false; Object.entries(R.claves||{}).forEach(([k,v])=>{ if(v&&!lc[k]){ lc[k]=v; ch=true; } }); if(ch){ localStorage.setItem('mor_claves',JSON.stringify(lc)); }
+      const cc=JSON.parse(localStorage.getItem('mor_conectores')||'{}'); Object.entries(R.con||{}).forEach(([k,v])=>{ if(v&&!cc[k]) cc[k]=v; }); localStorage.setItem('mor_conectores',JSON.stringify(cc)); }catch(e){}
+    saveMem(); },
+  async ahora(silencio){ if(this.busy) return; if(!GH.tok()){ if(!silencio) toast('Para sincronizar, pon tu token de GitHub en Conectores',5000); return; }
+    if(!localStorage.getItem('mor_synckey')){ if(!silencio) this.pedirClave(); return; }
+    this.busy=true; this.estado('Sincronizando…');
+    try{ const u=await this.usuario(), R=`${u}/${this.repo}`;
+      try{ await GH.api(`repos/${R}`); }catch(e){ if(!/404/.test(e.message)) throw e; await GH.api('user/repos',{method:'POST',body:JSON.stringify({name:this.repo,private:true,auto_init:true,description:'Datos cifrados de M.O.R. (no borrar)'})}); await sleep(1500); }
+      let sha=null, remoto=null; try{ const meta=await GH.api(`repos/${R}/contents/${this.file}`); sha=meta.sha; const txt=await GH.api(`repos/${R}/contents/${this.file}`,{raw:true,headers:{Accept:'application/vnd.github.raw'}}); remoto=await this.descifrar(txt); }
+      catch(e){ if(/decrypt|operation/i.test(e.name+e.message)) throw new Error('la contraseña de sincronización no coincide con la del otro aparato'); if(!/404/.test(e.message)) throw e; }
+      if(remoto&&remoto.at>(+localStorage.getItem('mor_sync_at')||0)) await this.unir(remoto);
+      const body=await this.cifrar(await this.paquete());
+      await GH.api(`repos/${R}/contents/${this.file}`,{method:'PUT',body:JSON.stringify({message:'Sincronizar M.O.R.',content:btoa(body),sha:sha||undefined})});
+      localStorage.setItem('mor_sync_at',String(Date.now())); this.dirty=false; this.estado('✓ Sincronizado '+new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}));
+      if(remoto){ renderFeed(); renderSide(); }
+    }catch(e){ this.estado('⚠ '+e.message); if(!silencio) toast('Sincronizar: '+e.message,6000); }
+    this.busy=false; },
+  estado(t){ this.ult=t; const el=$('syncEstado'); if(el) el.textContent=t; },
+  pedirClave(){ cierraPaneles(); $('sheetSync').classList.add('open'); $('syncPass').focus(); }
+};
+const _saveMem80=saveMem; saveMem=function(){ MEM._upd=Date.now(); Sync.dirty=true; return _saveMem80(); };
+$('syncGo').onclick=async()=>{ const p=$('syncPass').value; if(p){ $('syncGo').disabled=true; await Sync.clave(p); $('syncPass').value=''; $('syncGo').disabled=false; } Sync.ahora(); };
+$('syncNow').onclick=()=>Sync.ahora();
+// al entrar con la contraseña se prepara también la clave de sincronizar
+$('lgForm').addEventListener('submit',()=>{ const p=$('lgPass').value; if(p) setTimeout(()=>Sync.clave(p).then(()=>Sync.ahora(true)),2500); },true);
+setInterval(()=>{ if(Sync.dirty&&!busy) Sync.ahora(true); },180000);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&Sync.dirty) Sync.ahora(true); });
+setTimeout(()=>{ if(localStorage.getItem('mor_synckey')&&GH.tok()) Sync.ahora(true); },6000);
+
+/* =====================================================================
+   81. MODO EXAMEN (examen de verdad con nota, sobre tus apuntes o un tema)
+   ===================================================================== */
+const EXSCHEMA={type:'OBJECT',properties:{titulo:{type:'STRING'},preguntas:{type:'ARRAY',items:{type:'OBJECT',properties:{tipo:{type:'STRING',enum:['test','desarrollo']},enunciado:{type:'STRING'},opciones:{type:'ARRAY',items:{type:'STRING'}},correcta:{type:'INTEGER'},explicacion:{type:'STRING'},claves:{type:'ARRAY',items:{type:'STRING'}},puntos:{type:'NUMBER'}},required:['tipo','enunciado','puntos']}}},required:['titulo','preguntas']};
+const Examen={E:null,resp:[],i:0,fin:0,iv:null,
+  async open(){ cierraPaneles(); const docs=await DB.all('docs'); $('exDoc').innerHTML='<option value="">— Sobre un tema (sin apuntes) —</option>'+docs.map(d=>`<option value="${esc(d.id)}">${esc(d.titulo)}</option>`).join(''); $('sheetExamen').classList.add('open'); },
+  async crear(){ const docId=$('exDoc').value, tema=$('exTema').value.trim(), n=+$('exN').value||10, min=+$('exMin').value||20, dif=$('exDif').value;
+    if(!docId&&!tema) return toast('Elige unos apuntes o escribe un tema'); $('sheetExamen').classList.remove('open');
+    const doc=docId?(await DB.all('docs')).find(d=>d.id===docId):null; Paso.set('ex','📝 Preparando tu examen…');
+    try{ this.E=await geminiJSON(`Eres un profesor que pone un examen ${dif} de ${n} preguntas sobre ${doc?`estos apuntes («${doc.titulo}»):\n${String(doc.texto||doc.resumen||'').slice(0,30000)}`:`«${tema}»`}.
+Mezcla unas ${Math.round(n*.7)} preguntas tipo test (4 opciones, una correcta, «correcta» es el índice 0-3) y ${n-Math.round(n*.7)} de desarrollo corto (con «claves»: las ideas que debe incluir la respuesta). Pon «puntos» a cada una para que sumen 10. Explicación breve de cada respuesta. Solo sobre lo que entra; preguntas claras y sin ambigüedad.`,EXSCHEMA,[],MODELOS_CODIGO,90000);
+      this.E.min=min; this.E.tema=doc?doc.titulo:tema; this.resp=this.E.preguntas.map(()=>null); this.i=0; this.fin=Date.now()+min*60000;
+      Paso.fin('ex','📝 Examen listo: '+this.E.preguntas.length+' preguntas, '+min+' min'); this.pinta(); clearInterval(this.iv); this.iv=setInterval(()=>this.reloj(),1000); }
+    catch(e){ Paso.fin('ex','📝 No pude preparar el examen: '+e.message); } },
+  reloj(){ const s=Math.max(0,Math.round((this.fin-Date.now())/1000)); const el=$('exReloj'); if(el) el.textContent=`⏱ ${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; if(s<=0&&this.E&&!this.E.nota) this.corregir(); },
+  pinta(){ const q=this.E.preguntas[this.i], r=this.resp[this.i], box=document.createElement('div'); box.className='exBox';
+    box.innerHTML=`<div class="row" style="margin-top:0"><b style="flex:1">Pregunta ${this.i+1}/${this.E.preguntas.length} · ${q.puntos} pt</b><span id="exReloj"></span></div><p class="exQ">${esc(q.enunciado)}</p>`
+      +(q.tipo==='test'?(q.opciones||[]).map((o,k)=>`<button class="exOp${r===k?' sel':''}" data-k="${k}">${'ABCD'[k]}) ${esc(o)}</button>`).join(''):`<textarea class="exTxt" rows="7" placeholder="Escribe tu respuesta…">${esc(r||'')}</textarea>`)
+      +`<div class="row"><button class="tbtn" data-n="-1" ${this.i?'':'disabled'}>← Anterior</button><button class="tbtn" data-n="1" ${this.i<this.E.preguntas.length-1?'':'disabled'}>Siguiente →</button><span style="flex:1"></span><button class="tbtn on" data-fin="1">Entregar</button></div>`
+      +`<div class="exDots">${this.E.preguntas.map((_,k)=>`<span class="${k===this.i?'cur ':''}${this.resp[k]!=null&&this.resp[k]!==''?'ok':''}" data-go="${k}"></span>`).join('')}</div>`;
+    box.querySelectorAll('.exOp').forEach(b=>b.onclick=()=>{ this.resp[this.i]=+b.dataset.k; this.pinta(); });
+    const ta=box.querySelector('.exTxt'); if(ta) ta.oninput=()=>this.resp[this.i]=ta.value;
+    box.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{ this.i+=+b.dataset.n; this.pinta(); });
+    box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{ this.i=+b.dataset.go; this.pinta(); });
+    box.querySelector('[data-fin]').onclick=()=>this.corregir();
+    Art.open('📝 Examen: '+this.E.tema,{el:box}); this.reloj(); },
+  async corregir(){ if(!this.E||this.E.corrigiendo) return; this.E.corrigiendo=true; clearInterval(this.iv); Art.close(); Paso.set('ex','📝 Corrigiendo…');
+    const P=this.E.preguntas; let nota=0; const det=[];
+    P.forEach((q,k)=>{ if(q.tipo==='test'){ const ok=this.resp[k]===q.correcta; if(ok) nota+=q.puntos; det.push({k,ok,pts:ok?q.puntos:0}); } });
+    const des=P.map((q,k)=>({q,k})).filter(x=>x.q.tipo==='desarrollo');
+    if(des.length){ try{ const o=await geminiJSON(`Corrige estas respuestas de desarrollo como un profesor justo. Para cada una da los puntos conseguidos (0 a su máximo) según si incluye las ideas clave, y un comentario breve.\n${des.map(x=>`#${x.k} (máx ${x.q.puntos}) PREGUNTA: ${x.q.enunciado}\nCLAVES: ${(x.q.claves||[]).join('; ')}\nRESPUESTA: ${this.resp[x.k]||'(en blanco)'}`).join('\n\n')}`,
+        {type:'OBJECT',properties:{notas:{type:'ARRAY',items:{type:'OBJECT',properties:{k:{type:'INTEGER'},puntos:{type:'NUMBER'},comentario:{type:'STRING'}},required:['k','puntos']}}},required:['notas']},[],MODELOS_RAPIDOS,60000);
+        o.notas.forEach(n=>{ const q=P[n.k]; if(!q) return; const p=Math.max(0,Math.min(q.puntos,n.puntos)); nota+=p; det.push({k:n.k,ok:p>=q.puntos*.6,pts:p,com:n.comentario}); }); }catch(e){} }
+    nota=Math.round(nota*10)/10; this.E.nota=nota; det.sort((a,b)=>a.k-b.k);
+    const fallos=det.filter(d=>!d.ok); MEM.examenes=(MEM.examenes||[]).concat([{tema:this.E.tema,nota,n:P.length,at:Date.now()}]).slice(-100); saveMem();
+    Paso.fin('ex',`📝 Examen corregido: ${nota}/10`);
+    const c=chatCard(`<div class="ctit">📝 ${esc(this.E.tema)} · <span style="color:${nota>=5?'#7dffb0':'#ff8fa3'}">${nota}/10</span></div>
+      <details><summary>Ver corrección (${P.length-fallos.length} bien, ${fallos.length} a repasar)</summary>${det.map(d=>{ const q=P[d.k]; return `<div class="exRes ${d.ok?'ok':'mal'}"><b>${d.k+1}.</b> ${esc(q.enunciado)}<br>${q.tipo==='test'?`Tu respuesta: ${this.resp[d.k]!=null?'ABCD'[this.resp[d.k]]:'—'} · Correcta: ${'ABCD'[q.correcta]}) ${esc((q.opciones||[])[q.correcta]||'')}`:`${d.pts}/${q.puntos} pt · ${esc(d.com||'')}`}<br><small>${esc(q.explicacion||'')}</small></div>`; }).join('')}</details>
+      ${fallos.length?'<div class="row"><button class="tbtn on" data-a="f">Hacer flashcards de los fallos</button></div>':''}`);
+    const bf=c.querySelector('[data-a=f]'); if(bf) bf.onclick=async()=>{ for(const d of fallos){ const q=P[d.k]; await DB.put('cards',{id:'ex'+Date.now()+'_'+d.k,doc:'examen',tema:this.E.tema,p:q.enunciado,r:q.tipo==='test'?(q.opciones||[])[q.correcta]+(q.explicacion?' — '+q.explicacion:''):(q.claves||[]).join('; '),box:0,due:Date.now(),hits:0,miss:0}); } toast(fallos.length+' flashcards creadas: repásalas en Repasar',4000); bf.disabled=true; };
+    send(null,{event:`HA TERMINADO UN EXAMEN de "${this.E.tema}" y ha sacado ${nota}/10 (${fallos.length} fallos de ${P.length}). Coméntale el resultado en dos frases, sincero y motivador, y dile qué repasar.`}); }
+};
+$('exGo').onclick=()=>Examen.crear();
+
+/* =====================================================================
+   82. ESTADÍSTICAS (tu semana y tu mes de un vistazo)
+   ===================================================================== */
+function cardStats(dias=7){ const hoy=new Date(); hoy.setHours(0,0,0,0); const D=[...Array(dias)].map((_,i)=>{ const d=new Date(hoy); d.setDate(d.getDate()-(dias-1-i)); return d; });
+  const st=MEM.study||[], minDia=D.map(d=>st.filter(s=>s.at>=d.getTime()&&s.at<d.getTime()+864e5).reduce((a,s)=>a+(s.min||0),0)), max=Math.max(30,...minDia);
+  const total=minDia.reduce((a,b)=>a+b,0), distr=st.filter(s=>s.at>=D[0].getTime()).reduce((a,s)=>a+(s.distracciones||0),0);
+  const porTema={}; st.filter(s=>s.at>=D[0].getTime()).forEach(s=>porTema[s.tema]=(porTema[s.tema]||0)+(s.min||0));
+  const temas=Object.entries(porTema).sort((a,b)=>b[1]-a[1]).slice(0,6), maxT=Math.max(1,...temas.map(t=>t[1]));
+  const exs=(MEM.examenes||[]).slice(-6), ult=(MEM.ultimas||[]).filter(u=>u.at>=D[0].getTime());
+  const hab=Habits.list().map(h=>({n:h.n,c:D.filter(d=>h.log[d.toISOString().slice(0,10)]).length}));
+  const pronto=(MEM.exams||[]).filter(e=>{ const t=new Date(e.fecha).getTime(); return t>=Date.now()&&t-Date.now()<10*864e5; }).map(e=>({...e,min:st.filter(s=>norm(s.tema).includes(norm(e.asignatura).split(' ')[0])&&s.at>=Date.now()-7*864e5).reduce((a,s)=>a+s.min,0)}));
+  chatCard(`<div class="ctit">📊 Tus ${dias===7?'últimos 7 días':'últimos 30 días'}</div>
+    <div class="stTot"><div><b>${Math.floor(total/60)} h ${total%60} min</b><small>estudiando</small></div><div><b>${distr}</b><small>distracciones</small></div><div><b>${ult.length}</b><small>últimas horas</small></div></div>
+    <div class="stBars">${minDia.map((m,i)=>`<div title="${m} min"><span style="height:${Math.round(m/max*100)}%"></span><small>${D[i].toLocaleDateString('es-ES',{weekday:'narrow'})}</small></div>`).join('')}</div>
+    ${temas.length?'<b>Por asignatura</b>'+temas.map(([t,m])=>`<div class="stRow"><span>${esc(t)}</span><i style="width:${Math.round(m/maxT*100)}%"></i><small>${m} min</small></div>`).join(''):''}
+    ${hab.length?'<b>Hábitos</b>'+hab.map(h=>`<div class="stRow"><span>${esc(h.n)}</span><i style="width:${Math.round(h.c/dias*100)}%"></i><small>${h.c}/${dias}</small></div>`).join(''):''}
+    ${exs.length?'<b>Exámenes de práctica</b><div>'+exs.map(e=>`${esc(e.tema)}: <b style="color:${e.nota>=5?'#7dffb0':'#ff8fa3'}">${e.nota}</b>`).join(' · ')+'</div>':''}
+    ${pronto.map(e=>`<div class="stAviso">⚠ Examen de <b>${esc(e.asignatura)}</b> el ${esc(e.fecha)} y ${e.min?`solo llevas ${e.min} min esta semana`:'aún no lo has estudiado esta semana'}.</div>`).join('')}
+    <div class="row"><button class="tbtn" data-a="m">${dias===7?'Ver 30 días':'Ver 7 días'}</button></div>`).querySelector('[data-a=m]').onclick=()=>cardStats(dias===7?30:7); }
+
+/* =====================================================================
+   83. PIZARRA (Mor dibuja la explicación paso a paso en el panel de la derecha)
+   ===================================================================== */
+const Pizarra={
+  limpia(svg){ const d=new DOMParser().parseFromString(svg,'image/svg+xml'), s=d.querySelector('svg'); if(!s) throw new Error('dibujo vacío');
+    d.querySelectorAll('script,foreignObject,iframe,image').forEach(x=>x.remove()); d.querySelectorAll('*').forEach(el=>[...el.attributes].forEach(a=>{ if(/^on/i.test(a.name)||/javascript:/i.test(a.value)) el.removeAttribute(a.name); })); return s; },
+  async hacer(tema){ Paso.set('pz','🧑‍🏫 Dibujando en la pizarra: '+tema+'…');
+    try{ let t=await gemini({contents:[{role:'user',parts:[{text:`Eres un profesor excelente. Dibuja en una PIZARRA (un SVG) la explicación visual de: «${tema}».
+Reglas: <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg"> con fondo #0f2a22 (pizarra verde oscura), trazos y textos en blanco/tiza (#f4f1e8) y colores de tiza (#ffd166, #7fd8ff, #ff8fa3, #9ef01a). Fuente "Comic Sans MS, Chalkboard, sans-serif".
+Organiza en 3-6 PASOS: cada paso dentro de <g class="paso">…</g>, en orden (se irán mostrando uno a uno). Usa cajas, flechas (con marker), esquemas, ejes, fórmulas o dibujos sencillos; textos cortos (máx. 6 palabras por línea), tamaño 18-26. Nada se sale ni se solapa. Responde SOLO con el SVG.`}]}],generationConfig:{temperature:.4,maxOutputTokens:12000}},MODELOS_CODIGO,90000);
+      t=String(t).replace(/^[\s\S]*?(<svg)/i,'$1').replace(/(<\/svg>)[\s\S]*$/i,'$1'); const svg=this.limpia(t);
+      const pasos=[...svg.querySelectorAll('g.paso')]; pasos.forEach((g,i)=>{ g.style.transition='opacity .6s'; g.style.opacity=i?0:1; });
+      const box=document.createElement('div'); box.className='pzBox'; box.appendChild(document.importNode(svg,true));
+      const ctr=document.createElement('div'); ctr.className='row'; ctr.innerHTML=`<button class="tbtn" data-p="-1">← Atrás</button><span class="pzN"></span><button class="tbtn on" data-p="1">Siguiente paso →</button><button class="tbtn" data-p="all">Ver todo</button>`; box.appendChild(ctr);
+      let i=0; const G=()=>[...box.querySelectorAll('g.paso')]; const show=()=>{ G().forEach((g,k)=>g.style.opacity=k<=i?1:0); box.querySelector('.pzN').textContent=G().length?`Paso ${i+1}/${G().length}`:''; };
+      ctr.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ if(b.dataset.p==='all') i=G().length-1; else i=Math.max(0,Math.min(G().length-1,i+(+b.dataset.p))); show(); }); show();
+      Art.open('🧑‍🏫 '+tema,{el:box}); Paso.fin('pz','🧑‍🏫 Pizarra lista: '+tema);
+      const c=chatCard(`<div class="ctit">🧑‍🏫 Pizarra: ${esc(tema)}</div><div class="row"><button class="tbtn on" data-a="v">Ver pizarra</button><button class="tbtn" data-a="d">Descargar</button></div>`);
+      const svgTxt=new XMLSerializer().serializeToString(svg).replace(/opacity:\s*0/g,'opacity:1');
+      c.querySelector('[data-a=v]').onclick=()=>Art.open('🧑‍🏫 '+tema,{el:box}); c.querySelector('[data-a=d]').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([svgTxt],{type:'image/svg+xml'})); a.download='pizarra.svg'; a.click(); };
+    }catch(e){ Paso.fin('pz','🧑‍🏫 No pude dibujarlo: '+e.message); } }
+};
+
+/* ===== atajos, menú y etiquetas para todo lo nuevo ===== */
+SIDE[2][1].push(['📝 Modo examen',()=>Examen.open()],['📊 Mis estadísticas',()=>cardStats(7)],['🧑‍🏫 Pizarra',()=>{ cierraPaneles(); $('inp').value='/pizarra '; $('inp').focus(); }]);
+SIDE[5][1].unshift(['☁️ Sincronizar',()=>{ cierraPaneles(); $('syncEstado').textContent=Sync.ult||(localStorage.getItem('mor_sync_at')?'Última: '+new Date(+localStorage.getItem('mor_sync_at')).toLocaleString('es-ES'):'Aún no sincronizado'); $('sheetSync').classList.add('open'); }]);
+CMDS.splice(8,0,['/examen','Modo examen con nota',()=>Examen.open()],['/stats','Tus estadísticas',()=>cardStats(7)],['/pizarra','Explicación dibujada (escribe el tema)',r=>r?Pizarra.hacer(r):toast('Escribe el tema: /pizarra fotosíntesis')],['/sincronizar','Sincronizar con tus otros aparatos',()=>Sync.ahora()]);
+const _apply83=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply83(acts);
+  for(const a of acts){ const m=String(a).match(/^\s*(pizarra|estadisticas|estadísticas|examen)\s*(?::\s*([\s\S]*))?$/i); if(!m) continue; const k=norm(m[1]), v=(m[2]||'').trim();
+    if(k==='pizarra'&&v) setTimeout(()=>Pizarra.hacer(v),400); else if(/estad/.test(k)) setTimeout(()=>cardStats(7),300); else if(k==='examen') setTimeout(()=>{ Examen.open(); if(v) $('exTema').value=v; },300); }
+  return made; };
+const _sys83=systemPrompt; systemPrompt=function(extra){ return _sys83(extra)+`\n· {{pizarra: tema}} cuando una explicación se entienda mejor con un dibujo o esquema (procesos, ciclos, esquemas, problemas de mates o física) · {{estadisticas}} si pregunta cómo va o cuánto ha estudiado · {{examen: tema}} si pide que le examines o ponerse a prueba.`; };
+
+/* =====================================================================
+   84. AVISOS CON MOR CERRADO (servidor gratis tuyo en Cloudflare; solo guarda horas)
+   ===================================================================== */
+const b64uDec=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')+'==='.slice((s.length+3)%4)),c=>c.charCodeAt(0));
+const Avisos={
+  url(){ return (Conn.get().avisosUrl||'').trim().replace(/\/+$/,''); },
+  id(){ let i=localStorage.getItem('mor_dev_id'); if(!i){ i='d'+Math.random().toString(36).slice(2,12); localStorage.setItem('mor_dev_id',i); } return i; },
+  lista(){ const L=[]; (MEM.reminders||[]).filter(r=>!r.fired&&r.when>Date.now()).forEach(r=>L.push({t:r.when,txt:'⏰ '+r.t}));
+    if(MEM.rutinaAvisos!==false) for(let d=0;d<7;d++){ const day=new Date(); day.setDate(day.getDate()+d); (Rutina.data()[Rutina.tipoHoy(day)]||[]).forEach(b=>{ const [H,M]=String(b.i).split(':').map(Number); const t=new Date(day); t.setHours(H,M||0,0,0); if(t>Date.now()&&!((MEM.rutinaSkip||{})[t.toISOString().slice(0,10)]||[]).includes(norm(b.t))) L.push({t:t.getTime(),txt:'🕒 Ahora toca: '+b.t}); }); }
+    return L.sort((a,b)=>a.t-b.t).slice(0,300); },
+  async subir(sub){ if(!this.url()||!('serviceWorker' in navigator)) return; try{ const reg=await navigator.serviceWorker.ready; sub=sub||await reg.pushManager.getSubscription(); if(!sub) return;
+      const L=this.lista(); const c=await caches.open('mor-avisos'); await c.put('avisos.json',new Response(JSON.stringify(L),{headers:{'content-type':'application/json'}}));
+      const r=await fetch(this.url()+'/sub',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:this.id(),sub:sub.toJSON(),times:L.map(x=>x.t)})}); this.firma=JSON.stringify(L); return r.ok; }catch(e){ return false; } },
+  async activar(){ const u=$('avUrl').value.trim(); if(u){ Conn.set({avisosUrl:u}); } if(!this.url()) return toast('Pega la dirección de tu servidor de avisos',4000);
+    try{ const t=await (await fetch(this.url()+'/vapid')).json(); if(!t.pub) throw new Error(t.error||'el servidor no responde bien');
+      if(await Notification.requestPermission()!=='granted') throw new Error('sin permiso de notificaciones');
+      const reg=await navigator.serviceWorker.ready; let sub=await reg.pushManager.getSubscription(); if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uDec(t.pub)});
+      localStorage.setItem('mor_push','1'); const ok=await this.subir(sub); $('avEstado').textContent=ok?'✓ Avisos activados en este aparato':'⚠ No se pudo guardar en el servidor'; }
+    catch(e){ $('avEstado').textContent='⚠ '+e.message; } },
+  async prueba(){ await this.subir(); try{ const r=await (await fetch(this.url()+'/prueba',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:this.id()})})).json(); $('avEstado').textContent=r.estado>=200&&r.estado<300?'✓ Prueba enviada: cierra Mor y te llegará en unos segundos':'⚠ '+(r.error||('estado '+r.estado)); }catch(e){ $('avEstado').textContent='⚠ '+e.message; } },
+  open(){ cierraPaneles(); $('avUrl').value=Conn.get().avisosUrl||''; $('avEstado').textContent=localStorage.getItem('mor_push')?'✓ Activados en este aparato':'No activados en este aparato'; $('sheetAvisos').classList.add('open'); }
+};
+$('avGo').onclick=()=>Avisos.activar(); $('avTest').onclick=()=>Avisos.prueba();
+$('avCopy').onclick=async()=>{ try{ const t=await (await fetch('avisos-worker.js',{cache:'no-store'})).text(); await navigator.clipboard.writeText(t); toast('Código del servidor copiado',3000); }catch(e){ toast('No se pudo copiar: '+e.message); } };
+// cada vez que cambian los recordatorios o la rutina, el servidor se entera (solo de las horas)
+setInterval(()=>{ if(localStorage.getItem('mor_push')&&Avisos.url()&&JSON.stringify(Avisos.lista())!==Avisos.firma) Avisos.subir(); },60000);
+setTimeout(()=>{ if(localStorage.getItem('mor_push')) Avisos.subir(); },8000);
+SIDE[0][1].push(['🔔 Avisos con Mor cerrado',()=>Avisos.open()]);
 
 /* =====================================================================
    15. DESPERTAR
