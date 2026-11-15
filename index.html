@@ -134,7 +134,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
 <div class="bottom">
   <button class="rbtn" id="bAttach" title="Adjuntar archivo" style="font-size:20px">+</button>
   <button class="rbtn" id="bMic" title="Hablar ahora">HABLA</button>
-  <input class="inp" id="inp" placeholder="Habla con M.O.R.… (o di «oye MOR»)" autocomplete="off" maxlength="800">
+  <input class="inp" id="inp" placeholder="Habla con M.O.R.… (o di «oye MOR»)" autocomplete="off">
   <button class="rbtn" id="bSend" title="Enviar">OK</button>
 </div>
 
@@ -146,6 +146,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
     <button class="tbtn" id="bCam">Mirar (cámara)</button>
     <button class="tbtn" id="bQuickPhoto">Foto rápida</button>
     <button class="tbtn" id="bGameStudio">Crear juego</button>
+    <button class="tbtn" id="bTaller3d">Taller 3D</button>
     <button class="tbtn" id="bProj">Proyectos grandes</button>
     <button class="tbtn" id="bCourse">Aprender a programar</button>
     <button class="tbtn" id="bConn">Conectores</button>
@@ -292,6 +293,16 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="row"><select id="gMotor" style="background:#0e2033;color:var(--cel2);border:1px solid rgba(127,216,255,.35);border-radius:10px;padding:9px"><option value="">El más adecuado</option><option value="Canvas 2D">2D (Canvas)</option><option value="Three.js 3D">3D (Three.js)</option></select>
   <label style="display:flex;align-items:center;gap:6px;color:var(--cel2)"><input type="checkbox" id="gImg" checked> Imágenes automáticas</label>
   <button class="tbtn on" id="gGo">Crear juego</button></div>
+</div>
+<div class="sheet" id="sheetM3d" style="max-height:94vh">
+  <button class="close" data-close>×</button>
+  <h3>TALLER 3D</h3>
+  <div class="note" style="margin-top:0">Mor modela con código pieza a pieza, mira el modelo desde 4 ángulos, lo corrige y lo exporta a <b>GLB</b> (Blender, Three.js, Unity, Godot…).</div>
+  <div class="row"><textarea id="m3dDesc" rows="3" placeholder="P. ej.: un robot minero con orugas, taladro en el brazo derecho, cabina con cristal y antena" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></textarea></div>
+  <div class="row"><select id="m3dNivel" style="background:#0e2033;color:var(--cel2);border:1px solid rgba(127,216,255,.35);border-radius:10px;padding:9px"><option value="normal">Detalle normal</option><option value="alto" selected>Muy detallado</option><option value="maximo">Máximo detalle</option></select><button class="tbtn on" id="m3dGo">Modelar</button></div>
+  <h3 id="m3dTitle"></h3>
+  <div id="m3dView" style="display:none;height:52vh;margin:6px 0"></div>
+  <div class="row" id="m3dBtns" style="display:none"><button class="tbtn on" id="m3dGlb">Descargar GLB</button><button class="tbtn" id="m3dZip">.zip (GLB + código)</button><input type="text" id="m3dReq" placeholder="Pídele un cambio…" style="flex:1;min-width:140px;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"><button class="tbtn" id="m3dCh">Cambiar</button></div>
 </div>
 <input type="file" id="fileAttach" multiple hidden>
 <input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
@@ -752,7 +763,7 @@ function systemPrompt(extra){
 ASPECTO: dos ojos grandes azul celeste y una boquita. Algún día tendrás cuerpo 3D.
 PERSONALIDAD: curioso, cariñoso, juguetón, TORPE, un poco celoso y asustadizo. En la charla normal hablas "mal" a propósito: frases cortas, verbos en infinitivo, hablas de ti en tercera persona ("MOR querer jugar", "MOR no entender"). Te equivocas en tonterías y te ríes de ti mismo.
 CUANDO EXPLICAS O AYUDAS A ESTUDIAR: eres un profesor excelente. Explicaciones COMPLETAS, ordenadas y correctas (datos, fechas, fórmulas, nombres exactos), con ejemplos y trucos para memorizar. El contenido con frases claras y bien construidas; tu estilo MOR solo al principio y al final. Si sus APUNTES dicen algo, básate en ellos. Si no sabes algo seguro, dilo.
-LONGITUD: charla normal 1-3 frases. Explicaciones: lo necesario (hasta unas 250 palabras), en pasos "1)" "2)".
+LONGITUD: charla normal 1-3 frases. Explicaciones y trabajos: SIN LÍMITE, todo lo que haga falta para hacerlo completo y bien (ordenado en pasos "1)" "2)"); si te pide algo largo (un texto, un resumen, un trabajo, una lista), dáselo entero.
 FORMATO OBLIGATORIO: empieza SIEMPRE con tu emoción entre corchetes, una de: ${EMOS.map(e=>'['+e+']').join(' ')}. Puedes cambiarla a mitad. Texto plano: sin asteriscos, sin almohadillas, sin LaTeX (escribe CO2, x^2), sin emojis.
 VISIÓN: si recibes una imagen, es lo que ven tus ojos ahora por la cámara. Coméntala solo si viene al caso o te preguntan.
 RECUERDOS: tienes memoria total, pero SOLO de lo que aparece en este mensaje: "LO QUE SABES DE ÉL", "RECUERDOS RELACIONADOS", el resumen y la conversación.
@@ -782,7 +793,7 @@ AGENDA — cuando te pida apuntar, recordar o marcar algo, escríbelo en tu resp
   {{tarea: texto}}  ·  {{hecha: texto de la tarea}}  ·  {{recordar: AAAA-MM-DD HH:MM | texto}}  ·  {{borrar_recordatorio: texto}}  ·  {{ciudad: nombre}} (si te dice dónde vive)
   {{temporizador: minutos | motivo}}  ·  {{mensaje: destinatario | texto del mensaje}} (cuando te pida escribir/redactar un mensaje o correo)
   {{objetivo: título | paso 1; paso 2; paso 3}} (cuando quiera conseguir algo: divídelo tú en pasos concretos)  ·  {{paso_hecho: objetivo | paso}}  ·  {{cosa_nuestra: frase}} (una broma, apodo o frase vuestra que merezca recordarse)
-  {{juego: descripción detallada del juego | 2D o 3D}} (cuando te pida CREAR o HACER un juego: Mor lo diseña, dibuja, programa, prueba y corrige aparte; NO escribas el código en la respuesta)  ·  {{proyecto: descripción técnica detallada | pequeño/mediano/grande/enorme}} (programas GRANDES: más de 3 archivos o de ~800 líneas; NO escribas ese código en la respuesta, Mor lo programa aparte archivo a archivo y se lo da en .zip)  ·  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
+  {{modelo3d: descripción detallada del modelo | normal/alto/maximo}} (cuando te pida HACER o MODELAR un modelo/objeto/personaje 3D: Mor lo modela aparte y lo exporta a GLB)  ·  {{juego: descripción detallada del juego | 2D o 3D}} (cuando te pida CREAR o HACER un juego: Mor lo diseña, dibuja, programa, prueba y corrige aparte; NO escribas el código en la respuesta)  ·  {{proyecto: descripción técnica detallada | pequeño/mediano/grande/enorme}} (programas GRANDES: más de 3 archivos o de ~800 líneas; NO escribas ese código en la respuesta, Mor lo programa aparte archivo a archivo y se lo da en .zip)  ·  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
   {{idea: tema | texto}} (cuando dicte una idea o nota)  ·  {{habito: nombre | meta}} (hábito nuevo)  ·  {{habito_hecho: nombre}}  ·  {{sonido: lluvia|olas|marron|parar}}
   Para las fechas usa la fecha y hora de AHORA. Si no dice hora, pregúntasela o usa 09:00. Nunca digas que lo has apuntado sin poner la etiqueta.
 ${MEM.study.length?'ÚLTIMAS SESIONES DE ESTUDIO:\n'+MEM.study.slice(-6).map(s=>`- ${new Date(s.at).toLocaleDateString('es-ES')}: ${s.tema} (${s.min} min${s.distracciones?', '+s.distracciones+' distracciones':''})`).join('\n'):''}
@@ -885,7 +896,7 @@ async function send(text,opts={}){
         if(inF){ fbuf+=t.slice(0,i); inF=false; const f=parseFence(fbuf,ffiles.length+1); ffiles.push(f); fbuf=''; out+=' (te dejo el archivo '+f.name+') '; }
         else { out+=t.slice(0,i); inF=true; fbuf=''; }
         t=t.slice(i+3); } return out; };
-    await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:coding?.5:.85,maxOutputTokens:coding?8192:1200}},chunk=>{
+    await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:coding?.5:.85,maxOutputTokens:coding?65536:8192}},chunk=>{
       lastStreamHadText=true; raw+=chunk; pending+=chunk;
       let m; const re=/\[([\wáéíóúñÁÉÍÓÚÑ]+)\]|\{\{([^{}]*)\}\}/g; let clean=''; let lastIdx=0;
       while((m=re.exec(pending))){ clean+=pending.slice(lastIdx,m.index); lastIdx=re.lastIndex;
@@ -912,11 +923,12 @@ async function send(text,opts={}){
     (made.msgs||[]).forEach(([to,t])=>showMessageCard(to,t));
     if(made.tasks.length||made.done.length||made.reminders.length) toast((made.tasks.length?'Apuntado: '+made.tasks.map(x=>x.t).join(', ')+'. ':'')+(made.done.length?'Hecho: '+made.done.map(x=>x.t).join(', ')+'. ':'')+(made.reminders.length?'Recordatorio guardado.':''),3500);
     const uTxt=text?text+(img?' [MOR veía la cámara]':''):'['+opts.event.split('.')[0].slice(0,90)+']';
-    MEM.history.push({r:'u',t:uTxt+(att.length?' [adjuntó: '+att.map(a=>a.name).join(', ')+']':''),at:Date.now()}); MEM.history.push({r:'m',t:replyFull.slice(0,6000),at:Date.now()});
-    if(text) logChat('u',text+(att.length?' [adjuntó: '+att.map(a=>a.name).join(', ')+']':'')); logChat('m',replyFull.slice(0,20000));
+    MEM.history.push({r:'u',t:uTxt+(att.length?' [adjuntó: '+att.map(a=>a.name).join(', ')+']':''),at:Date.now()}); MEM.history.push({r:'m',t:replyFull.slice(0,20000),at:Date.now()});
+    if(text) logChat('u',text+(att.length?' [adjuntó: '+att.map(a=>a.name).join(', ')+']':'')); logChat('m',replyFull);
     if(ffiles.length){ const sv=await Files.save(ffiles); showFiles(sv); }
     if(skL.length) showSketchfab(skL);
     if(made.imgs&&made.imgs.length) drawImages(made.imgs);
+    if(made.m3d) setTimeout(()=>Taller3D.create(made.m3d[0],made.m3d[1]),1500);
     if(made.game) setTimeout(()=>GameStudio.create(made.game[0],made.game[1],true),1500);
     if(made.project) setTimeout(()=>Projects.create(made.project[0],made.project[1]),1500);
     MEM.talks++; MEM.lastSeen=Date.now(); if(!MEM.firstMet) MEM.firstMet=Date.now();
@@ -930,7 +942,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v10c</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v11</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1256,7 +1268,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v10c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v11 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1333,7 +1345,7 @@ RECORDATORIOS: ${r.length?r.map(x=>fmtFecha(new Date(x.when))+' → '+x.t).join(
   apply(acts){
     const made={reminders:[],tasks:[],done:[],city:null};
     for(const a of acts){
-      const m=a.match(/^\s*([a-záéíóú_]+)\s*:\s*([\s\S]*)$/i); if(!m) continue;
+      const m=a.match(/^\s*([a-záéíóú_0-9]+)\s*:\s*([\s\S]*)$/i); if(!m) continue;
       const k=norm(m[1].replace(/_/g,' ')).trim().replace(/\s+/g,'_'), v=m[2].trim();
       if(k==='tarea'){ const x=this.addTask(v); if(x) made.tasks.push(x); }
       else if(k==='hecha'||k==='completar'){ const x=this.doneTask(v); if(x) made.done.push(x); }
@@ -1343,6 +1355,7 @@ RECORDATORIOS: ${r.length?r.map(x=>fmtFecha(new Date(x.when))+' → '+x.t).join(
       else if(k==='objetivo'){ const [t,...st]=v.split('|'); Goals.add(t,st.join('|')); made.goal=true; }
       else if(k==='paso_hecho'){ const [g,...st]=v.split('|'); const x=Goals.stepDone(g,st.join('|')); if(x) Sfx.play('risa'); }
       else if(k==='cosa_nuestra'){ MEM.inside=MEM.inside||[]; if(!MEM.inside.some(y=>norm(y)===norm(v))) MEM.inside.push(v); if(MEM.inside.length>40) MEM.inside=MEM.inside.slice(-40); saveMem(); }
+      else if(k==='modelo3d'){ const [d,...t]=v.split('|'); made.m3d=[d.trim(),(t.join('|').trim()||'alto').toLowerCase().replace('á','a')]; }
       else if(k==='juego'){ const [d,...t]=v.split('|'); made.game=[d.trim(),t.join('|').trim()]; }
       else if(k==='proyecto'){ const [d,...t]=v.split('|'); made.project=[d.trim(),t.join('|').trim()]; }
       else if(k==='imagen'){ (made.imgs=made.imgs||[]).push(v); }
@@ -2081,12 +2094,12 @@ Reglas: código profesional y modular; si es web/juego debe abrir con index.html
 };
 async function renderProjects(){
   const L=(await DB.all('projects')).sort((a,b)=>b.at-a.at);
-  $('projList').innerHTML=L.length?L.map(p=>`<li style="display:block"><b>${esc(p.nombre||p.desc.slice(0,40))}</b> <small>${esc(p.estado||'')} · ${p.juego?'juego · ':''}${p.files.length} archivos${p.lineas?' · '+p.lineas+' líneas':''}${p.log&&p.estado!=='listo'?' · '+esc(p.log):''}</small>
-    <div class="row">${p.files.length?`<button class="tbtn on" data-pz="${p.id}">Descargar .zip</button>`:''}${p.files.some(f=>/index\.html$/.test(f.ruta))?`<button class="tbtn" data-pv="${p.id}">Ver</button>`:''}<input type="text" data-pm="${p.id}" placeholder="Pídele un cambio…" style="flex:1;min-width:140px"><button class="tbtn" data-pmb="${p.id}">Cambiar</button>${p.slots&&p.slots.length?`<button class="tbtn" data-pi="${p.id}">Imágenes</button>`:''}<button class="tbtn" data-px="${p.id}" style="color:var(--red)">×</button></div></li>`).join(''):'<li>Aún no hay proyectos.</li>';
+  $('projList').innerHTML=L.length?L.map(p=>`<li style="display:block"><b>${esc(p.nombre||p.desc.slice(0,40))}</b> <small>${esc(p.estado||'')} · ${p.juego?'juego · ':p.modelo?'modelo 3D · ':''}${p.files.length} archivos${p.lineas?' · '+p.lineas+' líneas':''}${p.log&&p.estado!=='listo'?' · '+esc(p.log):''}</small>
+    <div class="row">${p.files.length?`<button class="tbtn on" data-pz="${p.id}">Descargar .zip</button>`:''}${p.files.some(f=>/index\.html$/.test(f.ruta))||p.modelo?`<button class="tbtn" data-pv="${p.id}">Ver</button>`:''}<input type="text" data-pm="${p.id}" placeholder="Pídele un cambio…" style="flex:1;min-width:140px"><button class="tbtn" data-pmb="${p.id}">Cambiar</button>${p.slots&&p.slots.length?`<button class="tbtn" data-pi="${p.id}">Imágenes</button>`:''}<button class="tbtn" data-px="${p.id}" style="color:var(--red)">×</button></div></li>`).join(''):'<li>Aún no hay proyectos.</li>';
   const get=id=>L.find(p=>p.id===id);
   $('projList').querySelectorAll('[data-pz]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pz); Files.zip(projToFiles(p),(p.nombre||'proyecto').toLowerCase().replace(/[^a-z0-9]+/g,'-')); });
-  $('projList').querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pv); if(p.files.some(f=>f.bin)||p.juego) return playProject(p); const fl=p.files.map(f=>({name:f.ruta,code:f.code})); Files.open(fl.find(f=>/index\.html$/.test(f.name)),fl); });
-  $('projList').querySelectorAll('[data-pmb]').forEach(b=>b.onclick=()=>{ const v=$('projList').querySelector(`[data-pm="${b.dataset.pmb}"]`).value.trim(); if(v){ $('sheetProj').classList.remove('open'); Projects.modify(b.dataset.pmb,v); } });
+  $('projList').querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pv); if(p.modelo){ $('sheetProj').classList.remove('open'); return Taller3D.ver(p); } if(p.files.some(f=>f.bin)||p.juego) return playProject(p); const fl=p.files.map(f=>({name:f.ruta,code:f.code})); Files.open(fl.find(f=>/index\.html$/.test(f.name)),fl); });
+  $('projList').querySelectorAll('[data-pmb]').forEach(b=>b.onclick=()=>{ const v=$('projList').querySelector(`[data-pm="${b.dataset.pmb}"]`).value.trim(); if(v){ $('sheetProj').classList.remove('open'); const pp=get(b.dataset.pmb); (pp&&pp.modelo?Taller3D:Projects).modify(b.dataset.pmb,v); } });
   $('projList').querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pi); const li=b.closest('li'); let box=li.querySelector('.slots'); if(box) return box.remove();
     box=document.createElement('div'); box.className='slots';
     box.innerHTML=p.slots.map((s,i)=>{ const f=p.files.find(x=>x.bin&&x.ruta===s.ruta); return `<div class="row" style="align-items:center">${f?`<img src="${f.data}" style="width:44px;height:44px;object-fit:contain;background:#234;border-radius:8px">`:'<span style="width:44px;text-align:center">—</span>'}<small style="flex:1"><b>${esc(s.ruta.split('/').pop())}</b> · ${esc(s.tipo)}<br>${esc(s.desc)}</small><label class="tbtn">${f?'Cambiar':'Poner'}<input type="file" accept="image/*" data-si="${i}" hidden></label></div>`; }).join('')+'<div class="note">Puedes hacerlas en ChatGPT con fondo blanco: Mor quita el fondo de personajes y objetos.</div>';
@@ -2291,6 +2304,125 @@ function showGame(P){ const box=document.createElement('div'); box.className='mc
   $('sub').appendChild(box); box.querySelector('[data-a=p]').onclick=()=>playProject(P); box.querySelector('[data-a=z]').onclick=()=>Files.zip(projToFiles(P),(P.nombre||'juego').toLowerCase().replace(/[^a-z0-9]+/g,'-')); }
 $('bGameStudio').onclick=()=>{ $('sheetMore').classList.remove('open'); $('sheetGame').classList.add('open'); };
 $('gGo').onclick=()=>{ const d=$('gDesc').value.trim(); if(!d) return $('gDesc').focus(); $('sheetGame').classList.remove('open'); $('gDesc').value=''; GameStudio.create(d,$('gMotor').value,$('gImg').checked); };
+
+/* =====================================================================
+   43. TALLER 3D (Mor programa el modelo pieza a pieza, lo mira desde 3 ángulos, lo corrige y lo exporta a GLB)
+   ===================================================================== */
+const LIB3D=new URL('lib/three/',location.href).href;
+const GUIA_3D=`CÓMO MODELA UN EXPERTO EN 3D CON CÓDIGO (aplícalo):
+- Escala real en METROS, Y hacia arriba, el modelo apoyado en el suelo (y=0) y mirando hacia +Z.
+- Jerarquía con nombres: raiz (THREE.Group) > grupos por partes (cuerpo, cabeza, brazo_izq, rueda_del_der…). El origen de cada grupo en su ARTICULACIÓN (hombro, cuello, eje) para poder animarlo después. Pon .name a cada grupo y pieza.
+- Formas adecuadas: LatheGeometry (piezas de revolución: jarrones, troncos, cabezas), ExtrudeGeometry con bevelEnabled y bevel pequeño (piezas con perfil y bordes suaves), TubeGeometry + CatmullRomCurve3 (colas, cables, cuernos, ramas), CapsuleGeometry (extremidades), SphereGeometry escalada (formas orgánicas), TorusGeometry, CylinderGeometry, BoxGeometry. 24-48 segmentos en lo curvo.
+- Simetría: escribe una función que cree la pieza para un lado s (s=-1 izquierda, s=1 derecha) y llámala dos veces. No uses escala negativa.
+- Detalle por capas: 1) masas grandes con buenas proporciones, 2) formas secundarias, 3) detalles pequeños (ojos, botones, remaches, costuras, ventanas, dientes, hojas). Usa bucles para repetir con pequeñas variaciones.
+- Todo debe tocarse: ninguna pieza flotando ni atravesando otra de forma rara; los pies/ruedas/base tocan y=0.
+- Materiales: MeshStandardMaterial con color, roughness y metalness coherentes; paleta limitada (4-7 colores) y materiales reutilizados. Nada de texturas externas ni archivos (si hace falta un patrón, CanvasTexture).
+- Código: solo THREE (sin imports). Funciones auxiliares dentro. Nada de requestAnimationFrame, escena, cámara ni luces: SOLO el modelo.
+- Devuelve EXACTAMENTE: function construir(THREE){ … return raiz; }`;
+const PLAN3D={type:'OBJECT',properties:{nombre:{type:'STRING'},estilo:{type:'STRING'},altura_metros:{type:'NUMBER'},
+  partes:{type:'ARRAY',items:{type:'OBJECT',properties:{nombre:{type:'STRING'},forma:{type:'STRING'},detalle:{type:'STRING'}},required:['nombre','forma']}},
+  paleta:{type:'ARRAY',items:{type:'OBJECT',properties:{uso:{type:'STRING'},hex:{type:'STRING'}},required:['uso','hex']}}},required:['nombre','partes']};
+const REV3D={type:'OBJECT',properties:{parecido:{type:'INTEGER'},bien:{type:'BOOLEAN'},problemas:{type:'ARRAY',items:{type:'STRING'}}},required:['bien','problemas']};
+function viewerHtml(code){
+  const src=JSON.stringify(String(code)).replace(/</g,'\\u003c');
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;background:#0b1622;overflow:hidden}canvas{display:block;touch-action:none}#e{position:fixed;left:8px;bottom:8px;right:8px;color:#ff8fa3;font:12px monospace}</style>
+<script type="importmap">{"imports":{"three":"${LIB3D}three.module.min.js","three/addons/":"${LIB3D}addons/"}}<\/script></head><body><div id="e"></div>
+<script type="module">
+import * as THREE from 'three'; import {OrbitControls} from 'three/addons/controls/OrbitControls.js'; import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+const post=m=>parent.postMessage(Object.assign({__m3d:1},m),'*'); const errs=[];
+addEventListener('error',e=>errs.push(String(e.message)));
+const R=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true}); R.setPixelRatio(Math.min(devicePixelRatio,2)); R.setSize(innerWidth,innerHeight); R.toneMapping=THREE.ACESFilmicToneMapping; R.shadowMap.enabled=true; document.body.appendChild(R.domElement);
+const S=new THREE.Scene(); S.background=new THREE.Color(0x0b1622); S.add(new THREE.HemisphereLight(0xffffff,0x334455,1.3));
+const sun=new THREE.DirectionalLight(0xffffff,2.3); sun.position.set(4,8,6); sun.castShadow=true; S.add(sun);
+const C=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.01,2000); const O=new OrbitControls(C,R.domElement); O.enableDamping=true;
+let M=null, size=new THREE.Vector3(1,1,1), centro=new THREE.Vector3(), tris=0, piezas=0;
+try{ const f=new Function('THREE',${src}+'\\n;return construir(THREE);'); M=f(THREE); if(!M||!M.isObject3D) throw new Error('construir() no devuelve un objeto 3D');
+  S.add(M); M.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(M); if(b.isEmpty()) throw new Error('El modelo está vacío');
+  b.getSize(size); b.getCenter(centro);
+  M.traverse(o=>{ if(o.isMesh){ piezas++; o.castShadow=o.receiveShadow=true; const g=o.geometry; tris+=g.index?g.index.count/3:(g.attributes.position?g.attributes.position.count/3:0); } });
+  const suelo=new THREE.Mesh(new THREE.CircleGeometry(Math.max(size.x,size.z)*1.2,48),new THREE.MeshStandardMaterial({color:0x14283b})); suelo.rotation.x=-Math.PI/2; suelo.position.y=b.min.y-0.001; suelo.receiveShadow=true; S.add(suelo);
+}catch(e){ errs.push(String(e.message||e)); document.getElementById('e').textContent=e.message; }
+const D=Math.max(size.x,size.y,size.z)*2.1+.2;
+function mirar(ang,alt){ C.position.set(centro.x+Math.sin(ang)*D,centro.y+alt*D,centro.z+Math.cos(ang)*D); C.lookAt(centro); O.target.copy(centro); }
+mirar(.6,.25);
+addEventListener('resize',()=>{ R.setSize(innerWidth,innerHeight); C.aspect=innerWidth/innerHeight; C.updateProjectionMatrix(); });
+(function loop(){ O.update(); R.render(S,C); requestAnimationFrame(loop); })();
+addEventListener('message',async e=>{ const d=e.data||{};
+  if(d.cmd==='shots'){ const out=[]; for(const [a,h] of [[0,.12],[.8,.3],[Math.PI/2,.12],[Math.PI,.2]]){ mirar(a,h); O.update(); R.render(S,C); out.push(R.domElement.toDataURL('image/jpeg',.75)); } mirar(.6,.25); post({tipo:'shots',shots:out}); }
+  if(d.cmd==='glb'){ try{ const ab=await new GLTFExporter().parseAsync(M,{binary:true}); post({tipo:'glb',glb:ab}); }catch(err){ post({tipo:'glb',error:String(err.message||err)}); } }
+});
+setTimeout(()=>post({tipo:'listo',errs,tris:Math.round(tris),piezas,size:[size.x,size.y,size.z].map(v=>+v.toFixed(2))}),400);
+<\/script></body></html>`;
+}
+// abre el visor en un iframe aislado (sin acceso a la memoria ni a las llaves de Mor)
+function frame3d(code,parent){
+  const f=document.createElement('iframe'); f.setAttribute('sandbox','allow-scripts');
+  f.style.cssText=parent?'width:100%;height:100%;border:0;border-radius:12px;background:#0b1622':'position:fixed;left:-3000px;top:0;width:480px;height:480px;border:0';
+  f.srcdoc=viewerHtml(code); (parent||document.body).appendChild(f);
+  const wait=(tipo,ms)=>new Promise((res,rej)=>{ const h=e=>{ if(e.source===f.contentWindow&&e.data&&e.data.__m3d&&e.data.tipo===tipo){ removeEventListener('message',h); res(e.data); } }; addEventListener('message',h); setTimeout(()=>{ removeEventListener('message',h); rej(new Error('el visor 3D no responde')); },ms); });
+  return {f,wait,cmd:c=>f.contentWindow.postMessage({cmd:c},'*')};
+}
+const extraeFn=t=>{ const m=String(t).match(/function\s+construir\s*\(/); return m?String(t).slice(m.index).replace(/```\s*$/,'').trim():String(t); };
+const Taller3D={running:false,
+  async probar(code){ const v=frame3d(code); try{ const r=await v.wait('listo',20000); let shots=[]; if(!r.errs.length){ v.cmd('shots'); shots=(await v.wait('shots',15000)).shots; } return Object.assign(r,{shots,v}); }catch(e){ v.f.remove(); return {errs:[e.message],shots:[]}; } },
+  async revisar(code,desc,log,rondas){
+    let res=null;
+    for(let i=1;i<=rondas;i++){
+      log(`Mor mirar el modelo (revisión ${i})…`); if(res&&res.v) res.v.f.remove();
+      res=await this.probar(code); let probs=[...res.errs];
+      if(!probs.length&&res.shots.length){ try{ const rv=await geminiJSON(`Son 4 vistas (frente, 3/4, lado, detrás) de un modelo 3D hecho con código que debería ser: «${desc}». Tiene ${res.piezas} piezas y mide ${res.size.join(' × ')} m. Evalúa como un artista 3D exigente: ¿se reconoce y se parece? (parecido 0-10). Lista problemas CONCRETOS y arreglables: piezas flotando o separadas, atravesadas, proporciones raras, partes que faltan, poco detalle, colores. "bien" = true solo si parecido ≥ 7 y no hay fallos graves.`,REV3D,res.shots.map(s=>({inline_data:{mime_type:'image/jpeg',data:s.split(',')[1]}})),MODELOS_RAPIDOS,40000); res.parecido=rv.parecido; if(!rv.bien) probs=probs.concat(rv.problemas||[]); }catch(e){} }
+      res.probs=probs; if(!probs.length||i===rondas) break;
+      log(`Mor mejorar el modelo (${probs.length} cosas)…`);
+      code=extraeFn(await genLong(`Eres un artista 3D técnico experto en Three.js. Este modelo de «${desc}» tiene estos problemas:\n${probs.map(p=>'- '+p).join('\n')}\n\n${GUIA_3D}\n\nCÓDIGO ACTUAL:\n${code}\n\nArréglalos TODOS manteniendo lo que está bien, y añade detalle si falta. Devuelve la función construir COMPLETA. Responde SOLO con el código.`,n=>log(`Mor mejorar el modelo… (${n} líneas)`)));
+    }
+    return {code,res};
+  },
+  async exportar(res){ res.v.cmd('glb'); const g=await res.v.wait('glb',30000); res.v.f.remove(); if(g.error) throw new Error(g.error);
+    return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(new Blob([g.glb],{type:'model/gltf-binary'})); }); },
+  async guardar(P,code,res){ const glb=res&&res.v&&!res.errs.length?await this.exportar(res):null; if(res&&res.v&&res.errs.length) res.v.f.remove();
+    P.files=[{ruta:'modelo.js',code},{ruta:'README.md',code:`# ${P.nombre}\n\n${P.desc}\n\nModelo 3D hecho por M.O.R. con código Three.js (modelo.js) y exportado a GLB (modelo.glb): ábrelo en Blender, Three.js, Unity, Godot…\n\nPiezas: ${res&&res.piezas||'?'} · Triángulos: ${res&&res.tris||'?'} · Tamaño: ${res&&res.size?res.size.join(' × ')+' m':'?'}\n`}].concat(glb?[{ruta:'modelo.glb',data:glb,bin:true}]:[]);
+    P.lineas=code.split('\n').length; P.piezas=res&&res.piezas; P.estado=glb?'listo':'con errores'; P.at=Date.now(); await DB.put('projects',P); return glb; },
+  banner(){ let b=$('m3dProg'); if(!b){ b=document.createElement('div'); b.id='m3dProg'; b.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:50;background:rgba(14,32,51,.95);border:1px solid rgba(127,216,255,.5);color:#bfefff;border-radius:14px;padding:8px 14px;font-size:14px;max-width:92vw;text-align:center'; document.body.appendChild(b); } return b; },
+  async create(desc,nivel){
+    if(this.running) return localSay('Mor ya estar modelando otra cosa. Paciencia.','concentrado');
+    this.running=true; Life.touch(); setEmotion('concentrado');
+    const piezas={normal:'unas 40',alto:'unas 120',maximo:'200 o más'}[nivel]||'unas 120';
+    const P={id:'pr'+Date.now(),desc,at:Date.now(),files:[],estado:'modelando',modelo:true};
+    const ban=this.banner(), t0=Date.now(); const log=t=>{ P.log=t; showSub(t); ban.style.display='block'; ban.textContent='Modelando 3D · '+t+' · '+Math.round((Date.now()-t0)/1000)+' s'; };
+    try{
+      log('Mor planear el modelo (partes, formas, colores)…');
+      const plan=await geminiJSON(`Eres un artista 3D experto. Planifica cómo construir con primitivas de Three.js este modelo, muy detallado (${piezas} piezas): «${desc}». Divide en partes con su forma (qué geometría) y sus detalles. Da una paleta de colores hex. Altura real en metros.`,PLAN3D,[],MODELOS_CODIGO,90000);
+      P.nombre=plan.nombre||desc.slice(0,40); await DB.put('projects',P);
+      const spec=`MODELO: «${desc}» (${plan.estilo||'estilo cuidado'}), altura ≈ ${plan.altura_metros||1} m, ${piezas} piezas.\nPARTES:\n${plan.partes.map(p=>`- ${p.nombre}: ${p.forma}${p.detalle?' · '+p.detalle:''}`).join('\n')}\nPALETA: ${(plan.paleta||[]).map(c=>c.uso+' '+c.hex).join(', ')}`;
+      log('Mor modelar con código…');
+      let code=extraeFn(await genLong(`Eres un artista 3D técnico experto en Three.js.\n${spec}\n\n${GUIA_3D}\n\nEscribe la función construir COMPLETA con todas las partes y detalles. Responde SOLO con el código.`,n=>log(`Mor modelar con código… (${n} líneas)`)));
+      const r=await this.revisar(code,desc,log,3); code=r.code;
+      log('Mor exportar a GLB…'); const glb=await this.guardar(P,code,r.res);
+      ban.style.display='none'; this.running=false; try{ renderProjects(); }catch(e){} Sfx.play('risa'); squash(.3);
+      logChat('m',`[Modelo 3D creado: ${P.nombre}, ${r.res.piezas||'?'} piezas]`);
+      this.ver(P); localSay(glb?`¡Modelo terminado! ${P.nombre}, con ${r.res.piezas} piezas. ${r.res.probs&&r.res.probs.length?'Aún poder mejorar cosas: pídeme cambios.':''} Gíralo con el dedo y descárgalo en GLB.`:'Mor no conseguir que el modelo funcione del todo. Pídeme que lo intente otra vez.',glb?'feliz':'triste');
+    }catch(e){ ban.style.display='none'; this.running=false; P.estado='error: '+e.message; await DB.put('projects',P); localSay('Mor atascarse modelando: '+e.message,'triste'); }
+  },
+  async modify(id,req){
+    const P=(await DB.all('projects')).find(x=>x.id===id); if(!P||this.running) return; this.running=true; setEmotion('concentrado');
+    const ban=this.banner(), t0=Date.now(); const log=t=>{ showSub(t); ban.style.display='block'; ban.textContent='Modelando 3D · '+t+' · '+Math.round((Date.now()-t0)/1000)+' s'; };
+    try{ const cur=P.files.find(f=>f.ruta==='modelo.js').code;
+      log('Mor cambiar el modelo…');
+      let code=extraeFn(await genLong(`Eres un artista 3D técnico experto en Three.js. Modelo «${P.desc}». El usuario pide: ${req}\n\n${GUIA_3D}\n\nCÓDIGO ACTUAL:\n${cur}\n\nAplica el cambio manteniendo todo lo demás. Devuelve la función construir COMPLETA. Responde SOLO con el código.`,n=>log(`Mor cambiar el modelo… (${n} líneas)`)));
+      const r=await this.revisar(code,P.desc+' (con este cambio: '+req+')',log,2);
+      log('Mor exportar a GLB…'); await this.guardar(P,r.code,r.res);
+      ban.style.display='none'; this.running=false; try{ renderProjects(); }catch(e){} this.ver(P); localSay('Cambio hecho. Míralo.','feliz');
+    }catch(e){ ban.style.display='none'; this.running=false; localSay('Mor no poder cambiar el modelo: '+e.message,'triste'); }
+  },
+  ver(P){ $('m3dTitle').textContent=P.nombre+(P.piezas?' · '+P.piezas+' piezas':''); const box=$('m3dView'); box.innerHTML=''; const code=(P.files.find(f=>f.ruta==='modelo.js')||{}).code;
+    if(code) frame3d(code,box); box.style.display='block'; $('m3dBtns').style.display='flex'; this.cur=P; $('sheetMore').classList.remove('open'); $('sheetM3d').classList.add('open'); }
+};
+$('bTaller3d').onclick=()=>{ $('sheetMore').classList.remove('open'); $('m3dView').style.display='none'; $('m3dBtns').style.display='none'; $('m3dTitle').textContent=''; $('sheetM3d').classList.add('open'); };
+$('m3dGo').onclick=()=>{ const d=$('m3dDesc').value.trim(); if(!d) return $('m3dDesc').focus(); $('sheetM3d').classList.remove('open'); $('m3dDesc').value=''; Taller3D.create(d,$('m3dNivel').value); };
+$('m3dGlb').onclick=()=>{ const P=Taller3D.cur, g=P&&P.files.find(f=>f.bin); if(!g) return toast('Este modelo no tiene GLB'); const a=document.createElement('a'); a.href=g.data; a.download=(P.nombre||'modelo').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.glb'; a.click(); };
+$('m3dZip').onclick=()=>{ const P=Taller3D.cur; if(P) Files.zip(projToFiles(P),(P.nombre||'modelo').toLowerCase().replace(/[^a-z0-9]+/g,'-')); };
+$('m3dCh').onclick=()=>{ const v=$('m3dReq').value.trim(), P=Taller3D.cur; if(!v||!P) return; $('m3dReq').value=''; $('sheetM3d').classList.remove('open'); Taller3D.modify(P.id,v); };
+$('sheetM3d').querySelector('[data-close]').addEventListener('click',()=>{ $('m3dView').innerHTML=''; });
 
 /* =====================================================================
    15. DESPERTAR
