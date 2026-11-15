@@ -930,7 +930,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v10b</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v10c</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1256,7 +1256,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v10b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v10c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2082,11 +2082,21 @@ Reglas: código profesional y modular; si es web/juego debe abrir con index.html
 async function renderProjects(){
   const L=(await DB.all('projects')).sort((a,b)=>b.at-a.at);
   $('projList').innerHTML=L.length?L.map(p=>`<li style="display:block"><b>${esc(p.nombre||p.desc.slice(0,40))}</b> <small>${esc(p.estado||'')} · ${p.juego?'juego · ':''}${p.files.length} archivos${p.lineas?' · '+p.lineas+' líneas':''}${p.log&&p.estado!=='listo'?' · '+esc(p.log):''}</small>
-    <div class="row">${p.files.length?`<button class="tbtn on" data-pz="${p.id}">Descargar .zip</button>`:''}${p.files.some(f=>/index\.html$/.test(f.ruta))?`<button class="tbtn" data-pv="${p.id}">Ver</button>`:''}<input type="text" data-pm="${p.id}" placeholder="Pídele un cambio…" style="flex:1;min-width:140px"><button class="tbtn" data-pmb="${p.id}">Cambiar</button><button class="tbtn" data-px="${p.id}" style="color:var(--red)">×</button></div></li>`).join(''):'<li>Aún no hay proyectos.</li>';
+    <div class="row">${p.files.length?`<button class="tbtn on" data-pz="${p.id}">Descargar .zip</button>`:''}${p.files.some(f=>/index\.html$/.test(f.ruta))?`<button class="tbtn" data-pv="${p.id}">Ver</button>`:''}<input type="text" data-pm="${p.id}" placeholder="Pídele un cambio…" style="flex:1;min-width:140px"><button class="tbtn" data-pmb="${p.id}">Cambiar</button>${p.slots&&p.slots.length?`<button class="tbtn" data-pi="${p.id}">Imágenes</button>`:''}<button class="tbtn" data-px="${p.id}" style="color:var(--red)">×</button></div></li>`).join(''):'<li>Aún no hay proyectos.</li>';
   const get=id=>L.find(p=>p.id===id);
   $('projList').querySelectorAll('[data-pz]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pz); Files.zip(projToFiles(p),(p.nombre||'proyecto').toLowerCase().replace(/[^a-z0-9]+/g,'-')); });
   $('projList').querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pv); if(p.files.some(f=>f.bin)||p.juego) return playProject(p); const fl=p.files.map(f=>({name:f.ruta,code:f.code})); Files.open(fl.find(f=>/index\.html$/.test(f.name)),fl); });
   $('projList').querySelectorAll('[data-pmb]').forEach(b=>b.onclick=()=>{ const v=$('projList').querySelector(`[data-pm="${b.dataset.pmb}"]`).value.trim(); if(v){ $('sheetProj').classList.remove('open'); Projects.modify(b.dataset.pmb,v); } });
+  $('projList').querySelectorAll('[data-pi]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pi); const li=b.closest('li'); let box=li.querySelector('.slots'); if(box) return box.remove();
+    box=document.createElement('div'); box.className='slots';
+    box.innerHTML=p.slots.map((s,i)=>{ const f=p.files.find(x=>x.bin&&x.ruta===s.ruta); return `<div class="row" style="align-items:center">${f?`<img src="${f.data}" style="width:44px;height:44px;object-fit:contain;background:#234;border-radius:8px">`:'<span style="width:44px;text-align:center">—</span>'}<small style="flex:1"><b>${esc(s.ruta.split('/').pop())}</b> · ${esc(s.tipo)}<br>${esc(s.desc)}</small><label class="tbtn">${f?'Cambiar':'Poner'}<input type="file" accept="image/*" data-si="${i}" hidden></label></div>`; }).join('')+'<div class="note">Puedes hacerlas en ChatGPT con fondo blanco: Mor quita el fondo de personajes y objetos.</div>';
+    li.appendChild(box);
+    box.querySelectorAll('[data-si]').forEach(inp=>inp.onchange=async()=>{ const s=p.slots[+inp.dataset.si], file=inp.files[0]; if(!file) return;
+      let data=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(file); });
+      if(s.tipo==='sprite'||s.tipo==='icono') data=await spriteFromImage(data); else { const im=new Image(); im.src=data; await im.decode(); const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; c.getContext('2d').drawImage(im,0,0); data=c.toDataURL('image/jpeg',.88); }
+      const f=p.files.find(x=>x.bin&&x.ruta===s.ruta); if(f) f.data=data; else p.files.push({ruta:s.ruta,data,bin:true});
+      await DB.put('projects',p); toast('Imagen puesta: '+s.ruta.split('/').pop()); renderProjects(); });
+  });
   $('projList').querySelectorAll('[data-px]').forEach(b=>b.onclick=async()=>{ await DB.del('projects',b.dataset.px); renderProjects(); });
 }
 $('bProj').onclick=()=>{ $('sheetMore').classList.remove('open'); renderProjects(); $('sheetProj').classList.add('open'); };
@@ -2128,7 +2138,7 @@ const GAMEDEV_GUIA=`CÓMO PROGRAMA UN EXPERTO EN JUEGOS (aplícalo):
 - Robustez: si una imagen no carga, dibuja una forma de color en su lugar; try/catch alrededor del audio; nada de variables sin declarar.
 - 3D (Three.js): import map con "three" desde https://unpkg.com/three@0.160.0/build/three.module.js; renderer.setPixelRatio(Math.min(devicePixelRatio,2)); luz ambiente + direccional; cámara que sigue al jugador con lerp; colisiones con Box3 o distancias; el HUD en HTML encima del canvas.`;
 const GAME_BASE=`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>JUEGO</title>
-<style>html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;font-family:system-ui,sans-serif}canvas{display:block;margin:auto}
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;font-family:system-ui,sans-serif}body{display:flex;align-items:center;justify-content:center}canvas{display:block}
 #ui{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;gap:12px;background:rgba(0,0,0,.55)}
 #ui.oculto{display:none}button{font:inherit;font-size:20px;padding:12px 28px;border-radius:14px;border:0;background:#ffcc33;color:#222;cursor:pointer}
 .tb{position:fixed;bottom:18px;width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:28px;display:flex;align-items:center;justify-content:center;user-select:none}
@@ -2183,7 +2193,7 @@ async function genAsset(a){
   const extra=a.tipo==='sprite'||a.tipo==='icono'?', single object centered, full body, plain pure white background, no shadow, game sprite, clean edges':a.tipo==='textura'?', seamless tileable texture, top-down':', game background, no characters, no text';
   const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(a.descripcion_en_ingles+extra)+`?width=${w}&height=${h}&nologo=true&seed=${Math.floor(Math.random()*1e6)}`;
   let r=null; for(let i=0;i<4;i++){ const w8=_lastImg+6000-Date.now(); if(w8>0) await sleep(w8); _lastImg=Date.now();
-    r=await withTimeout(fetch(url+'&i='+i),70000).catch(()=>null); if(r&&r.ok) break; await sleep(5000*(i+1)); }
+    r=await withTimeout(fetch(url+'&i='+i),70000).catch(()=>null); if(r&&r.ok) break; await sleep(8000*(i+1)); }
   if(!r||!r.ok) throw new Error('imagen');
   const b0=await r.blob(); const b=await cropMark(b0); let data=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b); });
   if(a.tipo==='sprite'||a.tipo==='icono') data=await spriteFromImage(data);
@@ -2228,11 +2238,12 @@ ${desc}
 Motor: ${motor||'el más adecuado (Canvas 2D o Three.js)'}. Debe jugarse en móvil (controles táctiles) y en ordenador (teclado/ratón).
 En "assets" pon SOLO las imágenes imprescindibles (máximo 8): fondos, personajes/objetos como sprites y texturas. Nombres de archivo simples (jugador.png, fondo.jpg).`,GDDSCHEMA,[],MODELOS_CODIGO,120000);
       P.nombre=g.titulo; P.gdd=g; await DB.put('projects',P);
-      const assets=[];
-      if(autoImg){ for(const [i,a] of (g.assets||[]).slice(0,8).entries()){ log(`Mor dibujar ${i+1}/${Math.min(8,g.assets.length)}: ${a.archivo}…`);
-          try{ assets.push({ruta:assetPath(a),data:await genAsset(a),tipo:a.tipo,desc:a.descripcion_en_ingles}); }catch(e){} } }
-      P.assets=assets;
-      const lista=assets.length?assets.map(a=>`- ${a.ruta} (${a.tipo}${a.tipo==='sprite'?', PNG con fondo transparente':''}): ${a.desc}`).join('\n'):'(sin imágenes: usa formas y colores con buen estilo)';
+      // todas las imágenes tienen su hueco (ruta fija); si el dibujo automático falla, él podrá poner la suya luego
+      const slots=(g.assets||[]).slice(0,8).map(a=>({ruta:assetPath(a),tipo:a.tipo,desc:a.descripcion_en_ingles,data:null}));
+      if(autoImg){ for(const [i,a] of slots.entries()){ log(`Mor dibujar ${i+1}/${slots.length}: ${a.ruta.split('/').pop()}…`);
+          try{ a.data=await genAsset({archivo:a.ruta,tipo:a.tipo,descripcion_en_ingles:a.desc}); }catch(e){} } }
+      const assets=slots.filter(a=>a.data); P.slots=slots.map(({data,...r})=>r);
+      const lista=slots.length?slots.map(a=>`- ${a.ruta} (${a.tipo}${a.tipo==='sprite'?', PNG con fondo transparente':''}): ${a.desc}`).join('\n'):'(sin imágenes: usa formas y colores con buen estilo)';
       const spec=`JUEGO «${g.titulo}» (${g.genero||''}). ${g.resumen}
 MECÁNICAS: ${(g.mecanicas||[]).join('; ')}
 CONTROLES: ${g.controles}
@@ -2264,11 +2275,11 @@ ${lista}`;
         html=await genLong(`Eres un programador de videojuegos experto. Este juego tiene problemas detectados al probarlo:\n${probs.map(p=>'- '+p).join('\n')}\n\n${spec}\n\n${rules}\n\nCÓDIGO ACTUAL:\n${html}\n\nArregla TODOS los problemas y devuelve el index.html COMPLETO corregido. Responde SOLO con el código.`,n=>log(`Mor arreglar… (${n} líneas)`));
       }
       P.files=[{ruta:'index.html',code:html},{ruta:'README.md',code:`# ${g.titulo}\n\n${g.resumen}\n\n## Controles\n${g.controles}\n\n## Mecánicas\n${(g.mecanicas||[]).map(m=>'- '+m).join('\n')}\n\nHecho por M.O.R.\n`}].concat(assets.map(a=>({ruta:a.ruta,data:a.data,bin:true})));
-      P.lineas=html.split('\n').length; P.estado='listo'; await DB.put('projects',P);
+      P.lineas=html.split('\n').length; P.estado='listo'; const faltan=slots.length-assets.length; await DB.put('projects',P);
       ban.style.display='none'; const ult=(P.pruebas||[]).slice(-1)[0]; this.running=false; renderProjects(); Sfx.play('risa'); squash(.35);
       logChat('m',`[Juego creado: ${g.titulo}, ${P.lineas} líneas, ${assets.length} imágenes]`);
-      showSub(`¡Juego «${g.titulo}» terminado! ${P.lineas} líneas y ${assets.length} imágenes.`); showGame(P);
-      localSay(`¡Juego terminado! ${g.titulo}. ${ult&&ult.probs.length?'Quedan '+ult.probs.length+' detalles que no pude arreglar solo; pídeme cambios.':'Pasar todas las pruebas.'} Pulsa Jugar.`,'feliz');
+      showSub(`¡Juego «${g.titulo}» terminado! ${P.lineas} líneas y ${assets.length} imágenes.${faltan?' Faltan '+faltan+' imágenes: ponlas en Proyectos → Imágenes.':''}`); showGame(P);
+      localSay(`¡Juego terminado! ${g.titulo}. ${ult&&ult.probs.length?'Quedan '+ult.probs.length+' detalles que no pude arreglar solo; pídeme cambios.':'Pasar todas las pruebas.'} ${faltan?'El dibujante gratis fallar con '+faltan+' imágenes; el juego usar colores hasta que pongas las tuyas en Proyectos, Imágenes. ':''}Pulsa Jugar.`,'feliz');
     }catch(e){ ban.style.display='none'; this.running=false; P.estado='error: '+e.message; await DB.put('projects',P); localSay('Mor atascarse haciendo el juego: '+e.message,'triste'); }
   }
 };
