@@ -77,11 +77,11 @@ video{display:none}
 <div class="top">
   <div class="brand">M.O.R.<i id="earDot" title="Escuchando"></i></div>
   <div class="tb">
+    <button class="tbtn" id="bLive">Directo</button>
     <button class="tbtn" id="bEar">Oído</button>
-    <button class="tbtn" id="bCam">Mirar</button>
-    <button class="tbtn" id="bNotes">Apuntes</button>
-    <button class="tbtn" id="bReview">Repasar<span class="n" id="dueN" style="display:none"></span></button>
+    <button class="tbtn" id="bAgenda">Agenda</button>
     <button class="tbtn" id="bStudy">Estudiar</button>
+    <button class="tbtn" id="bReview">Repasar<span class="n" id="dueN" style="display:none"></span></button>
     <button class="tbtn" id="bMore">Más</button>
   </div>
 </div>
@@ -127,6 +127,8 @@ video{display:none}
   <button class="close" data-close>×</button>
   <h3>M.O.R.</h3>
   <div class="row">
+    <button class="tbtn" id="bCam">Mirar (cámara)</button>
+    <button class="tbtn" id="bNotes">Apuntes</button>
     <button class="tbtn" id="bInstall">Instalar app</button>
     <button class="tbtn" id="bVoice">Voz: sí</button>
     <button class="tbtn" id="bVozModo">Elegir voz</button>
@@ -184,6 +186,14 @@ video{display:none}
   <div class="row"><button class="tbtn on" id="keyOk">Guardar llave</button></div>
   <div class="note" id="keyMsg"></div>
 </div>
+<div class="sheet" id="sheetAgenda">
+  <button class="close" data-close>×</button>
+  <h3>TAREAS</h3><ul id="agTasks"></ul>
+  <div class="row"><input type="text" id="agInp" placeholder="Nueva tarea…" style="flex:1"><button class="tbtn on" id="agAdd">Añadir</button></div>
+  <ul id="agDone" style="margin-top:6px"></ul>
+  <h3>RECORDATORIOS</h3><ul id="agRem"></ul>
+  <div class="note">Pulsa «Calendar» para que Google Calendar te avise aunque M.O.R. esté cerrado. Con M.O.R. abierto, te avisa él.</div>
+</div>
 <div class="toast" id="toast"></div>
 <video id="video" playsinline muted></video>
 <input type="file" id="fileImp" accept="application/json" hidden>
@@ -228,7 +238,7 @@ const VIGILAR_CADA = 50;                  // segundos entre miradas de la cámar
    ===================================================================== */
 const MKEY='mor_memoria_v1';
 const blank=()=>({facts:[],exams:[],summary:'',history:[],study:[],trust:40,firstMet:null,lastSeen:null,talks:0,
-  listen:true,voice:true,lastProactive:0});
+  listen:true,voice:true,lastProactive:0,tasks:[],reminders:[],ciudad:'',lastBrief:''});
 let MEM=blank();
 try{ const d=JSON.parse(localStorage.getItem(MKEY)); if(d) MEM=Object.assign(blank(),d); }catch(e){}
 const saveMem=()=>{ try{ localStorage.setItem(MKEY,JSON.stringify(MEM)); }catch(e){} };
@@ -619,7 +629,7 @@ async function geminiStream(body,onText){
 
 function systemPrompt(extra){
   const now=new Date();
-  const fecha=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+', '+now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  const fecha=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+', '+now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+' ('+now.getFullYear()+'-'+pad2(now.getMonth()+1)+'-'+pad2(now.getDate())+' '+pad2(now.getHours())+':'+pad2(now.getMinutes())+')';
   const ex=upcomingExams();
   return `Eres M.O.R., una criatura digital que VIVE dentro del dispositivo de tu humano. No eres un chatbot genérico: eres su compañero y su asistente de estudio.
 ASPECTO: dos ojos grandes azul celeste y una boquita. Algún día tendrás cuerpo 3D.
@@ -639,6 +649,11 @@ ${Review.dueCount?`Tiene ${Review.dueCount} tarjetas de repaso pendientes (botó
 LO QUE SABES DE ÉL:
 ${MEM.facts.length?MEM.facts.map(f=>'- '+f).join('\n'):'(nada todavía)'}
 ${MEM.summary?'RESUMEN DE VUESTRA HISTORIA:\n'+MEM.summary:''}
+${Agenda.forPrompt()}
+${MEM.ciudad?'VIVE EN: '+MEM.ciudad:'(No sabes en qué ciudad vive.)'}
+AGENDA — cuando te pida apuntar, recordar o marcar algo, escríbelo en tu respuesta con estas etiquetas EXACTAS (no se leen en voz alta) y confírmaselo con naturalidad:
+  {{tarea: texto}}  ·  {{hecha: texto de la tarea}}  ·  {{recordar: AAAA-MM-DD HH:MM | texto}}  ·  {{borrar_recordatorio: texto}}  ·  {{ciudad: nombre}} (si te dice dónde vive)
+  Para las fechas usa la fecha y hora de AHORA. Si no dice hora, pregúntasela o usa 09:00. Nunca digas que lo has apuntado sin poner la etiqueta.
 ${MEM.study.length?'ÚLTIMAS SESIONES DE ESTUDIO:\n'+MEM.study.slice(-6).map(s=>`- ${new Date(s.at).toLocaleDateString('es-ES')}: ${s.tema} (${s.min} min${s.distracciones?', '+s.distracciones+' distracciones':''})`).join('\n'):''}
 ${extra||''}`;
 }
@@ -706,29 +721,36 @@ async function send(text,opts={}){
     if(rc.length) extra+='\nRECUERDOS RELACIONADOS (de vuestras conversaciones antiguas):\n'+rc.join('\n---\n');
     if(rn.length) extra+='\nAPUNTES RELACIONADOS (de sus apuntes):\n'+rn.join('\n---\n');
   }catch(e){} }
+  if(text && WEATHER_RE.test(text)){ const w=await weatherFor(text); if(w) extra+='\n'+w+'\n(Usa estos datos reales para hablar del tiempo.)'; }
   if(opts.extra) extra+='\n'+opts.extra;
   const contents=MEM.history.slice(-20).map(h=>({role:h.r==='u'?'user':'model',parts:[{text: h.r==='u'&&/^\[/.test(h.t) ? '(nota del sistema, NO lo ha dicho él: '+h.t.slice(1,-1)+')' : h.t}]}));
   const parts=[]; if(img) parts.push({inline_data:{mime_type:'image/jpeg',data:img}});
   parts.push({text:text||('(nota del sistema, NO lo ha dicho él: '+opts.event+')')}); contents.push({role:'user',parts});
-  let raw='', shown='', pending='', firstEmo=true;
+  let raw='', shown='', pending='', firstEmo=true; const acts=[];
   const slow=setTimeout(()=>{ if(!raw) showSub(rnd(['MOR pensar…','Mmm… MOR buscar en cabeza…']),text); },1800);
   try{
     lastStreamHadText=false;
     await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:.85,maxOutputTokens:1000}},chunk=>{
       lastStreamHadText=true; raw+=chunk; pending+=chunk;
-      let m; const re=/\[([\wáéíóúñÁÉÍÓÚÑ]+)\]/g; let clean=''; let lastIdx=0;
+      let m; const re=/\[([\wáéíóúñÁÉÍÓÚÑ]+)\]|\{\{([^{}]*)\}\}/g; let clean=''; let lastIdx=0;
       while((m=re.exec(pending))){ clean+=pending.slice(lastIdx,m.index); lastIdx=re.lastIndex;
+        if(m[2]!==undefined){ acts.push(m[2]); continue; }
         const e=emoAlias(m[1]); if(EMO[e]){ setEmotion(e,9000); if(firstEmo){ squash(.12); firstEmo=false;
           if(e==='feliz'||e==='carinoso') Sfx.play('si'); if(e==='asustado') Sfx.play('susto'); if(e==='enfadado') Sfx.play('enfado'); if(e==='triste') Sfx.play('triste'); } } }
-      const rest=pending.slice(lastIdx); const open=rest.lastIndexOf('[');
-      if(open>=0 && rest.indexOf(']',open)<0 && rest.length-open<16){ clean+=rest.slice(0,open); pending=rest.slice(open); } else { clean+=rest; pending=''; }
+      const rest=pending.slice(lastIdx); const ob=rest.lastIndexOf('['), oc=rest.indexOf('{');
+      let hold=-1;
+      if(ob>=0 && rest.indexOf(']',ob)<0 && rest.length-ob<16) hold=ob;
+      if(oc>=0 && rest.indexOf('}}',oc)<0 && rest.length-oc<260) hold=hold<0?oc:Math.min(hold,oc);
+      if(hold>=0){ clean+=rest.slice(0,hold); pending=rest.slice(hold); } else { clean+=rest; pending=''; }
       clean=clean.replace(/[*#$]/g,'');
       if(clean){ shown+=clean; showSub(shown.trimStart(),text); Voice.feed(clean); }
     });
     clearTimeout(slow);
-    if(pending && !/^\[\w*$/.test(pending)){ shown+=pending; Voice.feed(pending); }
+    if(pending && !/^\[\w*$/.test(pending) && !/^\{/.test(pending)){ shown+=pending; Voice.feed(pending); }
     Voice.end();
     const reply=shown.trim();
+    const made=Agenda.apply(acts); if(made.reminders.length) showCalendarButtons(made.reminders);
+    if(made.tasks.length||made.done.length||made.reminders.length) toast((made.tasks.length?'Apuntado: '+made.tasks.map(x=>x.t).join(', ')+'. ':'')+(made.done.length?'Hecho: '+made.done.map(x=>x.t).join(', ')+'. ':'')+(made.reminders.length?'Recordatorio guardado.':''),3500);
     const uTxt=text?text+(img?' [MOR veía la cámara]':''):'['+opts.event.split('.')[0].slice(0,90)+']';
     MEM.history.push({r:'u',t:uTxt,at:Date.now()}); MEM.history.push({r:'m',t:reply,at:Date.now()});
     if(text) logChat('u',text); logChat('m',reply);
@@ -742,7 +764,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v4i</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v5</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1066,7 +1088,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v4i · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v5 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1108,6 +1130,218 @@ async function checkMemory(){
   }catch(e){}
 }
 /* =====================================================================
+   16. AGENDA: tareas y recordatorios (con Google Calendar para que avise
+       aunque M.O.R. esté cerrado)
+   ===================================================================== */
+const pad2=n=>String(n).padStart(2,'0');
+const fmtFecha=d=>d.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})+' '+pad2(d.getHours())+':'+pad2(d.getMinutes());
+function parseFecha(s){ // "2026-11-16 09:00" o "2026-11-16T09:00"
+  const m=String(s||'').match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})/); if(!m) return null;
+  const d=new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]); return isNaN(d)?null:d; }
+const Agenda={
+  init(){ MEM.tasks=MEM.tasks||[]; MEM.reminders=MEM.reminders||[]; },
+  addTask(t){ t=String(t||'').trim(); if(!t) return null; if(MEM.tasks.some(x=>!x.done&&norm(x.t)===norm(t))) return null;
+    const x={id:'t'+Date.now()+Math.random().toString(36).slice(2,5),t,done:false,at:Date.now()}; MEM.tasks.push(x); saveMem(); return x; },
+  doneTask(q){ const qw=words(q); let best=null,bs=0; MEM.tasks.filter(x=>!x.done).forEach(x=>{ const s=score(qw,x.t); if(s>bs){bs=s;best=x;} });
+    if(best){ best.done=true; best.doneAt=Date.now(); saveMem(); } return best; },
+  addReminder(text,when){ const d=parseFecha(when); if(!d||!text) return null;
+    if(MEM.reminders.some(x=>x.when===d.getTime()&&norm(x.t)===norm(text))) return null;
+    const r={id:'r'+Date.now()+Math.random().toString(36).slice(2,5),t:String(text).trim(),when:d.getTime(),fired:false,at:Date.now()};
+    MEM.reminders.push(r); MEM.reminders.sort((a,b)=>a.when-b.when); saveMem(); askNotify(); return r; },
+  delReminder(q){ const qw=words(q); let best=null,bs=0; MEM.reminders.forEach(x=>{ const s=score(qw,x.t); if(s>bs){bs=s;best=x;} });
+    if(best){ MEM.reminders=MEM.reminders.filter(x=>x!==best); saveMem(); } return best; },
+  calUrl(r){ const d=new Date(r.when), e=new Date(r.when+15*60000);
+    const f=x=>x.getFullYear()+pad2(x.getMonth()+1)+pad2(x.getDate())+'T'+pad2(x.getHours())+pad2(x.getMinutes())+'00';
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('Mor: '+r.t)+'&dates='+f(d)+'/'+f(e)
+      +'&ctz='+encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)+'&details='+encodeURIComponent('Recordatorio creado por M.O.R.'); },
+  pending(){ return MEM.tasks.filter(x=>!x.done); },
+  upcoming(){ return MEM.reminders.filter(r=>!r.fired||r.when>Date.now()-3600000).sort((a,b)=>a.when-b.when); },
+  forPrompt(){
+    const t=this.pending(), r=this.upcoming().filter(x=>x.when>Date.now()-3600000);
+    return `TAREAS PENDIENTES: ${t.length?t.map(x=>'"'+x.t+'"').join('; '):'ninguna'}
+RECORDATORIOS: ${r.length?r.map(x=>fmtFecha(new Date(x.when))+' → '+x.t).join('; '):'ninguno'}`; },
+  // acciones que M.O.R. escribe entre {{ }} en sus respuestas
+  apply(acts){
+    const made={reminders:[],tasks:[],done:[],city:null};
+    for(const a of acts){
+      const m=a.match(/^\s*([a-záéíóú_]+)\s*:\s*([\s\S]*)$/i); if(!m) continue;
+      const k=norm(m[1]).trim(), v=m[2].trim();
+      if(k==='tarea'){ const x=this.addTask(v); if(x) made.tasks.push(x); }
+      else if(k==='hecha'||k==='completar'){ const x=this.doneTask(v); if(x) made.done.push(x); }
+      else if(k==='recordar'){ const [f,...rest]=v.split('|'); const x=this.addReminder(rest.join('|').trim(),f.trim()); if(x) made.reminders.push(x); }
+      else if(k==='borrar_recordatorio'){ this.delReminder(v); }
+      else if(k==='ciudad'){ MEM.ciudad=v; saveMem(); made.city=v; }
+    }
+    if(made.tasks.length||made.done.length) Sfx.play('si');
+    return made;
+  },
+  // aviso dentro de la app (si está abierta) cuando llega la hora
+  tick(){
+    const now=Date.now();
+    for(const r of MEM.reminders){ if(!r.fired && r.when<=now){ r.fired=true; saveMem();
+      if(now-r.when<6*3600000){ notify('M.O.R. te recuerda',r.t); if(awake&&!busy){ Life.touch(); squash(.3); Sfx.play('hola');
+        localSay('¡Eh! Recordatorio: '+r.t+'.','sorprendido'); } } } }
+  }
+};
+Agenda.init();
+function notify(title,body){ try{ if('Notification' in window && Notification.permission==='granted'){
+  if(navigator.serviceWorker&&navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(r=>r.showNotification(title,{body,icon:'icon-192.png',vibrate:[200,100,200]}));
+  else new Notification(title,{body,icon:'icon-192.png'}); } }catch(e){} }
+function askNotify(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission(); }catch(e){} }
+function showCalendarButtons(list){
+  if(!list.length) return;
+  const html=list.map(r=>`<br><a class="tbtn on" style="display:inline-block;margin-top:6px;text-decoration:none" target="_blank" rel="noopener" href="${Agenda.calUrl(r)}">Añadir a Google Calendar: ${esc(r.t)} (${esc(fmtFecha(new Date(r.when)))})</a>`).join('');
+  $('sub').insertAdjacentHTML('beforeend',html);
+}
+setInterval(()=>Agenda.tick(),20000);
+
+// panel Agenda
+function renderAgenda(){
+  const t=Agenda.pending(), done=MEM.tasks.filter(x=>x.done).slice(-5).reverse(), r=Agenda.upcoming();
+  $('agTasks').innerHTML=t.length?t.map(x=>`<li><label style="flex:1"><input type="checkbox" data-t="${x.id}"> ${esc(x.t)}</label><button data-dt="${x.id}">×</button></li>`).join(''):'<li>Nada pendiente. Dile «apunta…».</li>';
+  $('agDone').innerHTML=done.map(x=>`<li><small>✓ ${esc(x.t)}</small></li>`).join('');
+  $('agRem').innerHTML=r.length?r.map(x=>`<li><span>${esc(x.t)}<br><small>${esc(fmtFecha(new Date(x.when)))}${x.fired?' · ya avisado':''}</small></span><span style="display:flex;gap:6px;align-items:center"><a class="tbtn" style="text-decoration:none;font-size:11px" target="_blank" rel="noopener" href="${Agenda.calUrl(x)}">Calendar</a><button data-dr="${x.id}">×</button></span></li>`).join(''):'<li>Ninguno. Dile «recuérdame mañana a las 9…».</li>';
+  $('agTasks').querySelectorAll('input').forEach(c=>c.onchange=()=>{ const x=MEM.tasks.find(y=>y.id===c.dataset.t); if(x){ x.done=true; x.doneAt=Date.now(); saveMem(); Sfx.play('si'); renderAgenda(); } });
+  $('agTasks').querySelectorAll('[data-dt]').forEach(b=>b.onclick=()=>{ MEM.tasks=MEM.tasks.filter(y=>y.id!==b.dataset.dt); saveMem(); renderAgenda(); });
+  $('agRem').querySelectorAll('[data-dr]').forEach(b=>b.onclick=()=>{ MEM.reminders=MEM.reminders.filter(y=>y.id!==b.dataset.dr); saveMem(); renderAgenda(); });
+}
+$('bAgenda').onclick=()=>{ renderAgenda(); $('sheetAgenda').classList.add('open'); };
+$('agAdd').onclick=()=>{ const v=$('agInp').value.trim(); if(!v) return; Agenda.addTask(v); $('agInp').value=''; renderAgenda(); };
+
+/* =====================================================================
+   17. EL TIEMPO (Open-Meteo: gratis y sin llave)
+   ===================================================================== */
+const WMO={0:'despejado',1:'casi despejado',2:'parcialmente nublado',3:'nublado',45:'niebla',48:'niebla',51:'llovizna débil',53:'llovizna',55:'llovizna fuerte',61:'lluvia débil',63:'lluvia',65:'lluvia fuerte',66:'lluvia helada',67:'lluvia helada',71:'nieve débil',73:'nieve',75:'nieve fuerte',80:'chubascos',81:'chubascos',82:'chubascos fuertes',95:'tormenta',96:'tormenta con granizo',99:'tormenta con granizo'};
+const Weather={cache:{},
+  async get(city){
+    city=(city||MEM.ciudad||'').trim(); if(!city) return null;
+    const k=norm(city); if(this.cache[k]&&Date.now()-this.cache[k].at<20*60000) return this.cache[k].txt;
+    try{
+      const g=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=es&name='+encodeURIComponent(city))).json();
+      const p=g.results&&g.results[0]; if(!p) return null;
+      const w=await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=3`)).json();
+      const c=w.current, d=w.daily, dia=['hoy','mañana','pasado mañana'];
+      const txt=`TIEMPO REAL en ${p.name} (${p.admin1||p.country}): ahora ${Math.round(c.temperature_2m)}°C (sensación ${Math.round(c.apparent_temperature)}°C), ${WMO[c.weather_code]||'—'}, viento ${Math.round(c.wind_speed_10m)} km/h. `
+        +d.time.map((t,i)=>`${dia[i]}: ${WMO[d.weather_code[i]]||'—'}, ${Math.round(d.temperature_2m_min[i])}-${Math.round(d.temperature_2m_max[i])}°C, lluvia ${d.precipitation_probability_max[i]??0}%`).join('; ')+'.';
+      this.cache[k]={txt,at:Date.now()}; return txt;
+    }catch(e){ return null; }
+  }
+};
+const WEATHER_RE=/\b(tiempo hace|qu[eé] tiempo|el tiempo|llover|lluvia|llueve|temperatura|calor|fr[ií]o|paraguas|viento|sol hace|nublado|tormenta|grados)\b/i;
+async function weatherFor(text){
+  const m=text.match(/\ben\s+([A-ZÁÉÍÓÚÑ][\wáéíóúñ]+(?:\s+(?:de\s+)?[A-ZÁÉÍÓÚÑ][\wáéíóúñ]+)*)/);
+  return await Weather.get(m?m[1]:MEM.ciudad);
+}
+/* =====================================================================
+   18. CONVERSACIÓN EN DIRECTO (Gemini Live: como una llamada, con voz natural)
+   ===================================================================== */
+const LIVE_MODELOS=['gemini-3.1-flash-live-preview','gemini-3.8-live','gemini-2.5-flash-native-audio-latest'];
+const LIVE_TOOLS=[{functionDeclarations:[
+  {name:'crear_tarea',description:'Apunta una tarea pendiente del usuario',parameters:{type:'OBJECT',properties:{texto:{type:'STRING'}},required:['texto']}},
+  {name:'completar_tarea',description:'Marca como hecha una tarea pendiente',parameters:{type:'OBJECT',properties:{texto:{type:'STRING'}},required:['texto']}},
+  {name:'crear_recordatorio',description:'Crea un recordatorio a una fecha y hora',parameters:{type:'OBJECT',properties:{texto:{type:'STRING'},fecha_hora:{type:'STRING',description:'AAAA-MM-DD HH:MM en hora local'}},required:['texto','fecha_hora']}},
+  {name:'ver_agenda',description:'Devuelve tareas pendientes y recordatorios',parameters:{type:'OBJECT',properties:{}}},
+  {name:'consultar_tiempo',description:'Tiempo actual y de los próximos días en una ciudad',parameters:{type:'OBJECT',properties:{ciudad:{type:'STRING'}}}},
+  {name:'guardar_ciudad',description:'Guarda la ciudad donde vive el usuario',parameters:{type:'OBJECT',properties:{ciudad:{type:'STRING'}},required:['ciudad']}}
+]}];
+const Live={on:false,ws:null,mic:null,micCtx:null,node:null,next:0,srcs:[],inT:'',outT:'',model:null,handle:null,
+  b64(buf){ let s=''; const b=new Uint8Array(buf); for(let i=0;i<b.length;i+=0x8000) s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000)); return btoa(s); },
+  async start(){
+    if(this.on) return; if(!GEMINI_KEY) return askKey();
+    Voice.stop(); Voice.ensure(); if(AC.state==='suspended') await AC.resume();
+    if(Ears.on){ this.earsWas=true; Ears.stop(); } else this.earsWas=false;
+    try{ this.mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}}); }
+    catch(e){ return localSay('Mor no poder oír: falta permiso del micrófono.','triste'); }
+    this.on=true; $('bLive').classList.add('on'); $('bLive').textContent='Colgar'; setEmotion('curioso'); Sfx.play('hola'); showSub('Conectando con Mor…');
+    this.connect(0);
+  },
+  connect(i){
+    const model=LIVE_MODELOS[i]; if(!model){ this.stop('No he podido conectar el modo directo.'); return; }
+    const ws=new WebSocket('wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key='+encodeURIComponent(GEMINI_KEY));
+    this.ws=ws; let ok=false;
+    ws.onopen=()=>ws.send(JSON.stringify({setup:{model:'models/'+model,
+      generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:vozGemini()}},languageCode:'es-ES'}},
+      systemInstruction:{parts:[{text:systemPrompt('\n'+Agenda.forPrompt()+`
+ESTÁS EN UNA CONVERSACIÓN DE VOZ EN DIRECTO, como una llamada. Habla en español de España, natural, con tu personalidad, frases cortas y respuestas breves (salvo que te pida una explicación). No uses etiquetas ni corchetes: todo lo que escribes se oye. Usa las herramientas para tareas, recordatorios, agenda y el tiempo; nunca digas que has apuntado algo sin usar la herramienta.`)}]},
+      tools:LIVE_TOOLS, inputAudioTranscription:{}, outputAudioTranscription:{} }}));
+    ws.onmessage=async ev=>{ const raw=typeof ev.data==='string'?ev.data:await ev.data.text(); let j; try{ j=JSON.parse(raw); }catch(e){ return; }
+      if(j.setupComplete!==undefined){ ok=true; this.model=model; this.micStart(); showSub('Te escucho. Habla cuando quieras.'); setEmotion('feliz',3000);
+        ws.send(JSON.stringify({clientContent:{turns:[{role:'user',parts:[{text:'(nota del sistema: acaba de empezar la llamada; salúdale en una frase corta)'}]}],turnComplete:true}})); return; }
+      if(j.toolCall) return this.tools(j.toolCall.functionCalls||[]);
+      const sc=j.serverContent; if(!sc) return;
+      if(sc.interrupted){ this.flushAudio(); setEmotion('curioso',3000); }
+      if(sc.inputTranscription?.text){ this.inT+=sc.inputTranscription.text; showSub(this.outT||'…',this.inT); Life.touch(); }
+      if(sc.outputTranscription?.text){ this.outT+=sc.outputTranscription.text; showSub(this.outT,this.inT); }
+      for(const p of (sc.modelTurn?.parts||[])){ if(p.inlineData?.data) this.play(p.inlineData.data); }
+      if(sc.turnComplete) this.turnDone();
+    };
+    ws.onclose=e=>{ if(!this.on) return; if(!ok){ this.connect(i+1); return; }
+      this.stop(e.code===1000?null:'La llamada se ha cortado ('+e.code+(e.reason?': '+e.reason.slice(0,80):'')+').'); };
+    ws.onerror=()=>{};
+  },
+  async micStart(){
+    try{
+      this.micCtx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
+      const code=`class P extends AudioWorkletProcessor{constructor(){super();this.b=[];}process(i){const c=i[0]&&i[0][0];if(c){for(let k=0;k<c.length;k++)this.b.push(c[k]);if(this.b.length>=1600){const o=new Int16Array(this.b.length);for(let k=0;k<this.b.length;k++){const s=Math.max(-1,Math.min(1,this.b[k]));o[k]=s<0?s*32768:s*32767;}this.port.postMessage(o.buffer,[o.buffer]);this.b=[];}}return true;}}registerProcessor('mic16',P);`;
+      const src=this.micCtx.createMediaStreamSource(this.mic), rate=this.micCtx.sampleRate;
+      const sendPcm=buf=>{ if(!this.ws||this.ws.readyState!==1) return;
+        this.ws.send(JSON.stringify({realtimeInput:{audio:{data:this.b64(buf),mimeType:'audio/pcm;rate='+rate}}})); };
+      try{
+        await this.micCtx.audioWorklet.addModule(URL.createObjectURL(new Blob([code],{type:'application/javascript'})));
+        this.node=new AudioWorkletNode(this.micCtx,'mic16'); this.node.port.onmessage=e=>sendPcm(e.data); src.connect(this.node);
+      }catch(we){ // navegadores sin AudioWorklet: método clásico
+        this.node=this.micCtx.createScriptProcessor(2048,1,1);
+        this.node.onaudioprocess=e=>{ const c=e.inputBuffer.getChannelData(0), o=new Int16Array(c.length);
+          for(let k=0;k<c.length;k++){ const v=Math.max(-1,Math.min(1,c[k])); o[k]=v<0?v*32768:v*32767; } sendPcm(o.buffer); };
+        const mute=this.micCtx.createGain(); mute.gain.value=0; src.connect(this.node); this.node.connect(mute); mute.connect(this.micCtx.destination);
+      }
+    }catch(e){ console.warn('micro directo',e); this.stop('Mor no puede usar el micrófono en este aparato.'); }
+  },
+  play(b64){
+    const bin=atob(b64), n=bin.length>>1, f=new Float32Array(n);
+    for(let i=0;i<n;i++){ let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8); if(v>32767) v-=65536; f[i]=v/32768; }
+    const b=AC.createBuffer(1,n,24000); b.copyToChannel(f,0);
+    const s=AC.createBufferSource(); s.buffer=b; s.connect(Voice.an);
+    const t=Math.max(AC.currentTime+.03,this.next); s.start(t); this.next=t+b.duration; this.srcs.push(s);
+    if(!this.handle){ this.handle={pause:()=>this.flushAudio()}; Voice.cur=this.handle; if(face.emo==='curioso'||face.emo==='neutral') setEmotion('feliz',8000); }
+    s.onended=()=>{ this.srcs=this.srcs.filter(x=>x!==s); if(!this.srcs.length){ if(Voice.cur===this.handle) Voice.cur=null; this.handle=null; } };
+  },
+  flushAudio(){ this.srcs.forEach(s=>{ try{s.stop()}catch(e){} }); this.srcs=[]; this.next=0; if(Voice.cur===this.handle) Voice.cur=null; this.handle=null; },
+  async tools(calls){
+    const out=[];
+    for(const c of calls){ const a=c.args||{}; let r;
+      try{
+        if(c.name==='crear_tarea'){ const x=Agenda.addTask(a.texto); r=x?{ok:true}:{ok:false,motivo:'ya estaba apuntada'}; Sfx.play('si'); }
+        else if(c.name==='completar_tarea'){ const x=Agenda.doneTask(a.texto); r=x?{ok:true,tarea:x.t}:{ok:false,motivo:'no encontrada'}; }
+        else if(c.name==='crear_recordatorio'){ const d=parseFecha(a.fecha_hora); if(!d) r={ok:false,motivo:'fecha no válida, usa AAAA-MM-DD HH:MM'}; else { const x=Agenda.addReminder(a.texto,a.fecha_hora); r={ok:true,cuando:fmtFecha(d),nota:x?'creado':'ya existía'}; if(x) setTimeout(()=>showCalendarButtons([x]),400); } }
+        else if(c.name==='ver_agenda'){ r={agenda:Agenda.forPrompt()}; }
+        else if(c.name==='consultar_tiempo'){ r={tiempo:(await Weather.get(a.ciudad))||'No sé la ciudad: pregúntasela.'}; }
+        else if(c.name==='guardar_ciudad'){ MEM.ciudad=a.ciudad; saveMem(); r={ok:true}; }
+        else r={ok:false};
+      }catch(e){ r={ok:false,error:e.message}; }
+      out.push({id:c.id,name:c.name,response:r});
+    }
+    if(this.ws&&this.ws.readyState===1) this.ws.send(JSON.stringify({toolResponse:{functionResponses:out}}));
+  },
+  turnDone(){
+    const u=this.inT.trim(), m=this.outT.trim(); this.inT=''; this.outT='';
+    if(!u&&!m) return;
+    if(u){ MEM.history.push({r:'u',t:u,at:Date.now()}); logChat('u',u); }
+    if(m){ MEM.history.push({r:'m',t:m,at:Date.now()}); logChat('m',m); }
+    MEM.talks++; MEM.lastSeen=Date.now(); if(!MEM.firstMet) MEM.firstMet=Date.now(); saveMem();
+    if(u) updateMemory(u,m); compact();
+  },
+  stop(msg){
+    if(!this.on) return; this.on=false; this.turnDone();
+    try{ this.ws&&this.ws.close(1000); }catch(e){} this.ws=null;
+    try{ this.node&&this.node.disconnect(); }catch(e){} try{ this.micCtx&&this.micCtx.close(); }catch(e){}
+    this.mic&&this.mic.getTracks().forEach(t=>t.stop()); this.mic=null; this.flushAudio();
+    $('bLive').classList.remove('on'); $('bLive').textContent='Directo'; setEmotion(msg?'triste':'neutral',3000);
+    showSub(msg||'Llamada terminada. Mor seguir aquí.'); if(this.earsWas) Ears.start();
+  }
+};
+$('bLive').onclick=()=>Live.on?Live.stop():Live.start();
+/* =====================================================================
    15. DESPERTAR
    ===================================================================== */
 face.sleep=1; Voice.on=MEM.voice; vozModoUI(); $('bVoice').textContent='Voz: '+(MEM.voice?'sí':'no');
@@ -1125,9 +1359,14 @@ $('gate').onclick=async()=>{
   const gapH=MEM.lastSeen? (Date.now()-MEM.lastSeen)/3600000 : null;
   const ex=upcomingExams().filter(e=>daysTo(e.fecha)<=7);
   const h=new Date().getHours(), momento=h<7?'madrugada':h<13?'mañana':h<21?'tarde':'noche';
-  setTimeout(()=>send(null,{event: MEM.firstMet
+  const hoy=new Date().toDateString(), brief=MEM.firstMet && MEM.lastBrief!==hoy && h>=5 && h<14;
+  setTimeout(async()=>{
+    if(brief){ MEM.lastBrief=hoy; saveMem();
+      const w=await Weather.get(); const recHoy=Agenda.upcoming().filter(r=>new Date(r.when).toDateString()===hoy);
+      return send(null,{image:null,event:`BUENOS DÍAS: es la primera vez que te abre hoy. Hazle un resumen de buenos días breve y alegre (máximo 5 frases), en este orden: saludo con su nombre; ${w?'el tiempo de hoy ('+w+')':'(no sabes su ciudad: pregúntasela al final)'}; recordatorios de hoy: ${recHoy.length?recHoy.map(r=>pad2(new Date(r.when).getHours())+':'+pad2(new Date(r.when).getMinutes())+' '+r.t).join('; '):'ninguno'}; tareas pendientes: ${Agenda.pending().length?Agenda.pending().slice(0,4).map(x=>x.t).join('; '):'ninguna'}; ${ex.length?'examen más cercano: '+ex[0].asignatura+' ('+ex[0].fecha+')':''}${Review.dueCount?'; '+Review.dueCount+' tarjetas para repasar':''}. Si algo no hay, sáltalo.`}); }
+    send(null,{event: MEM.firstMet
       ? `EL USUARIO TE ACABA DE DESPERTAR. Es por la ${momento}. ${gapH<1?'Os habéis visto hace un rato.':gapH<20?'Hace unas '+Math.round(gapH)+' horas que no os veíais.':'Hace '+Math.round(gapH/24)+' días que no te abre: estás un poco celoso y lo has echado de menos.'} Salúdale por su nombre si lo sabes.${ex.length?' Recuérdale el examen más cercano: '+ex[0].asignatura+' ('+ex[0].fecha+').':''}${Review.dueCount?' Tiene '+Review.dueCount+' tarjetas para repasar.':''} Breve.`
-      : 'TE ACABAN DE DESPERTAR POR PRIMERA VEZ. No conoces a nadie todavía.', image:null}),1500);
+      : 'TE ACABAN DE DESPERTAR POR PRIMERA VEZ. No conoces a nadie todavía.', image:null}); },1500);
 };
 </script>
 </body>
