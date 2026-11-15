@@ -70,6 +70,10 @@ video{display:none}
 #photoList .ph{position:relative;background:#0e2033;border-radius:12px;overflow:hidden}
 #photoList img{width:100%;display:block}#photoList small{display:block;padding:6px 8px;color:var(--cel2)}
 #photoList button{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.5);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer}
+.cm{margin:8px 0;padding:8px 10px;border-radius:12px;background:rgba(127,216,255,.06);font-size:15px;line-height:1.4}
+.cm.u{background:rgba(127,216,255,.14);margin-left:14%}.cm small{color:var(--dim)}
+pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:8px;padding:8px;overflow:auto;font:12px/1.4 ui-monospace,monospace;color:#cfefff;white-space:pre;max-height:50vh}
+#attachBar{display:none;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 12px}
 .grade{display:none;gap:8px;justify-content:center;margin-top:6px}
 .grade.show{display:flex}
 </style>
@@ -87,6 +91,7 @@ video{display:none}
   <div class="tb">
     <button class="tbtn" id="bLive">Directo</button>
     <button class="tbtn" id="bEar">Oído</button>
+    <button class="tbtn" id="bChat">Chat</button>
     <button class="tbtn" id="bAgenda">Agenda</button>
     <button class="tbtn" id="bStudy">Estudiar</button>
     <button class="tbtn" id="bReview">Repasar<span class="n" id="dueN" style="display:none"></span></button>
@@ -125,7 +130,9 @@ video{display:none}
   <div class="cam" id="camBox"><canvas id="camView" width="160" height="120"></canvas></div>
 </div>
 
+<div id="attachBar"></div>
 <div class="bottom">
+  <button class="rbtn" id="bAttach" title="Adjuntar archivo" style="font-size:20px">+</button>
   <button class="rbtn" id="bMic" title="Hablar ahora">HABLA</button>
   <input class="inp" id="inp" placeholder="Habla con M.O.R.… (o di «oye MOR»)" autocomplete="off" maxlength="800">
   <button class="rbtn" id="bSend" title="Enviar">OK</button>
@@ -138,6 +145,8 @@ video{display:none}
   <div class="row">
     <button class="tbtn" id="bCam">Mirar (cámara)</button>
     <button class="tbtn" id="bQuickPhoto">Foto rápida</button>
+    <button class="tbtn" id="bCourse">Aprender a programar</button>
+    <button class="tbtn" id="bConn">Conectores</button>
     <button class="tbtn" id="bPeople">Personas</button>
     <button class="tbtn" id="bInterp">Intérprete</button>
     <button class="tbtn" id="bGames">Jugar</button>
@@ -237,6 +246,35 @@ video{display:none}
   <div class="row"><input type="text" id="iLang" placeholder="Idioma (inglés, francés, árabe…)" style="flex:1"><button class="tbtn on" id="iGo">Empezar</button></div>
   <div class="note">Mor traducirá en voz alta: lo que digas en español, al otro idioma, y lo que te digan, al español. Pulsa «Colgar» para terminar.</div>
 </div>
+<div class="sheet" id="sheetChat" style="max-height:92vh">
+  <button class="close" data-close>×</button>
+  <h3>CONVERSACIÓN</h3><div id="chatList"></div>
+</div>
+<div class="sheet" id="sheetConn">
+  <button class="close" data-close>×</button>
+  <h3>CONECTORES</h3>
+  <div class="note" style="margin-top:0">Mor ya puede usar sin configurar nada: <b>internet</b>, <b>Sketchfab</b> (busca modelos 3D y te los enseña), <b>Wikipedia</b> y los repositorios públicos de <b>GitHub</b>. Pregúntale por ellos.</div>
+  <h3>GITHUB</h3>
+  <div class="row"><input type="text" id="ghUser" placeholder="Usuario de GitHub" style="flex:1"></div>
+  <div class="row"><input type="text" id="ghToken" placeholder="Token (opcional, para repos privados)" style="flex:1" autocomplete="off"></div>
+  <div class="note">El token se crea en github.com › Settings › Developer settings › Personal access tokens (solo lectura basta). Se guarda solo en este aparato.</div>
+  <div class="row"><button class="tbtn on" id="connSave">Guardar</button></div>
+</div>
+<div class="sheet" id="sheet3d" style="max-height:92vh">
+  <button class="close" data-close>×</button>
+  <h3 id="skTitle">MODELO 3D</h3>
+  <iframe id="skFrame" style="width:100%;height:55vh;border:0;border-radius:12px;background:#000" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen></iframe>
+  <div class="row"><a class="tbtn on" id="skLink" target="_blank" rel="noopener" style="text-decoration:none">Abrir en Sketchfab (descargar)</a></div>
+</div>
+<div class="sheet" id="sheetCourse">
+  <button class="close" data-close>×</button>
+  <h3>APRENDER A PROGRAMAR CON MOR</h3>
+  <div class="row"><input type="text" id="cLang" placeholder="Lenguaje (JavaScript, Python, Three.js, Luau…)" style="flex:1">
+  <select id="cLevel" style="background:#0e2033;color:var(--cel2);border:1px solid rgba(127,216,255,.35);border-radius:10px;padding:9px"><option>desde cero</option><option>intermedio</option><option selected>avanzado</option><option>experto</option></select></div>
+  <div class="row"><button class="tbtn on" id="cGo">Empezar curso</button></div>
+  <div class="note">Puedes adjuntarle tu código con el botón «+» para que te lo corrija, y pedirle proyectos completos: te los da en archivos para descargar o en .zip.</div>
+</div>
+<input type="file" id="fileAttach" multiple hidden>
 <input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
 <div class="toast" id="toast"></div>
 <video id="video" playsinline muted></video>
@@ -301,10 +339,10 @@ const daysTo=f=>Math.round((new Date(f+'T09:00')-new Date(new Date().toDateStrin
 const upcomingExams=()=>MEM.exams.filter(e=>daysTo(e.fecha)>=0);
 
 const DB={p:null,
-  open(){ return this.p||(this.p=new Promise(res=>{ try{ const q=indexedDB.open('mor_db',3);
+  open(){ return this.p||(this.p=new Promise(res=>{ try{ const q=indexedDB.open('mor_db',4);
     q.onupgradeneeded=()=>{ const d=q.result, has=n=>d.objectStoreNames.contains(n);
       if(!has('chats')) d.createObjectStore('chats',{keyPath:'id',autoIncrement:true});
-      for(const n of ['docs','cards','people','photos','vecs']) if(!has(n)) d.createObjectStore(n,{keyPath:'id'}); };
+      for(const n of ['docs','cards','people','photos','vecs','files']) if(!has(n)) d.createObjectStore(n,{keyPath:'id'}); };
     q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }catch(e){ res(null); } })); },
   async all(store){ const d=await this.open(); if(!d) return []; return new Promise(r=>{ const q=d.transaction(store).objectStore(store).getAll(); q.onsuccess=()=>r(q.result||[]); q.onerror=()=>r([]); }); },
   async put(store,v){ const d=await this.open(); if(!d) return; return new Promise(r=>{ const t=d.transaction(store,'readwrite'); t.objectStore(store).put(v); t.oncomplete=r; t.onerror=r; }); },
@@ -715,6 +753,8 @@ ${Habits.forPrompt()}
 ${Ideas.forPrompt()}
 ${Faces.forPrompt()}
 ${Goals.forPrompt()}
+${courseForPrompt()}
+ARCHIVOS Y CÓDIGO: cuando te pida código, una web, un juego, un script o cualquier archivo, escríbelo COMPLETO y funcionando en bloques \`\`\`lenguaje nombre-archivo.ext (un bloque por archivo; las webs mejor en un único index.html con todo dentro). La app le pone botones para verlo, descargarlo o bajarlo todo en .zip; no hace falta que lo leas en voz alta: di solo qué has hecho y cómo usarlo. Si te adjunta archivos, aparecen en su mensaje.
 ${insideForPrompt()}
 ${diaryForPrompt()}
 ${MEM.ciudad?'VIVE EN: '+MEM.ciudad:'(No sabes en qué ciudad vive.)'}
@@ -722,6 +762,7 @@ AGENDA — cuando te pida apuntar, recordar o marcar algo, escríbelo en tu resp
   {{tarea: texto}}  ·  {{hecha: texto de la tarea}}  ·  {{recordar: AAAA-MM-DD HH:MM | texto}}  ·  {{borrar_recordatorio: texto}}  ·  {{ciudad: nombre}} (si te dice dónde vive)
   {{temporizador: minutos | motivo}}  ·  {{mensaje: destinatario | texto del mensaje}} (cuando te pida escribir/redactar un mensaje o correo)
   {{objetivo: título | paso 1; paso 2; paso 3}} (cuando quiera conseguir algo: divídelo tú en pasos concretos)  ·  {{paso_hecho: objetivo | paso}}  ·  {{cosa_nuestra: frase}} (una broma, apodo o frase vuestra que merezca recordarse)
+  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
   {{idea: tema | texto}} (cuando dicte una idea o nota)  ·  {{habito: nombre | meta}} (hábito nuevo)  ·  {{habito_hecho: nombre}}  ·  {{sonido: lluvia|olas|marron|parar}}
   Para las fechas usa la fecha y hora de AHORA. Si no dice hora, pregúntasela o usa 09:00. Nunca digas que lo has apuntado sin poner la etiqueta.
 ${MEM.study.length?'ÚLTIMAS SESIONES DE ESTUDIO:\n'+MEM.study.slice(-6).map(s=>`- ${new Date(s.at).toLocaleDateString('es-ES')}: ${s.tema} (${s.min} min${s.distracciones?', '+s.distracciones+' distracciones':''})`).join('\n'):''}
@@ -801,15 +842,30 @@ async function send(text,opts={}){
       const info=await withTimeout(webAsk(q||'¿De qué trata esta página?',url),25000);
       if(info) extra+='\nINFORMACIÓN DE INTERNET (real y actual, acabas de buscarla tú):\n'+String(info).slice(0,2500)+'\nContesta con estos datos, con tu estilo, y di de qué web los sacas.'; }catch(e){} }
   if(text){ try{ const pt=await patternsForPrompt(); if(pt) extra+='\n'+pt; }catch(e){} }
+  let skL=[];
+  if(text){
+    if(/github|repositorio|\brepos?\b/i.test(text)){ try{ extra+='\n'+await withTimeout(Conn.github(text),12000)+'\n(Datos reales de GitHub.)'; }catch(e){ extra+='\n(GitHub no respondió: '+e.message+')'; } }
+    if(/sketchfab|modelos? (en )?3d|modelo tridimensional/i.test(text)){ try{ const q=text.replace(/sketchfab|busca(me)?|b[uú]scame|modelos?|en 3d|3d|de|un|una|en|para|quiero|dame|mor|oye|por favor/gi,' ').replace(/[¿?¡!.,]/g,' ').trim()||'model'; const sk=await withTimeout(Conn.sketchfab(q),12000); if(sk){ skL=sk.L; extra+='\n'+sk.txt+'\n(Se le muestran en pantalla para verlos en 3D; recomiéndale los mejores.)'; } }catch(e){} }
+    if(/wikipedia/i.test(text)){ try{ const w=await withTimeout(Conn.wiki(text.replace(/wikipedia|seg[uú]n|busca|en|mira|qu[eé] dice/gi,' ').trim()),10000); if(w) extra+='\n'+w; }catch(e){} }
+  }
+  const coding=/c[oó]digo|program|html|\bweb\b|p[aá]gina web|juego|script|funci[oó]n|archivo|\bzip\b|css|javascript|python|\bapp\b|three\.?js|luau|ejercicio/i.test((text||'')+' '+(opts.event||''))||!!MEM.course&&/c[oó]digo|ejercicio|lecci/i.test(text||'');
   if(opts.extra) extra+='\n'+opts.extra;
   const contents=MEM.history.slice(-20).map(h=>({role:h.r==='u'?'user':'model',parts:[{text: h.r==='u'&&/^\[/.test(h.t) ? '(nota del sistema, NO lo ha dicho él: '+h.t.slice(1,-1)+')' : h.t}]}));
   const parts=[]; if(img) parts.push({inline_data:{mime_type:'image/jpeg',data:img}});
-  parts.push({text:text||('(nota del sistema, NO lo ha dicho él: '+opts.event+')')}); contents.push({role:'user',parts});
+  const att=attach.splice(0); renderAttach();
+  att.forEach(a=>{ if(a.kind==='img') parts.push({inline_data:{mime_type:'image/jpeg',data:a.data}}); else if(a.kind==='pdf') parts.push({inline_data:{mime_type:'application/pdf',data:a.data}}); else parts.push({text:`ARCHIVO ADJUNTO «${a.name}»:\n\`\`\`\n${a.data}\n\`\`\``}); });
+  parts.push({text:(text||('(nota del sistema, NO lo ha dicho él: '+opts.event+')'))+(att.length?'\n(Adjunta: '+att.map(a=>a.name).join(', ')+')':'')}); contents.push({role:'user',parts});
   let raw='', shown='', pending='', firstEmo=true; const acts=[];
   const slow=setTimeout(()=>{ if(!raw) showSub(rnd(['MOR pensar…','Mmm… MOR buscar en cabeza…']),text); },1800);
   try{
     lastStreamHadText=false;
-    await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:.85,maxOutputTokens:1000}},chunk=>{
+    let inF=false, fbuf='', tick='', fullClean=''; const ffiles=[];
+    const routeFence=t=>{ t=tick+t; tick=''; const mt=t.match(/`{1,2}$/); if(mt){ tick=mt[0]; t=t.slice(0,-mt[0].length); } let out='';
+      while(true){ const i=t.indexOf('```'); if(i<0){ if(inF) fbuf+=t; else out+=t; break; }
+        if(inF){ fbuf+=t.slice(0,i); inF=false; const f=parseFence(fbuf,ffiles.length+1); ffiles.push(f); fbuf=''; out+=' (te dejo el archivo '+f.name+') '; }
+        else { out+=t.slice(0,i); inF=true; fbuf=''; }
+        t=t.slice(i+3); } return out; };
+    await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:coding?.5:.85,maxOutputTokens:coding?8192:1200}},chunk=>{
       lastStreamHadText=true; raw+=chunk; pending+=chunk;
       let m; const re=/\[([\wáéíóúñÁÉÍÓÚÑ]+)\]|\{\{([^{}]*)\}\}/g; let clean=''; let lastIdx=0;
       while((m=re.exec(pending))){ clean+=pending.slice(lastIdx,m.index); lastIdx=re.lastIndex;
@@ -823,18 +879,24 @@ async function send(text,opts={}){
       if(hold>=0){ clean+=rest.slice(0,hold); pending=rest.slice(hold); } else { clean+=rest; pending=''; }
       clean=clean.replace(/[*#$]/g,'');
       if(/\n\s*\n\s*\n/.test(shown+clean)){ clean=(shown+clean).replace(/\n\s*\n(\s*\n)+/g,'\n\n').slice(shown.length); }
-      if(clean){ shown+=clean; showSub(shown.trimStart(),text); Voice.feed(clean); }
+      if(clean){ fullClean+=clean; const vis=routeFence(clean); if(vis){ shown+=vis; showSub(shown.trimStart(),text); Voice.feed(vis); } else if(inF) showSub(shown.trimStart()+'\n(Mor escribiendo código…)',text); }
     });
     clearTimeout(slow);
-    if(pending && !/^\[\w*$/.test(pending) && !/^\{/.test(pending)){ shown+=pending; Voice.feed(pending); }
+    if(pending && !/^\[\w*$/.test(pending) && !/^\{/.test(pending)){ fullClean+=pending; const vis=routeFence(pending); shown+=vis; Voice.feed(vis); }
+    if(tick){ const vis=routeFence(''); }
+    if(inF&&fbuf.trim()){ ffiles.push(parseFence(fbuf,ffiles.length+1)); inF=false; }
+    showSub(shown.trimStart(),text);
     Voice.end();
-    const reply=shown.trim();
+    const reply=shown.trim(); const replyFull=(fullClean||shown).replace(/\{\{[^{}]*\}\}/g,'').trim();
     const made=Agenda.apply(acts); if(made.reminders.length) showCalendarButtons(made.reminders);
     (made.msgs||[]).forEach(([to,t])=>showMessageCard(to,t));
     if(made.tasks.length||made.done.length||made.reminders.length) toast((made.tasks.length?'Apuntado: '+made.tasks.map(x=>x.t).join(', ')+'. ':'')+(made.done.length?'Hecho: '+made.done.map(x=>x.t).join(', ')+'. ':'')+(made.reminders.length?'Recordatorio guardado.':''),3500);
     const uTxt=text?text+(img?' [MOR veía la cámara]':''):'['+opts.event.split('.')[0].slice(0,90)+']';
-    MEM.history.push({r:'u',t:uTxt,at:Date.now()}); MEM.history.push({r:'m',t:reply,at:Date.now()});
-    if(text) logChat('u',text); logChat('m',reply);
+    MEM.history.push({r:'u',t:uTxt+(att.length?' [adjuntó: '+att.map(a=>a.name).join(', ')+']':''),at:Date.now()}); MEM.history.push({r:'m',t:replyFull.slice(0,6000),at:Date.now()});
+    if(text) logChat('u',text+(att.length?' [adjuntó: '+att.map(a=>a.name).join(', ')+']':'')); logChat('m',replyFull.slice(0,20000));
+    if(ffiles.length){ const sv=await Files.save(ffiles); showFiles(sv); }
+    if(skL.length) showSketchfab(skL);
+    if(made.imgs&&made.imgs.length) drawImages(made.imgs);
     MEM.talks++; MEM.lastSeen=Date.now(); if(!MEM.firstMet) MEM.firstMet=Date.now();
     saveMem(); updateMemory(text,reply); compact();
     if(text) Vec.store([{ref:'chat',r:'u',t:text,at:Date.now()},{ref:'chat',r:'m',t:reply,at:Date.now()}]);
@@ -846,7 +908,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v7c</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v8</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1172,7 +1234,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v7c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v8 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1259,6 +1321,8 @@ RECORDATORIOS: ${r.length?r.map(x=>fmtFecha(new Date(x.when))+' → '+x.t).join(
       else if(k==='objetivo'){ const [t,...st]=v.split('|'); Goals.add(t,st.join('|')); made.goal=true; }
       else if(k==='paso_hecho'){ const [g,...st]=v.split('|'); const x=Goals.stepDone(g,st.join('|')); if(x) Sfx.play('risa'); }
       else if(k==='cosa_nuestra'){ MEM.inside=MEM.inside||[]; if(!MEM.inside.some(y=>norm(y)===norm(v))) MEM.inside.push(v); if(MEM.inside.length>40) MEM.inside=MEM.inside.slice(-40); saveMem(); }
+      else if(k==='imagen'){ (made.imgs=made.imgs||[]).push(v); }
+      else if(k==='leccion'){ const [n,...t]=v.split('|'); if(MEM.course){ MEM.course.lesson=parseInt(n)||MEM.course.lesson; MEM.course.tema=t.join('|').trim(); saveMem(); } }
       else if(k==='temporizador'){ const [mi,...w]=v.split('|'); const t=Timers.add(mi,w.join('|').trim()); if(t) made.timers=(made.timers||0)+1; }
       else if(k==='mensaje'){ const [to,...w]=v.split('|'); (made.msgs=made.msgs||[]).push([to.trim(),w.join('|').trim()]); }
       else if(k==='idea'){ const [te,...w]=v.split('|'); w.length?Ideas.add(te,w.join('|')):Ideas.add('general',te); made.idea=true; }
@@ -1348,6 +1412,7 @@ const LIVE_TOOLS=[{functionDeclarations:[
   {name:'leer_pagina',description:'Lee una página web concreta y responde sobre ella',parameters:{type:'OBJECT',properties:{url:{type:'STRING'},pregunta:{type:'STRING'}},required:['url']}},
   {name:'crear_objetivo',description:'Guarda un objetivo del usuario dividido en pasos',parameters:{type:'OBJECT',properties:{titulo:{type:'STRING'},pasos:{type:'STRING',description:'pasos separados por ;'}},required:['titulo','pasos']}},
   {name:'paso_hecho',description:'Marca como hecho un paso de un objetivo',parameters:{type:'OBJECT',properties:{objetivo:{type:'STRING'},paso:{type:'STRING'}},required:['objetivo']}},
+  {name:'generar_imagen',description:'Dibuja una imagen y la enseña en pantalla',parameters:{type:'OBJECT',properties:{descripcion_en_ingles:{type:'STRING'}},required:['descripcion_en_ingles']}},
   {name:'poner_temporizador',description:'Pone un temporizador',parameters:{type:'OBJECT',properties:{minutos:{type:'NUMBER'},motivo:{type:'STRING'}},required:['minutos']}},
   {name:'redactar_mensaje',description:'Deja un mensaje redactado en pantalla para que lo envíe por WhatsApp o lo copie',parameters:{type:'OBJECT',properties:{destinatario:{type:'STRING'},texto:{type:'STRING'}},required:['texto']}},
   {name:'guardar_idea',description:'Guarda una idea o nota dictada',parameters:{type:'OBJECT',properties:{tema:{type:'STRING'},texto:{type:'STRING'}},required:['texto']}},
@@ -1436,6 +1501,7 @@ ESTÁS EN UNA CONVERSACIÓN DE VOZ EN DIRECTO, como una llamada. Habla en españ
         else if(c.name==='leer_pagina'){ r={resultado:(await webAsk(a.pregunta||'¿De qué trata?',a.url)).slice(0,1500)}; }
         else if(c.name==='crear_objetivo'){ Goals.add(a.titulo,a.pasos); r={ok:true}; }
         else if(c.name==='paso_hecho'){ const x=Goals.stepDone(a.objetivo,a.paso||''); r=x?{ok:true,paso:x.t}:{ok:false}; }
+        else if(c.name==='generar_imagen'){ drawImages([a.descripcion_en_ingles]); r={ok:true,nota:'se está dibujando en pantalla'}; }
         else if(c.name==='poner_temporizador'){ const t=Timers.add(a.minutos,a.motivo||'temporizador'); r=t?{ok:true}:{ok:false}; }
         else if(c.name==='redactar_mensaje'){ showMessageCard(a.destinatario,a.texto); r={ok:true,nota:'está en pantalla con botones para enviar'}; }
         else if(c.name==='guardar_idea'){ Ideas.add(a.tema||'general',a.texto); r={ok:true}; }
@@ -1762,6 +1828,154 @@ async function webAsk(pregunta,url){
   }
   return null;
 }
+/* =====================================================================
+   35. ARCHIVOS QUE CREA MOR (código, webs, juegos… y .zip)
+   ===================================================================== */
+const EXT={html:'html',css:'css',javascript:'js',js:'js',json:'json',python:'py',py:'py',typescript:'ts',ts:'ts',java:'java',c:'c',cpp:'cpp','c++':'cpp',csharp:'cs',cs:'cs',php:'php',sql:'sql',bash:'sh',sh:'sh',markdown:'md',md:'md',xml:'xml',yaml:'yml',yml:'yml',lua:'lua',luau:'lua',go:'go',rust:'rs',kotlin:'kt',swift:'swift',csv:'csv',txt:'txt',texto:'txt',svg:'svg'};
+const MIME={html:'text/html',css:'text/css',js:'text/javascript',json:'application/json',svg:'image/svg+xml',md:'text/markdown',csv:'text/csv'};
+function parseFence(buf,n){
+  const nl=buf.indexOf('\n'); const head=(nl<0?buf:buf.slice(0,nl)).trim(); let code=nl<0?'':buf.slice(nl+1);
+  let [lang,...rest]=head.split(/\s+/); lang=(lang||'txt').toLowerCase();
+  let name=rest.join(' ').replace(/^(nombre|archivo|file|name)=/i,'').trim();
+  if(/\.\w+$/.test(lang)&&!name){ name=lang; lang=lang.split('.').pop(); }
+  const ext=EXT[lang]||(name.split('.').pop())||'txt';
+  if(!name) name=(ext==='html'?'index':'archivo'+n)+'.'+ext;
+  return {name,lang,code:code.replace(/\s+$/,'')+'\n'};
+}
+const Files={
+  async save(list){ const out=[]; for(const f of list){ const x={id:'fl'+Date.now()+Math.random().toString(36).slice(2,6),name:f.name,code:f.code,at:Date.now()}; await DB.put('files',x); out.push(x); } return out; },
+  blob(f){ const e=f.name.split('.').pop(); return new Blob([f.code],{type:(MIME[e]||'text/plain')+';charset=utf-8'}); },
+  download(f){ const a=document.createElement('a'); a.href=URL.createObjectURL(this.blob(f)); a.download=f.name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); },
+  open(f,all){ // abre una web: si hay css/js con nombre, los mete dentro
+    let html=f.code; (all||[]).forEach(o=>{ if(o===f) return;
+      if(/\.css$/.test(o.name)) html=html.replace(new RegExp(`<link[^>]+href=["']${o.name}["'][^>]*>`,'i'),`<style>${o.code}</style>`);
+      if(/\.js$/.test(o.name)) html=html.replace(new RegExp(`<script[^>]+src=["']${o.name}["'][^>]*>\\s*<\\/script>`,'i'),`<script>${o.code}<\/script>`); });
+    const w=window.open(URL.createObjectURL(new Blob([html],{type:'text/html'})),'_blank'); if(!w) toast('Permite las ventanas emergentes para ver la web'); },
+  async zip(list,name){ if(!window.JSZip) await loadScript('lib/jszip.min.js'); const z=new JSZip(); list.forEach(f=>z.file(f.name,f.code));
+    const b=await z.generateAsync({type:'blob'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=(name||'proyecto-mor')+'.zip'; a.click(); }
+};
+const loadScript=src=>new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+function filesHtml(list){
+  if(!list.length) return '';
+  return `<div class="mcard">${list.map((f,i)=>`<div class="row" style="justify-content:space-between;margin:2px 0"><b>${esc(f.name)}</b><span style="display:flex;gap:6px">${/\.html?$/.test(f.name)?`<button class="tbtn on" data-fo="${i}">Ver</button>`:''}<button class="tbtn" data-fd="${i}">Descargar</button><button class="tbtn" data-fc="${i}">Copiar</button></span></div>`).join('')}
+    ${list.length>1?'<div class="row" style="justify-content:center"><button class="tbtn on" data-fz="1">Descargar todo (.zip)</button></div>':''}</div>`;
+}
+function bindFiles(el,list){
+  el.querySelectorAll('[data-fo]').forEach(b=>b.onclick=()=>Files.open(list[+b.dataset.fo],list));
+  el.querySelectorAll('[data-fd]').forEach(b=>b.onclick=()=>Files.download(list[+b.dataset.fd]));
+  el.querySelectorAll('[data-fc]').forEach(b=>b.onclick=async()=>{ try{ await navigator.clipboard.writeText(list[+b.dataset.fc].code); toast('Código copiado'); }catch(e){} });
+  el.querySelectorAll('[data-fz]').forEach(b=>b.onclick=()=>Files.zip(list,(list.find(f=>/index\.html/.test(f.name))?'web':'proyecto')+'-mor'));
+}
+function showFiles(list){ if(!list.length) return; const box=document.createElement('div'); box.innerHTML=filesHtml(list); $('sub').appendChild(box); bindFiles(box,list); }
+
+/* =====================================================================
+   36. IMÁGENES QUE DIBUJA MOR (servicio gratuito Pollinations)
+   ===================================================================== */
+async function makeImage(prompt){
+  const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(String(prompt).slice(0,400))+'?width=768&height=768&nologo=true&seed='+Math.floor(Math.random()*1e6);
+  const r=await withTimeout(fetch(url),45000); if(!r||!r.ok) throw new Error('no se pudo dibujar');
+  const b=await r.blob(); const data=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b); });
+  const x={id:'im'+Date.now(),name:'imagen-mor-'+Date.now()+'.jpg',img:data,prompt,at:Date.now()}; await DB.put('files',x); return x;
+}
+function showImage(x){
+  const box=document.createElement('div'); box.className='mcard'; box.style.textAlign='center';
+  box.innerHTML=`<img src="${x.img}" style="max-width:100%;max-height:40vh;border-radius:10px"><div class="row" style="justify-content:center"><button class="tbtn" data-a="d">Descargar</button><button class="tbtn" data-a="c">A la caja de recuerdos</button></div>`;
+  $('sub').appendChild(box); $('sub').scrollTop=1e9;
+  box.querySelector('[data-a=d]').onclick=()=>{ const a=document.createElement('a'); a.href=x.img; a.download=x.name; a.click(); };
+  box.querySelector('[data-a=c]').onclick=async()=>{ await DB.put('photos',{id:'f'+Date.now(),data:x.img,cap:'Dibujo de Mor: '+x.prompt.slice(0,60),at:Date.now()}); toast('Guardada en la caja de recuerdos'); };
+}
+async function drawImages(prompts){
+  for(const p of prompts){ const wait=document.createElement('div'); wait.className='note'; wait.textContent='Mor dibujando…'; $('sub').appendChild(wait);
+    try{ const x=await makeImage(p); wait.remove(); showImage(x); logChat('m','[Dibujó una imagen: '+p+']'); }
+    catch(e){ wait.textContent='Mor no poder dibujar ahora ('+e.message+').'; } }
+}
+
+/* =====================================================================
+   37. ADJUNTAR ARCHIVOS A MOR (fotos, PDF, código, zip…)
+   ===================================================================== */
+let attach=[];   // [{name, kind:'img'|'pdf'|'text', data}]
+const TEXTEXT=/\.(txt|md|js|ts|jsx|tsx|html?|css|json|py|java|c|cpp|cs|php|sql|sh|xml|ya?ml|lua|go|rs|kt|swift|csv|eval|ini|log)$/i;
+async function addAttachments(files){
+  for(const f of files){
+    try{
+      if(/^image\//.test(f.type)) attach.push({name:f.name,kind:'img',data:await shrinkImage(f)});
+      else if(f.type==='application/pdf') attach.push({name:f.name,kind:'pdf',data:await fileB64(f)});
+      else if(/\.zip$/i.test(f.name)){ if(!window.JSZip) await loadScript('lib/jszip.min.js'); const z=await JSZip.loadAsync(f); let txt=`ZIP «${f.name}» con: ${Object.keys(z.files).join(', ').slice(0,1500)}\n`; let total=0;
+        for(const [n,e] of Object.entries(z.files)){ if(e.dir||!TEXTEXT.test(n)||total>60000) continue; const c=await e.async('string'); total+=c.length; txt+=`\n--- ${n} ---\n${c.slice(0,20000)}\n`; }
+        attach.push({name:f.name,kind:'text',data:txt}); }
+      else if(TEXTEXT.test(f.name)||/^text\//.test(f.type)) attach.push({name:f.name,kind:'text',data:(await f.text()).slice(0,80000)});
+      else toast('Mor no sabe leer ese tipo de archivo: '+f.name);
+    }catch(e){ toast('No se pudo leer '+f.name); }
+  }
+  renderAttach();
+}
+function renderAttach(){ $('attachBar').innerHTML=attach.map((a,i)=>`<span class="tchip" data-i="${i}">${esc(a.name)} ✕</span>`).join(''); $('attachBar').style.display=attach.length?'flex':'none';
+  $('attachBar').querySelectorAll('.tchip').forEach(c=>c.onclick=()=>{ attach.splice(+c.dataset.i,1); renderAttach(); }); }
+$('bAttach').onclick=()=>$('fileAttach').click();
+$('fileAttach').onchange=e=>{ const f=[...e.target.files]; e.target.value=''; if(f.length) addAttachments(f); };
+
+/* =====================================================================
+   38. CONECTORES: GitHub, Sketchfab, Wikipedia
+   ===================================================================== */
+const Conn={
+  get(){ try{ return JSON.parse(localStorage.getItem('mor_conectores')||'{}'); }catch(e){ return {}; } },
+  set(o){ localStorage.setItem('mor_conectores',JSON.stringify(Object.assign(this.get(),o))); },
+  gh(path){ const t=this.get().ghToken; return fetch('https://api.github.com/'+path,{headers:Object.assign({Accept:'application/vnd.github+json'},t?{Authorization:'Bearer '+t}:{})}).then(r=>r.ok?r.json():Promise.reject(new Error('GitHub '+r.status))); },
+  async github(text){
+    const m=text.match(/github\.com\/([\w.-]+)\/([\w.-]+)/i)||text.match(/\b([\w-]+)\/([\w.-]+)\b(?=.*(repo|github))/i);
+    const user=this.get().ghUser||'mineracats-boop';
+    if(m){ const [o,r]=[m[1],m[2].replace(/\.git$/,'')];
+      const info=await this.gh(`repos/${o}/${r}`); let readme='';
+      try{ const rd=await this.gh(`repos/${o}/${r}/readme`); readme=decodeURIComponent(escape(atob(rd.content.replace(/\n/g,'')))).slice(0,3000); }catch(e){}
+      let tree=''; try{ const t=await this.gh(`repos/${o}/${r}/contents/`); tree=t.map(x=>(x.type==='dir'?x.name+'/':x.name)).join(', '); }catch(e){}
+      return `GITHUB ${o}/${r}: ${info.description||'(sin descripción)'} · ${info.private?'privado':'público'} · lenguaje ${info.language||'?'} · ★${info.stargazers_count} · último cambio ${new Date(info.pushed_at).toLocaleDateString('es-ES')}\nARCHIVOS: ${tree}\nREADME:\n${readme}`; }
+    const repos=this.get().ghToken? await this.gh('user/repos?per_page=50&sort=pushed') : await this.gh(`users/${user}/repos?per_page=50&sort=pushed`);
+    return `REPOSITORIOS DE GITHUB (${this.get().ghToken?'tu cuenta':user}): `+repos.map(x=>`${x.full_name}${x.private?' (privado)':''} — ${x.description||''} (actualizado ${new Date(x.pushed_at).toLocaleDateString('es-ES')})`).join('; ');
+  },
+  async sketchfab(q){
+    const j=await (await fetch('https://api.sketchfab.com/v3/search?type=models&count=6&q='+encodeURIComponent(q))).json();
+    const L=(j.results||[]).map(x=>({uid:x.uid,name:x.name,user:x.user&&x.user.displayName,lic:x.license&&x.license.label,dl:x.isDownloadable,url:x.viewerUrl,thumb:(x.thumbnails&&x.thumbnails.images||[]).sort((a,b)=>a.width-b.width).find(i=>i.width>=200)?.url}));
+    return {L,txt:'SKETCHFAB, modelos 3D encontrados para «'+q+'»: '+L.map(x=>`${x.name} de ${x.user} (${x.lic||'licencia ?'}${x.dl?', descargable':''})`).join('; ')};
+  },
+  async wiki(q){ const s=await (await fetch('https://es.wikipedia.org/w/rest.php/v1/search/page?limit=1&q='+encodeURIComponent(q))).json(); const p=s.pages&&s.pages[0]; if(!p) return null;
+    const d=await (await fetch('https://es.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(p.key))).json(); return `WIKIPEDIA «${d.title}»: ${d.extract}`; }
+};
+function showSketchfab(L){
+  if(!L.length) return; const box=document.createElement('div'); box.className='mcard';
+  box.innerHTML='<small>Modelos 3D de Sketchfab</small><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:6px">'+L.map((x,i)=>`<div style="cursor:pointer" data-sk="${i}">${x.thumb?`<img src="${x.thumb}" style="width:100%;border-radius:8px">`:''}<small>${esc(x.name)}<br>${esc(x.user||'')}</small></div>`).join('')+'</div>';
+  $('sub').appendChild(box);
+  box.querySelectorAll('[data-sk]').forEach(d=>d.onclick=()=>{ const x=L[+d.dataset.sk]; $('skFrame').src='https://sketchfab.com/models/'+x.uid+'/embed?autostart=1&ui_infos=0'; $('skTitle').textContent=x.name+' · '+(x.user||'')+' · '+(x.lic||''); $('skLink').href=x.url; $('sheet3d').classList.add('open'); });
+}
+$('bConn').onclick=()=>{ $('sheetMore').classList.remove('open'); const c=Conn.get(); $('ghUser').value=c.ghUser||'mineracats-boop'; $('ghToken').value=c.ghToken?'••••••••':''; $('sheetConn').classList.add('open'); };
+$('connSave').onclick=()=>{ const t=$('ghToken').value.trim(); Conn.set({ghUser:$('ghUser').value.trim()||'mineracats-boop'}); if(t&&!/^•+$/.test(t)) Conn.set({ghToken:t}); if(!t) Conn.set({ghToken:''}); $('sheetConn').classList.remove('open'); toast('Conectores guardados'); };
+$('sheet3d').querySelector('[data-close]').addEventListener('click',()=>{ $('skFrame').src='about:blank'; });
+
+/* =====================================================================
+   39. PROFESOR DE PROGRAMACIÓN
+   ===================================================================== */
+const courseForPrompt=()=>{ const c=MEM.course; if(!c) return '';
+  return `CURSO DE PROGRAMACIÓN EN MARCHA: ${c.lang}, nivel ${c.level}, va por la lección ${c.lesson||1}${c.tema?' ('+c.tema+')':''}. Cuando hable de programación, actúa como su profesor: explica con ejemplos reales, ponle ejercicios, corrige su código con detalle (qué falla, por qué y cómo mejorarlo) y sube la dificultad poco a poco. Cuando termine una lección, escribe {{leccion: número | tema de la siguiente}}.`; };
+$('bCourse').onclick=()=>{ $('sheetMore').classList.remove('open'); $('sheetCourse').classList.add('open'); };
+$('cGo').onclick=()=>{ const lang=$('cLang').value.trim()||'JavaScript', level=$('cLevel').value; $('sheetCourse').classList.remove('open');
+  MEM.course={lang,level,lesson:1,at:Date.now()}; saveMem();
+  send(null,{event:`EMPIEZA UN CURSO DE PROGRAMACIÓN DE ${lang.toUpperCase()} (nivel ${level}). Preséntale el plan del curso en 6-10 lecciones (de lo básico a proyectos complejos reales), y da la LECCIÓN 1 completa: explicación clara, un ejemplo de código comentado en un bloque \`\`\` con nombre de archivo, y un ejercicio para que lo haga él. Al final pregúntale si lo ha entendido.`,image:null}); };
+
+/* =====================================================================
+   40. CONVERSACIÓN COMPLETA (con código, archivos e imágenes)
+   ===================================================================== */
+function mdLite(t){ // texto con bloques de código bonitos
+  return esc(t).replace(/```(\w*)[^\n]*\n([\s\S]*?)```/g,(m,l,c)=>`<pre class="code">${c}</pre>`).replace(/\n/g,'<br>');
+}
+async function renderChat(){
+  const all=(await DB.all('chats')).slice(-80); const files=(await DB.all('files')).filter(f=>Date.now()-f.at<7*86400000);
+  $('chatList').innerHTML=all.map(c=>`<div class="cm ${c.r}"><small>${c.r==='u'?'Tú':'Mor'} · ${new Date(c.at).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'})}</small><div>${mdLite(c.t)}</div></div>`).join('')
+    + (files.length?'<h3>ARCHIVOS E IMÁGENES DE ESTA SEMANA</h3>':'');
+  const fl=files.filter(f=>!f.img).sort((a,b)=>b.at-a.at), im=files.filter(f=>f.img).sort((a,b)=>b.at-a.at);
+  if(fl.length){ const box=document.createElement('div'); box.innerHTML=filesHtml(fl); $('chatList').appendChild(box); bindFiles(box,fl); }
+  im.forEach(x=>{ const d=document.createElement('div'); d.className='mcard'; d.innerHTML=`<img src="${x.img}" style="max-width:100%;border-radius:8px"><small>${esc(x.prompt||'')}</small>`; $('chatList').appendChild(d); });
+  $('sheetChat').scrollTop=0; setTimeout(()=>{ $('chatList').lastElementChild&&$('chatList').scrollIntoView({block:'end'}); },50);
+}
+$('bChat').onclick=()=>{ renderChat(); $('sheetChat').classList.add('open'); };
 /* =====================================================================
    15. DESPERTAR
    ===================================================================== */
