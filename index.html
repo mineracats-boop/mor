@@ -577,7 +577,7 @@ async function geminiStream(body,onText){
     try{
       const b=Object.assign({},body,{generationConfig:cfgFor(m,body.generationConfig)});
       const r=await fetch(API+m+':streamGenerateContent?alt=sse',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},body:JSON.stringify(b)});
-      if(!r.ok){ clearTimeout(to); last=r.status; continue; }
+      if(!r.ok){ clearTimeout(to); let msg=''; try{ msg=(await r.json()).error.message.slice(0,80); }catch(x){} last=(last?last+' | ':'')+m.replace('gemini-','')+' '+r.status+' '+msg; continue; }
       const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', got=false, full='';
       while(true){
         const {done,value}=await rd.read(); if(done) break;
@@ -592,7 +592,7 @@ async function geminiStream(body,onText){
       clearTimeout(to);
       if(got){ modelOk=m; return full; }
       last='vacío';
-    }catch(e){ clearTimeout(to); last=e.name==='AbortError'?'tiempo':e.message; if(lastStreamHadText) throw e; }
+    }catch(e){ clearTimeout(to); last=(last?last+' | ':'')+m.replace('gemini-','')+' '+(e.name==='AbortError'?'sin respuesta en 15 s':e.message); if(lastStreamHadText) throw e; }
   }
   throw new Error(last||'sin respuesta');
 }
@@ -717,7 +717,8 @@ async function send(text,opts={}){
     clearTimeout(slow); console.warn('Gemini:',e.message); window._lastErr=new Date().toLocaleTimeString('es-ES')+' '+e.message;
     if(!raw && !opts.retry){ busy=false; $('bSend').disabled=false; await sleep(2500); return send(text,Object.assign({},opts,{retry:true})); }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
-      await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado'); }
+      await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v4e</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1031,7 +1032,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 // diagnóstico: comprueba cerebro, voces y permisos y lo enseña en pantalla
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v4d · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v4e · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?'sí':'NO (abre el enlace de configuración)')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
