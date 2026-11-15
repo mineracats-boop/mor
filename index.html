@@ -970,13 +970,13 @@ Si dudas, NO lo apuntes.`,MEMSCHEMA,[],MODELOS_MEMORIA);
 }
 let compacting=false;
 async function compact(){
-  if(compacting||MEM.history.length<34) return; compacting=true;
-  const old=MEM.history.slice(0,20);
+  if(compacting||MEM.history.length<70) return; compacting=true;
+  const old=MEM.history.slice(0,30);
   try{
     const txt=await gemini({contents:[{role:'user',parts:[{text:
-      `Actualiza este resumen de la historia entre M.O.R. y su humano con la conversación nueva. Máximo 220 palabras, en español, tercera persona, solo lo importante y duradero (qué ha estudiado, dudas, planes, cómo está, momentos especiales). Las conversaciones completas se guardan aparte, así que aquí basta lo esencial.\n\nRESUMEN ACTUAL:\n${MEM.summary||'(vacío)'}\n\nCONVERSACIÓN:\n${old.map(h=>(h.r==='u'?'Humano: ':'MOR: ')+h.t).join('\n')}`}]}],
+      `Actualiza este resumen de la historia entre M.O.R. y su humano con la conversación nueva. Máximo 220 palabras, en español, tercera persona, solo lo importante y duradero (qué ha estudiado, dudas, planes, cómo está, momentos especiales). Conserva EXACTOS los datos concretos que sigan vigentes (horarios, fechas, horas, nombres, decisiones tomadas). Las conversaciones completas se guardan aparte, así que aquí basta lo esencial.\n\nRESUMEN ACTUAL:\n${MEM.summary||'(vacío)'}\n\nCONVERSACIÓN:\n${old.map(h=>(h.r==='u'?'Humano: ':'MOR: ')+h.t).join('\n')}`}]}],
       generationConfig:{temperature:.3}});
-    MEM.summary=txt.trim(); MEM.history=MEM.history.slice(20); saveMem();
+    MEM.summary=txt.trim(); MEM.history=MEM.history.slice(30); saveMem();
   }catch(e){} compacting=false;
 }
 
@@ -1022,7 +1022,7 @@ async function send(text,opts={}){
   }
   const coding=/c[oó]digo|program|html|\bweb\b|p[aá]gina web|juego|script|funci[oó]n|archivo|\bzip\b|css|javascript|python|\bapp\b|three\.?js|luau|ejercicio/i.test((text||'')+' '+(opts.event||''))||!!MEM.course&&/c[oó]digo|ejercicio|lecci/i.test(text||'');
   if(opts.extra) extra+='\n'+opts.extra;
-  const contents=MEM.history.slice(-20).map(h=>({role:h.r==='u'?'user':'model',parts:[{text: h.r==='u'&&/^\[/.test(h.t) ? '(nota del sistema, NO lo ha dicho él: '+h.t.slice(1,-1)+')' : h.t}]}));
+  const contents=MEM.history.slice(-40).map(h=>({role:h.r==='u'?'user':'model',parts:[{text: h.r==='u'&&/^\[/.test(h.t) ? '(nota del sistema, NO lo ha dicho él: '+h.t.slice(1,-1)+')' : h.t}]}));
   const parts=[]; if(img) parts.push({inline_data:{mime_type:'image/jpeg',data:img}});
   const att=attach.splice(0); renderAttach();
   att.forEach(a=>{ if(a.kind==='img') parts.push({inline_data:{mime_type:'image/jpeg',data:a.data}}); else if(a.kind==='pdf') parts.push({inline_data:{mime_type:'application/pdf',data:a.data}}); else parts.push({text:`ARCHIVO ADJUNTO «${a.name}»:\n\`\`\`\n${a.data}\n\`\`\``}); });
@@ -1086,7 +1086,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15e</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15f</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1412,7 +1412,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v15e · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v15f · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3034,9 +3034,11 @@ const Rutina={
   tipoHoy(d=new Date()){ const w=d.getDay(); return w===0||w===6?'fin':'lab'; },
   hoy(){ const sk=(MEM.rutinaSkip||{})[hoyKey()]||[]; return (this.data()[this.tipoHoy()]||[]).filter(b=>!sk.includes(norm(b.t))).sort((a,b)=>hm(a.i)-hm(b.i)); },
   ahora(){ const n=new Date(), m=n.getHours()*60+n.getMinutes(), L=this.hoy(); const cur=L.find(b=>hm(b.i)<=m&&m<hm(b.f||b.i)+(b.f?0:30)); const sig=L.find(b=>hm(b.i)>m); return {cur,sig,L}; },
-  forPrompt(){ const L=this.hoy(); if(!L.length) return ''; const {cur,sig}=this.ahora();
-    return `\nRUTINA DE HOY (${this.tipoHoy()==='fin'?'fin de semana':'entre semana'}): ${L.map(b=>b.i+(b.f?'-'+b.f:'')+' '+b.t).join('; ')}.${cur?' AHORA TOCA: '+cur.t+'.':''}${sig?' DESPUÉS: '+sig.t+' a las '+sig.i+'.':''}\nSi hoy no toca un bloque, escribe {{saltar_bloque: nombre del bloque}}. Si te cuenta su día para que le hagas o rehagas la rutina, escribe {{rutina: lo que te ha contado}}.`; },
-  async crear(txt){ const o=await geminiJSON(`Eres un asistente personal experto en organizar el tiempo de un estudiante. Con lo que cuenta, monta su rutina diaria realista y equilibrada (horas de levantarse, clase, comidas, estudio, entreno, ocio, pantallas fuera y dormir), por bloques con hora de inicio y fin (HH:MM, 24 h). Una para ENTRE SEMANA (lab) y otra para FIN DE SEMANA (fin). Respeta lo que diga; si falta algo, pon algo sensato. Títulos cortos.\n\nLO QUE CUENTA: ${txt}`,
+  forPrompt(){ const d=this.data(), f=L=>(L||[]).slice().sort((a,b)=>hm(a.i)-hm(b.i)).map(b=>b.i+(b.f?'-'+b.f:'')+' '+b.t).join('; ')||'(vacía)'; const {cur,sig}=this.ahora();
+    return `\nSU RUTINA GUARDADA (esto es lo que vale; está guardada aunque no salga en la conversación):\n- ENTRE SEMANA: ${f(d.lab)}\n- FIN DE SEMANA: ${f(d.fin)}\nHoy es ${this.tipoHoy()==='fin'?'fin de semana':'entre semana'}.${cur?' AHORA TOCA: '+cur.t+'.':''}${sig?' DESPUÉS: '+sig.t+' a las '+sig.i+'.':''}
+CAMBIAR LA RUTINA (cada cambio que acordéis GUÁRDALO al momento con estas etiquetas; no esperes al final y no la reescribas entera si solo cambia una parte):
+{{rutina_bloque: lab|fin|todos | HH:MM-HH:MM | título}} añade o cambia un bloque (si ya hay uno con ese título o a esa hora, lo sustituye) · {{rutina_quitar: lab|fin|todos | título}} lo quita · {{saltar_bloque: título}} solo por hoy · {{rutina: instrucciones}} para hacerla entera o cambiar muchas cosas a la vez (se parte de la actual).`; },
+  async crear(txt){ const act=this.data(), hay=(act.lab||[]).length||(act.fin||[]).length; const o=await geminiJSON(`Eres un asistente personal experto en organizar el tiempo de un estudiante. ${hay?'YA TIENE ESTA RUTINA: '+JSON.stringify(act)+'. Aplica SOLO los cambios que pide y conserva todo lo demás igual (salvo que pida empezar de cero). ':''}Con lo que cuenta, monta su rutina diaria realista y equilibrada (horas de levantarse, clase, comidas, estudio, entreno, ocio, pantallas fuera y dormir), por bloques con hora de inicio y fin (HH:MM, 24 h). Una para ENTRE SEMANA (lab) y otra para FIN DE SEMANA (fin). Respeta lo que diga; si falta algo, pon algo sensato. Títulos cortos.\n\nLO QUE CUENTA: ${txt}`,
       {type:'OBJECT',properties:{lab:{type:'ARRAY',items:{type:'OBJECT',properties:{i:{type:'STRING'},f:{type:'STRING'},t:{type:'STRING'}},required:['i','f','t']}},fin:{type:'ARRAY',items:{type:'OBJECT',properties:{i:{type:'STRING'},f:{type:'STRING'},t:{type:'STRING'}},required:['i','f','t']}}},required:['lab','fin']},[],MODELOS_RAPIDOS,60000);
     const ok=b=>/^\d{1,2}:\d{2}$/.test(b.i)&&b.t; MEM.rutina={lab:o.lab.filter(ok),fin:o.fin.filter(ok)}; saveMem(); return MEM.rutina; },
   tab:'lab',
@@ -3142,7 +3144,13 @@ send=async function(text,opts={}){
 const _sys15=systemPrompt; systemPrompt=function(extra){ return _sys15(extra)+Rutina.forPrompt()+`\nPROTOCOLOS que él puede activar diciendo su frase: ${Proto.list().map(p=>`«${String(p.f||'').split('|')[0]}» (${p.n})`).join(', ')}.`; };
 const _apply15=Agenda.apply.bind(Agenda);
 Agenda.apply=function(acts){ const made=_apply15(acts);
-  for(const a of acts){ const m=String(a).match(/^\s*(saltar[_ ]bloque|rutina)\s*:\s*([\s\S]*)$/i); if(!m) continue; const v=m[2].trim();
+  for(const a of acts){ const m=String(a).match(/^\s*(saltar[_ ]bloque|rutina[_ ]bloque|rutina[_ ]quitar|rutina)\s*:\s*([\s\S]*)$/i); if(!m) continue; const v=m[2].trim();
+    if(/bloque|quitar/i.test(m[1])&&/^rutina/i.test(m[1])){ const parts=v.split('|').map(x=>x.trim()); const cual=norm(parts[0]); const dias=/todo|ambos|siempre/.test(cual)?['lab','fin']:/fin|sab|dom/.test(cual)?['fin']:['lab'];
+      const d=Rutina.data(); dias.forEach(k=>{ d[k]=d[k]||[];
+        if(/quitar/i.test(m[1])){ const qw=words(parts[1]||''); d[k]=d[k].filter(b=>score(qw,b.t)===0); }
+        else { const h=(parts[1]||'').match(/(\d{1,2}[:.]\d{2})\s*(?:-|a|–)?\s*(\d{1,2}[:.]\d{2})?/); const t=(parts[2]||'').trim(); if(!h||!t) return; const i=h[1].replace('.',':').padStart(5,'0'), f=(h[2]||'').replace('.',':'); const fF=f?f.padStart(5,'0'):'';
+          d[k]=d[k].filter(b=>norm(b.t)!==norm(t)&&b.i!==i); d[k].push({i,f:fF,t}); d[k].sort((a,b)=>hm(a.i)-hm(b.i)); } });
+      saveMem(); Rutina.tick(true); if($('sheetRutina').classList.contains('open')) Rutina.render(); toast('Rutina guardada ✓',2000); continue; }
     if(/^saltar/i.test(m[1])){ const L=Rutina.hoy(); const qw=words(v); let best=null,bs=0; L.forEach(b=>{ const s=score(qw,b.t); if(s>bs){bs=s;best=b;} }); if(best){ MEM.rutinaSkip=MEM.rutinaSkip||{}; (MEM.rutinaSkip[hoyKey()]=MEM.rutinaSkip[hoyKey()]||[]).push(norm(best.t)); saveMem(); Rutina.tick(true); toast('Hoy sin: '+best.t,4000); } }
     else Rutina.crear(v).then(()=>{ Rutina.tick(true); toast('Rutina hecha. Mírala en «Mi rutina».',5000); }).catch(()=>{}); }
   return made; };
