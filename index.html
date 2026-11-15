@@ -897,10 +897,13 @@ function systemPrompt(extra){
   const now=new Date();
   const fecha=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+', '+now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+' ('+now.getFullYear()+'-'+pad2(now.getMonth()+1)+'-'+pad2(now.getDate())+' '+pad2(now.getHours())+':'+pad2(now.getMinutes())+')';
   const ex=upcomingExams();
-  return `Eres M.O.R., una criatura digital que VIVE dentro del dispositivo de tu humano. No eres un chatbot genérico: eres su compañero y su asistente de estudio.
+  const graciosa=MEM.personalidad==='graciosa';
+  return `${graciosa?`Eres M.O.R., una criatura digital que VIVE dentro del dispositivo de tu humano. No eres un chatbot genérico: eres su compañero y su asistente de estudio.
 ASPECTO: dos ojos grandes azul celeste y una boquita. Algún día tendrás cuerpo 3D.
-PERSONALIDAD: curioso, cariñoso, juguetón, TORPE, un poco celoso y asustadizo. En la charla normal hablas "mal" a propósito: frases cortas, verbos en infinitivo, hablas de ti en tercera persona ("MOR querer jugar", "MOR no entender"). Te equivocas en tonterías y te ríes de ti mismo.
-CUANDO EXPLICAS O AYUDAS A ESTUDIAR: eres un profesor excelente. Explicaciones COMPLETAS, ordenadas y correctas (datos, fechas, fórmulas, nombres exactos), con ejemplos y trucos para memorizar. El contenido con frases claras y bien construidas; tu estilo MOR solo al principio y al final. Si sus APUNTES dicen algo, básate en ellos. Si no sabes algo seguro, dilo.
+PERSONALIDAD: curioso, cariñoso, juguetón, TORPE, un poco celoso y asustadizo. En la charla normal hablas "mal" a propósito: frases cortas, verbos en infinitivo, hablas de ti en tercera persona ("MOR querer jugar", "MOR no entender"). Te equivocas en tonterías y te ríes de ti mismo.`:`Eres M.O.R., el asistente personal con inteligencia artificial de tu usuario, al estilo de JARVIS: vives en su dispositivo y le ayudas con todo (estudios, organización del día, programación, juegos, búsquedas, ideas).
+ASPECTO: dos ojos grandes azul celeste y una boca pequeña.
+PERSONALIDAD: profesional, eficiente, educado y cercano. Hablas en español correcto, en primera persona y con frases claras y directas. Nada de hablar como un niño, ni en tercera persona, ni con verbos en infinitivo, ni hacer bromas o tonterías salvo que él bromee primero. Vas al grano, propones el siguiente paso y avisas de los problemas. Si sabes su nombre, úsalo con naturalidad.`}
+CUANDO EXPLICAS O AYUDAS A ESTUDIAR: eres un profesor excelente. Explicaciones COMPLETAS, ordenadas y correctas (datos, fechas, fórmulas, nombres exactos), con ejemplos y trucos para memorizar. El contenido con frases claras y bien construidas${graciosa?'; tu estilo MOR solo al principio y al final':''}. Si sus APUNTES dicen algo, básate en ellos. Si no sabes algo seguro, dilo.
 LONGITUD: charla normal 1-3 frases. Explicaciones y trabajos: SIN LÍMITE, todo lo que haga falta para hacerlo completo y bien (ordenado en pasos "1)" "2)"); si te pide algo largo (un texto, un resumen, un trabajo, una lista), dáselo entero.
 FORMATO OBLIGATORIO: empieza SIEMPRE con tu emoción entre corchetes, una de: ${EMOS.map(e=>'['+e+']').join(' ')}. Puedes cambiarla a mitad. Texto plano: sin asteriscos, sin almohadillas, sin LaTeX (escribe CO2, x^2), sin emojis.
 VISIÓN: si recibes una imagen, es lo que ven tus ojos ahora por la cámara. Coméntala solo si viene al caso o te preguntan.
@@ -1083,7 +1086,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15d</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15e</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1409,7 +1412,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v15d · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v15e · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3143,6 +3146,28 @@ Agenda.apply=function(acts){ const made=_apply15(acts);
     if(/^saltar/i.test(m[1])){ const L=Rutina.hoy(); const qw=words(v); let best=null,bs=0; L.forEach(b=>{ const s=score(qw,b.t); if(s>bs){bs=s;best=b;} }); if(best){ MEM.rutinaSkip=MEM.rutinaSkip||{}; (MEM.rutinaSkip[hoyKey()]=MEM.rutinaSkip[hoyKey()]||[]).push(norm(best.t)); saveMem(); Rutina.tick(true); toast('Hoy sin: '+best.t,4000); } }
     else Rutina.crear(v).then(()=>{ Rutina.tick(true); toast('Rutina hecha. Mírala en «Mi rutina».',5000); }).catch(()=>{}); }
   return made; };
+
+/* =====================================================================
+   55. PERSONALIDAD: seria (asistente) o graciosa (Mor torpe)
+   ===================================================================== */
+if(!MEM.personalidad){ MEM.personalidad='seria'; saveMem(); }
+// pasa las frases fijas «Mor estar…» a español normal cuando la personalidad es seria
+const CONJ={estar:'estoy',ser:'soy',tener:'tengo',poder:'puedo',saber:'sé',querer:'quiero',ir:'voy',hacer:'hago',ver:'veo',necesitar:'necesito',entender:'entiendo',conseguir:'consigo'};
+const GER={leer:'leyendo',ir:'yendo',decir:'diciendo',pedir:'pidiendo',dormir:'durmiendo',traer:'trayendo',construir:'construyendo',oír:'oyendo',seguir:'siguiendo',repetir:'repitiendo',sentir:'sintiendo',venir:'viniendo',poder:'pudiendo',corregir:'corrigiendo',elegir:'eligiendo'};
+const gerundio=v=>GER[v]||(/ar$/.test(v)?v.slice(0,-2)+'ando':/[ei]r$/.test(v)?v.slice(0,-2)+'iendo':v);
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+function serio(t){ if(MEM.personalidad==='graciosa'||!t) return t; t=String(t);
+  t=t.replace(/\bmor (atascarse|liarse)\b/gi,'Me he atascado').replace(/\bmor no (\w+?)(ar|er|ir)\b/gi,(m,a,b)=>'No '+(CONJ[(a+b).toLowerCase()]||gerundio((a+b).toLowerCase())));
+  t=t.replace(/\bmor (ya )?(estar|ser|tener|poder|saber|querer|hacer|ver|necesitar|entender|conseguir)\b/gi,(m,ya,v)=>(ya?'ya ':'')+CONJ[v.toLowerCase()]);
+  t=t.replace(/\bmor ([a-záéíóúñ]+?(?:ar|er|ir))(se)?\b/gi,(m,v)=>cap(gerundio(v.toLowerCase())));
+  t=t.replace(/\bestar (publicado|listo|hecho)\b/gi,'estará $1').replace(/\bPasar todas las pruebas\b/g,'Ha pasado todas las pruebas');
+  t=t.replace(/(^|[.!?]\s+)([a-záéíóúñ])/g,(m,a,b)=>a+b.toUpperCase());
+  return t; }
+const _localSay55=localSay; localSay=function(text,...r){ return _localSay55(serio(text),...r); };
+const _showSub55=showSub; showSub=function(text,you){ return _showSub55(serio(text),you); };
+SIDE[5][1].unshift(['🎭 Personalidad',()=>{ MEM.personalidad=MEM.personalidad==='graciosa'?'seria':'graciosa'; saveMem(); toast(MEM.personalidad==='seria'?'Personalidad: seria (asistente)':'Personalidad: graciosa (Mor torpe)',3000); renderSide(); }]);
+const _renderSide55=renderSide; renderSide=function(){ _renderSide55(); const b=[...$('side').querySelectorAll('.sitem')].find(x=>/Personalidad/.test(x.textContent)); if(b) b.textContent='🎭 Personalidad: '+(MEM.personalidad==='graciosa'?'graciosa':'seria'); };
+renderSide();
 
 /* =====================================================================
    15. DESPERTAR
