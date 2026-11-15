@@ -961,7 +961,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v12c</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v12d</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1287,7 +1287,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v12c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v12d · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2478,6 +2478,10 @@ const GH={
     if(!r.ok){ let m=''; try{ m=(await r.json()).message; }catch(e){} throw new Error('GitHub '+r.status+(m?': '+m:'')+(r.status===403||r.status===404?' (¿el token tiene permiso de escritura en ese repo?)':'')); }
     return r.status===204?null:(opt.raw?r.text():r.json()); },
   repos(){ return this.api('user/repos?per_page=100&sort=pushed'); },
+  // si la rama no existe (p. ej. «pruebas»), la crea copiando la principal
+  async ensureBranch(repo,branch){ try{ await this.api(`repos/${repo}/git/ref/heads/${encodeURIComponent(branch)}`); return false; }
+    catch(e){ if(!/ 404/.test(e.message)) throw e; const info=await this.api(`repos/${repo}`), base=await this.api(`repos/${repo}/git/ref/heads/${encodeURIComponent(info.default_branch)}`);
+      await this.api(`repos/${repo}/git/refs`,{method:'POST',body:JSON.stringify({ref:'refs/heads/'+branch,sha:base.object.sha})}); return info.default_branch; } },
   async tree(repo,branch){ const t=await this.api(`repos/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`); return t.tree.filter(x=>x.type==='blob'); },
   read(repo,branch,path){ return this.api(`repos/${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(branch)}`,{raw:true,headers:{Accept:'application/vnd.github.raw'}}); },
   // un único commit con varios archivos (crear, cambiar, borrar; texto o binario)
@@ -2540,6 +2544,7 @@ const Dev={running:false,pend:null,
     this.running=true; this.pend=null; $('devRes').innerHTML=''; setEmotion('concentrado'); Life.touch();
     try{
       this.log('Mor mirar el repositorio…');
+      const nueva=await GH.ensureBranch(repo,branch); if(nueva) toast(`Rama «${branch}» creada a partir de «${nueva}»`,4000);
       const tree=await GH.tree(repo,branch), lista=tree.filter(x=>!/(^|\/)(node_modules|dist|build|\.git)\//.test(x.path)&&!/\.(png|jpe?g|webp|gif|mp3|ogg|wav|glb|gltf|zip|ico|woff2?|ttf|pdf|mp4)$/i.test(x.path));
       const elegir=await geminiJSON(`Repositorio ${repo} (rama ${branch}). Petición del usuario: «${req}»\nArchivos (ruta · bytes):\n${lista.slice(0,1500).map(x=>x.path+' · '+x.size).join('\n')}\n\n¿Qué archivos hay que LEER para hacerlo bien (máximo 10, los imprescindibles: los que hay que cambiar y los que los usan)? Explica el plan en 2-4 frases.`,
         {type:'OBJECT',properties:{leer:{type:'ARRAY',items:{type:'STRING'}},plan:{type:'STRING'}},required:['leer','plan']},[],MODELOS_CODIGO,90000);
