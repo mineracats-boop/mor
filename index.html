@@ -118,6 +118,11 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
 #login button{background:var(--cel);color:var(--bg);border:none;border-radius:12px;font:700 15px system-ui;padding:12px;cursor:pointer}
 #lgErr{color:var(--red);font-size:13px;min-height:1.2em;text-align:center}
 #gameProg,#m3dProg{display:none!important}
+#atBadge{display:none;margin:6px auto 0;font-size:13px;padding:3px 10px;border-radius:999px;background:rgba(127,216,255,.1);color:var(--cel2);width:fit-content}#atBadge.mal{background:rgba(255,107,129,.2);color:#ffb3c0}
+#ulTop{display:none;position:fixed;top:0;left:0;right:0;z-index:30;align-items:center;gap:10px;padding:calc(6px + env(safe-area-inset-top)) 12px 6px;background:#3a1020;border-bottom:1px solid #ff6b81;color:#ffe3e8;font-size:14px}
+#ulBar{flex:1}body.ultima #ulTop{display:flex}body.ultima .app{padding-top:40px;box-sizing:border-box}body.ultima #side,body.ultima #bSideT,body.ultima #sideShade{display:none!important}
+.conds{display:flex;flex-direction:column;gap:8px;margin-top:6px}.conds label{display:flex;gap:8px;align-items:flex-start;color:var(--cel2);font-size:14px;line-height:1.35}.conds input{margin-top:3px;flex:none}
+#ulGo:disabled{opacity:.45}
 #bSend.stop{background:#ff6b81;color:#fff;font-size:16px}
 .fm.step{color:var(--cel2);font-size:12.5px;display:flex;align-items:center;gap:8px;margin:4px 0;padding:4px 8px}
 .fm.step.ok{color:var(--dim)}
@@ -165,6 +170,7 @@ body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area
   <p>TOCA PARA DESPERTAR A M.O.R.</p>
 </div>
 
+<div id="ulTop"><span id="ulBar"></span><button class="tbtn" id="ulRendir">Me rindo</button><span id="ulRBox" style="display:none;gap:6px;align-items:center"><input id="ulRTxt" placeholder="escribe: me rindo" style="width:150px;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px;padding:6px 10px"><button class="tbtn" id="ulROk">Salir</button></span></div>
 <div class="app"><aside id="side"></aside><div id="sideShade"></div><div class="main">
 <div class="top">
   <div class="brand"><button id="bSideT" title="Menú">☰</button>M.O.R.<i id="earDot" title="Escuchando"></i><small id="convName" style="display:block;font-size:10px;letter-spacing:0;opacity:.7;cursor:pointer;max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></small></div>
@@ -208,6 +214,7 @@ body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area
   <div class="sub" id="sub"></div>
   <div class="grade" id="grade"><button class="tbtn" data-g="no">No lo sabía</button><button class="tbtn" data-g="casi">Casi</button><button class="tbtn" data-g="si">Lo sabía</button></div>
   <div class="hear" id="hear"></div>
+  <div id="atBadge"></div>
   <div id="nowCard"></div>
   <div id="art"><div class="arthead"><b id="artTitle"></b><button class="tbtn" id="artCopy">Copiar</button><button class="tbtn" id="artTab">Pestaña nueva</button><button class="tbtn" id="artClose">×</button></div><div id="artBody"></div></div>
   <div class="cam" id="camBox"><canvas id="camView" width="160" height="120"></canvas></div>
@@ -465,6 +472,25 @@ body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area
   <div class="row"><button class="tbtn on" id="skAdd">＋ Skill nueva</button></div>
 </div>
 <div class="sheet" id="sheetTools"><button class="close" data-close>×</button><h3 style="margin-top:0">HERRAMIENTAS Y AJUSTES</h3><div class="note" style="margin-top:0">Todo esto también se lo puedes pedir a Mor en el chat, o con <b>/</b>.</div><div id="toolsBox"></div></div>
+<div class="sheet" id="sheetUltima"><button class="close" data-close>×</button>
+  <h3 style="margin-top:0">🔒 MODO ÚLTIMA HORA</h3>
+  <div class="note" style="margin-top:0">Estudio a tope: pantalla completa, la pantalla no se apaga, la cámara vigila y, si sales de Mor, lo nota, suena una alarma y queda apuntado. Solo empieza cuando aceptes todas las condiciones.</div>
+  <div class="row"><input type="text" id="ulTema" placeholder="¿Qué estudias? (p. ej. Revolución Francesa)" style="flex:1"></div>
+  <div class="row"><label>Duración <select id="ulMin"><option value="30">30 min</option><option value="45">45 min</option><option value="60" selected>1 hora</option><option value="90">1 h 30</option><option value="120">2 horas</option></select></label><label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ulCam" checked> Vigilar con la cámara</label></div>
+  <h3>CONDICIONES</h3>
+  <div id="ulConds" class="conds">
+    <label><input type="checkbox"> Durante <b id="ulCondMin">60</b> minutos me quedo dentro de Mor estudiando.</label>
+    <label><input type="checkbox"> Si salgo de Mor, Mor lo nota, suena una alarma y queda apuntado en mi informe.</label>
+    <label><input type="checkbox"> Mor puede vigilarme con la cámara y llamarme la atención si me distraigo (la imagen no sale de mi móvil salvo para comprobar si estudio).</label>
+    <label><input type="checkbox"> Solo puedo salir antes escribiendo «me rindo», y también queda apuntado.</label>
+    <label><input type="checkbox"> He fijado Mor en la pantalla (instrucciones abajo) para que el móvil no me deje abrir otras apps.</label>
+  </div>
+  <details class="note"><summary><b>Cómo bloquear el móvil de verdad (fijar Mor)</b></summary>
+    <p>Una web no puede bloquear las demás apps por sí sola, pero tu móvil sí:</p>
+    <p><b>Android:</b> Ajustes › Seguridad (o «Seguridad y privacidad» › Más ajustes) › <b>Fijar aplicaciones</b> › actívalo. Luego abre Mor, pulsa el botón de apps recientes (el cuadrado o desliza desde abajo y espera), toca el icono de Mor arriba y elige <b>Fijar</b>. Para soltarlo hay que mantener Atrás + Recientes (o deslizar y mantener).</p>
+    <p><b>iPhone:</b> Ajustes › Accesibilidad › <b>Acceso guiado</b> › actívalo y pon un código. En Mor, pulsa 3 veces el botón lateral › Iniciar.</p></details>
+  <div class="row"><button class="tbtn" id="ulGo" disabled>Acepto las condiciones y empiezo</button></div>
+</div>
 <input type="file" id="fileAttach" multiple hidden>
 <input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
 <div class="toast" id="toast"></div>
@@ -1146,7 +1172,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v18b</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v19</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1472,7 +1498,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v18b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v19 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3545,6 +3571,77 @@ function renderTools(){
     const panel=typeof a!=='string'||!/bEar|bTexto|bVoice|bLive|bQuickPhoto|bCam|bSound|bDiag|bInstall/.test(a);
     if(panel) cierraPaneles(); if(typeof a==='string') $(a).click(); else a(); setTimeout(()=>{ if($('sheetTools').classList.contains('open')) renderTools(); renderSide(); },300); }); }
 renderSide();
+
+/* =====================================================================
+   73. VIGILANCIA DE VERDAD: la cámara mira cada 1,5 s en el propio móvil (sin internet) si estás y si miras a tu estudio
+   ===================================================================== */
+const Atencion={iv:null,estado:'?',sinCara:0,girado:0,cool:0,ocupado:false,
+  async start(){ if(!Cam.on) return false; if(!await Faces.load()) return false; clearInterval(this.iv); this.sinCara=0; this.girado=0; this.iv=setInterval(()=>this.check(),1500); $('atBadge').style.display='block'; return true; },
+  stop(){ clearInterval(this.iv); this.iv=null; $('atBadge').style.display='none'; this.estado='?'; },
+  async check(){ if(!Cam.on){ this.stop(); return; } if(this.ocupado) return; this.ocupado=true;
+    try{ const v=$('video'), r=await Faces.api.detectSingleFace(v,Faces.opts()).withFaceLandmarks(true);
+      if(!r){ this.sinCara+=1.5; this.girado=0; }
+      else { this.sinCara=0; const lm=r.landmarks, m=L=>({x:L.reduce((s,p)=>s+p.x,0)/L.length,y:L.reduce((s,p)=>s+p.y,0)/L.length});
+        const le=m(lm.getLeftEye()), re=m(lm.getRightEye()), nariz=lm.getNose()[3], d=Math.hypot(re.x-le.x,re.y-le.y)||1;
+        const giro=(nariz.x-(le.x+re.x)/2)/d;            // cabeza girada a un lado
+        this.girado=Math.abs(giro)>.42?this.girado+1.5:Math.max(0,this.girado-1.5); }
+      this.estado=this.sinCara>=12?'ausente':this.girado>=9?'girado':'atento';
+      $('atBadge').textContent=this.estado==='atento'?'👀 Te veo':this.estado==='ausente'?'🙈 No te veo':'↪️ Miras a otro lado';
+      $('atBadge').className=this.estado==='atento'?'':'mal';
+      // algo raro: Mor lo confirma enseguida con la IA (que ve si es el móvil, la tele…)
+      if(this.estado!=='atento'&&Study.on&&Study.watch&&!busy&&Date.now()>this.cool){ this.cool=Date.now()+25000; Study.nextWatch=0; }
+    }catch(e){} this.ocupado=false; } };
+const _studyStart73=Study.start.bind(Study), _studyFinish73=Study.finish.bind(Study);
+Study.start=async function(tema,min,watch){ const r=await _studyStart73(tema,min,watch); if(this.watch&&Cam.on) Atencion.start(); return r; };
+Study.finish=function(done){ Atencion.stop(); return _studyFinish73(done); };
+
+/* =====================================================================
+   74. MODO ÚLTIMA HORA (aceptas las condiciones y queda bloqueado en Mor hasta que acabe)
+   ===================================================================== */
+const Ultima={on:false,fin:0,tema:'',min:60,salidas:0,fueraMs:0,hiddenAt:0,lock:null,iv:null,
+  open(tema,min){ cierraPaneles(); if(tema) $('ulTema').value=tema; if(min) $('ulMin').value=String(min); $('ulConds').querySelectorAll('input').forEach(x=>x.checked=false); this.check(); $('sheetUltima').classList.add('open'); },
+  check(){ const all=[...$('ulConds').querySelectorAll('input')].every(x=>x.checked)&&$('ulTema').value.trim(); $('ulGo').disabled=!all; $('ulGo').classList.toggle('on',!!all);
+    $('ulCondMin').textContent=$('ulMin').value; },
+  async start(){ const tema=$('ulTema').value.trim(), min=+$('ulMin').value||60; $('sheetUltima').classList.remove('open');
+    this.on=true; this.tema=tema; this.min=min; this.fin=Date.now()+min*60000; this.salidas=0; this.fueraMs=0;
+    MEM.voice=true; try{ await document.documentElement.requestFullscreen({navigationUI:'hide'}); }catch(e){}
+    try{ this.lock=await navigator.wakeLock.request('screen'); }catch(e){}
+    try{ askNotify(); }catch(e){}
+    document.body.classList.add('ultima'); clearInterval(this.iv); this.iv=setInterval(()=>this.tick(),1000); this.tick();
+    logChat('u',`[Modo última hora aceptado: ${tema}, ${min} min]`);
+    await Study.start(tema,min,$('ulCam').checked); },
+  tick(){ if(!this.on) return; const s=Math.max(0,Math.round((this.fin-Date.now())/1000));
+    $('ulBar').innerHTML=`🔒 <b>Última hora</b> · ${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')} · ${esc(this.tema)} · salidas: <b>${this.salidas}</b>`;
+    if(!document.fullscreenElement&&!this._fsAviso){ this._fsAviso=true; toast('Toca la pantalla para volver a pantalla completa',3000); }
+    if(s<=0) this.terminar(true); },
+  async terminar(ok){ if(!this.on) return; this.on=false; clearInterval(this.iv); document.body.classList.remove('ultima');
+    try{ this.lock&&this.lock.release(); }catch(e){} try{ if(document.fullscreenElement) await document.exitFullscreen(); }catch(e){}
+    MEM.ultimas=(MEM.ultimas||[]).concat([{tema:this.tema,min:this.min,salidas:this.salidas,fueraMin:Math.round(this.fueraMs/60000),ok,at:Date.now()}]).slice(-50); saveMem();
+    if(Study.on) Study.finish(ok);
+    chatCard(`<div class="ctit">🔒 Modo última hora ${ok?'superado ✅':'abandonado'}</div><div>${esc(this.tema)} · ${this.min} min</div><div>Salidas de Mor: <b>${this.salidas}</b>${this.fueraMs>30000?` (fuera ${Math.round(this.fueraMs/60000)} min)`:''} · Distracciones vistas por la cámara: <b>${Study.distr||0}</b></div>`); },
+  rendirse(){ $('ulRBox').style.display='inline-flex'; $('ulRTxt').value=''; $('ulRTxt').focus(); },
+  confirmar(){ if(norm($('ulRTxt').value).trim()!=='me rindo') return toast('Escribe exactamente: me rindo',3000); $('ulRBox').style.display='none'; this.terminar(false);
+    send(null,{event:`SE HA RENDIDO EN EL MODO ÚLTIMA HORA de "${this.tema}" antes de tiempo. Díselo con sinceridad pero sin machacarle, y anímale a intentarlo de nuevo.`}); }
+};
+['ulTema','ulMin'].forEach(id=>$(id).addEventListener('input',()=>Ultima.check())); $('ulConds').addEventListener('change',()=>Ultima.check());
+$('ulGo').onclick=()=>{ if(!$('ulGo').disabled) Ultima.start(); };
+$('ulRendir').onclick=()=>Ultima.rendirse(); $('ulROk').onclick=()=>Ultima.confirmar(); $('ulRTxt').addEventListener('keydown',e=>{ if(e.key==='Enter') Ultima.confirmar(); });
+document.addEventListener('pointerdown',()=>{ if(Ultima.on&&!document.fullscreenElement){ Ultima._fsAviso=false; document.documentElement.requestFullscreen().catch(()=>{}); } });
+// si sales de Mor: lo nota, te avisa, suena la alarma al volver y queda apuntado
+document.addEventListener('visibilitychange',async()=>{ if(!Ultima.on) return;
+  if(document.hidden){ Ultima.hiddenAt=Date.now(); try{ if(Notification.permission==='granted') new Notification('🔒 ¡Vuelve a Mor!',{body:`Estás en modo última hora: ${Ultima.tema}`,icon:'icon-192.png',requireInteraction:true}); }catch(e){} }
+  else if(Ultima.hiddenAt){ const fuera=Date.now()-Ultima.hiddenAt; Ultima.hiddenAt=0; Ultima.fueraMs+=fuera; Ultima.salidas++;
+    try{ Ultima.lock=await navigator.wakeLock.request('screen'); }catch(e){}
+    try{ const ac=new AudioContext(); [0,.25,.5].forEach(t=>{ const o=ac.createOscillator(), g=ac.createGain(); o.type='square'; o.frequency.value=880; g.gain.value=.15; o.connect(g).connect(ac.destination); o.start(ac.currentTime+t); o.stop(ac.currentTime+t+.15); }); }catch(e){}
+    setEmotion('enfadado',6000); toast(`🔒 Has salido de Mor (${Math.round(fuera/1000)} s). Salidas: ${Ultima.salidas}`,4000);
+    if(!busy) send(null,{event:`EN MODO ÚLTIMA HORA HA SALIDO DE MOR ${Math.round(fuera/1000)} SEGUNDOS (salida número ${Ultima.salidas}), y aceptó no hacerlo. Llámale la atención en una frase, firme pero sin pasarte, y que vuelva a "${Ultima.tema}".`}); } });
+window.addEventListener('beforeunload',e=>{ if(Ultima.on){ e.preventDefault(); e.returnValue=''; } });
+// por chat, menú y «/»
+SIDE[2][1].unshift(['🔒 Modo última hora',()=>Ultima.open()]);
+CMDS.splice(7,0,['/ultima','Modo última hora (bloqueo)',r=>Ultima.open(r)]);
+const _apply74=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply74(acts); for(const a of acts){ const m=String(a).match(/^\s*ultima[_ ]hora\s*:\s*([\s\S]*)$/i); if(m){ const [t,mi]=m[1].split('|').map(x=>x.trim()); setTimeout(()=>Ultima.open(t,parseInt(mi)||60),600); } } return made; };
+const _sys74=systemPrompt; systemPrompt=function(extra){ return _sys74(extra)+`\n· {{ultima_hora: tema | minutos}} abre el MODO ÚLTIMA HORA (estudio intensivo en el que se queda bloqueado en Mor; él tiene que aceptar las condiciones) cuando tenga un examen muy cerca o te pida concentrarse a tope.${Ultima.on?' AHORA ESTÁ EN MODO ÚLTIMA HORA: respuestas cortas y solo sobre lo que estudia.':''}`; };
 
 /* =====================================================================
    15. DESPERTAR
