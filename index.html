@@ -129,6 +129,7 @@ video{display:none}
   <div class="row">
     <button class="tbtn" id="bInstall">Instalar app</button>
     <button class="tbtn" id="bVoice">Voz: sí</button>
+    <button class="tbtn" id="bVozModo">Tipo de voz: automática</button>
     <button class="tbtn" id="bMem">Memoria</button>
     <button class="tbtn" id="bSearch">Buscar recuerdos</button>
     <button class="tbtn" id="bDiag">Probar conexión</button>
@@ -207,6 +208,7 @@ let ELEVEN_KEY = (KEYS.e||'').trim();
 const VOZ_ID = 'bIHbv24MWmeRgasZH58o';   // Will
 const VOZ_TONO = 1.35;                    // versión "peque"
 const VOZ_GEMINI = 'Puck';
+let VOZ_MODO = localStorage.getItem('mor_vozmodo')||'auto';   // auto | gemini | telefono
 const VOZ_PIPER = 'es_ES-davefx-medium';  // voz ilimitada dentro del dispositivo (se descarga una vez, ~60 MB)
 const VOZ_PIPER_TONO = 1.08;
 const MOVIL = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);           // >1 más aguda pero también más rápida                // voz de respaldo de Gemini si ElevenLabs no tiene créditos
@@ -376,12 +378,15 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
     }catch(e){ console.warn('Piper:',e); this.piperState='fail'; }
   },
   async synth(t){
+    if(VOZ_MODO==='telefono') return null;
     if(this.eleven){ try{ return {mp3:await this.ttsRetry(t)}; }
       catch(e){ console.warn('Voz ElevenLabs:',e.message);
         if(/401|402|quota|insufficient/i.test(e.message)){ this.eleven=false; if(!this.warned){ this.warned=true; toast('ElevenLabs sin créditos este mes: M.O.R. usa su voz ilimitada',4000); } } } }
     if(this.piperState==='ready'){ try{ return {wav:await this.piper.predict(t)}; }catch(e){ console.warn('Piper:',e.message); } }
-    if(this.gem){ try{ const r=await this.gtts(t); this.gemFails=0; return {pcm:r}; }
-      catch(e){ console.warn('Voz Gemini:',e.message); if(++this.gemFails>=2) this.gem=false; } }
+    if(this.gem && VOZ_MODO!=='telefono'){ try{ return {pcm:await this.gtts(t)}; }
+      catch(e){ console.warn('Voz Gemini:',e.message); this.gem=false; this.gemOffUntil=Date.now()+15*60000;   // falla → voz del teléfono un rato, sin mezclar
+        if(!this.warnGem){ this.warnGem=true; toast('La voz de Gemini está saturada: Mor usa la del teléfono un rato',4000); } } }
+    if(!this.gem && this.gemOffUntil && Date.now()>this.gemOffUntil && !this.playing){ this.gem=true; this.gemOffUntil=0; }
     return null;
   },
   async gtts(text){
@@ -420,7 +425,8 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
   // recibe texto en trozos y lo corta en frases para empezar a hablar cuanto antes
   feed(t){ this.acc+=t;
     while(true){ const m=this.acc.match(/[\s\S]*?(?:[.!?…:;](?=\s)|\n)/); if(!m) break;
-      let s=m[0]; if(s.trim().length<28 && this.acc.length<s.length+40) break;   // junta frases muy cortas
+      let s=m[0]; const minLen=(this.gem&&!this.eleven&&this.piperState!=='ready')?110:28;
+      if(s.trim().length<minLen && this.acc.length<s.length+40) break;   // junta frases cortas
       this.acc=this.acc.slice(s.length); this.push(s); } },
   end(){ if(this.acc.trim()) this.push(this.acc); this.acc=''; },
   push(s){
@@ -430,7 +436,7 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
     this.budget-=s.length;
     const item={text:s, audio:null};
     // se piden en fila (el plan gratis solo deja pocas a la vez): mientras suena una, se prepara la siguiente
-    if(this.eleven||this.gem||this.piperState==='ready'){ const g=this.gen; item.audio=(this.chain=(this.chain||Promise.resolve()).catch(()=>{}).then(()=>g===this.gen?this.synth(s):null)); item.audio.catch(()=>{}); }
+    if(VOZ_MODO!=='telefono'&&(this.eleven||this.gem||this.piperState==='ready')){ const g=this.gen; item.audio=(this.chain=(this.chain||Promise.resolve()).catch(()=>{}).then(()=>g===this.gen?this.synth(s):null)); item.audio.catch(()=>{}); }
     this.q.push(item); this.loop();
   },
   async loop(){ if(this.playing) return; this.playing=true; const g=this.gen;
@@ -727,7 +733,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v4f</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v4g</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1012,6 +1018,10 @@ $('bCam').onclick=async()=>{
   if(await Cam.start()){ $('bCam').classList.add('on'); setEmotion('sorprendido',2000); Sfx.play('pop');
     setTimeout(()=>send(null,{event:'ACABAS DE ABRIR LOS OJOS DE LA CÁMARA. Mira la imagen y comenta en una o dos frases lo que ves, con curiosidad.',image:Cam.snapshot()}),900); }
 };
+const VOZ_NOMBRES={auto:'automática',gemini:'Gemini',telefono:'la del teléfono'};
+function vozModoUI(){ $('bVozModo').textContent='Tipo de voz: '+VOZ_NOMBRES[VOZ_MODO]; }
+$('bVozModo').onclick=()=>{ VOZ_MODO={auto:'gemini',gemini:'telefono',telefono:'auto'}[VOZ_MODO]; localStorage.setItem('mor_vozmodo',VOZ_MODO);
+  Voice.gem=true; Voice.gemOffUntil=0; vozModoUI(); Voice.stop(); localSay('Así sonar Mor ahora. ¿Gustar?','feliz'); };
 $('bVoice').onclick=()=>{ MEM.voice=!MEM.voice; Voice.on=MEM.voice; saveMem(); $('bVoice').textContent='Voz: '+(MEM.voice?'sí':'no'); if(!MEM.voice) Voice.stop(); };
 $('face').addEventListener('pointerdown',e=>{ if(!awake) return; lookAtClient(e.clientX,e.clientY); squash(.3);
   if(Life.asleep){ Life.wake(); Life.touch(); localSay(rnd(['¿Eh? MOR no dormir. MOR descansar ojos.','¡Uy! Despierto, despierto.']),'sorprendido','susto'); return; }
@@ -1042,7 +1052,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v4f · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v4g · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1074,7 +1084,7 @@ $('keyOk').onclick=async()=>{
 /* =====================================================================
    15. DESPERTAR
    ===================================================================== */
-face.sleep=1; Voice.on=MEM.voice; $('bVoice').textContent='Voz: '+(MEM.voice?'sí':'no');
+face.sleep=1; Voice.on=MEM.voice; vozModoUI(); $('bVoice').textContent='Voz: '+(MEM.voice?'sí':'no');
 requestAnimationFrame(render); Review.refresh();
 $('gate').onclick=async()=>{
   $('gate').classList.add('fade'); setTimeout(()=>$('gate').remove(),900);
