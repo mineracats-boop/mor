@@ -448,7 +448,9 @@ const KEYS=(()=>{ try{
   return JSON.parse(localStorage.getItem('mor_claves')||'{}'); }catch(e){ return {}; } })();
 let GEMINI_KEY = (KEYS.g||'').trim();
 addEventListener('hashchange',()=>{ if(/claves=/.test(location.hash)) location.reload(); });
-const MODELOS = ['gemini-3.5-flash','gemini-3-flash-preview','gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3.1-flash-lite-preview','gemini-3.8-flash'];   // conversación: el listo primero
+// conversación: primero los listos (cada uno tiene su cupo diario); los «lite» solo si no queda otro
+const MODELOS_LISTOS = ['gemini-3.5-flash','gemini-3-flash-preview','gemini-3.7-flash','gemini-3.6-flash','gemini-flash-latest'];
+const MODELOS = [...MODELOS_LISTOS,'gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3.1-flash-lite-preview','gemini-3.8-flash'];   // conversación: el listo primero
 const MODELOS_RAPIDOS = ['gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3.1-flash-lite-preview','gemini-3-flash-preview','gemini-3.5-flash'];             // vigilancia
 const MODELOS_MEMORIA = ['gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3.1-flash-lite-preview','gemini-3-flash-preview','gemini-3.5-flash'];            // memoria y apuntes
 // el plan gratis da pocas respuestas al día del modelo listo: si se agota, se salta hasta mañana
@@ -863,11 +865,28 @@ function orMsgs(body){ const txt=c=>(c.parts||[]).map(p=>p.text||(p.inline_data?
   const gc=body.generationConfig||{}; if(gc.responseMimeType==='application/json') m.push({role:'system',content:'Responde SOLO con un JSON válido (sin ``` ni texto extra) que siga este esquema: '+JSON.stringify(gc.responseSchema||{})});
   return m; }
 async function orRespaldo(body){ if(typeof OR==='undefined'||!OR.on()) return null; try{ const r=await OR.chat(orMsgs(body),8000); let t=(r.text||'').trim(); if((body.generationConfig||{}).responseMimeType==='application/json'){ const a=t.indexOf('{'), b=t.lastIndexOf('}'); if(a>=0) t=t.slice(a,b+1); } if(t) toast('Google sin cupo: Mor usa su cerebro de reserva',3000); return t||null; }catch(e){ return null; } }
+// OpenRouter escribiendo poco a poco (para que no parezca colgado)
+async function orStream(body,onText){ if(typeof OR==='undefined'||!OR.on()) return null; const c=OR.cfg();
+  const L=[...new Set([c.model,'nvidia/nemotron-3-ultra-550b-a55b:free','google/gemma-4-31b-it:free','cohere/north-mini-code:free'].filter(Boolean))].filter(m=>!agotado('or:'+m));
+  for(const model of L){ const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),12000);
+    try{ const r=await fetch(c.url+'/chat/completions',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+c.key,'X-Title':'M.O.R.'},body:JSON.stringify({model,messages:orMsgs(body),temperature:.5,max_tokens:4000,stream:true})});
+      if(r.status===401){ clearTimeout(to); return null; } if(!r.ok){ clearTimeout(to); marcarAgotado('or:'+model,r.status===429?'rate limit':'quota'); continue; }
+      const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', full='';
+      while(true){ const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i;
+        while((i=buf.indexOf('\n'))>=0){ const line=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(!line.startsWith('data:')||line.includes('[DONE]')) continue;
+          try{ const t=JSON.parse(line.slice(5)).choices?.[0]?.delta?.content||''; if(t){ if(!full){ clearTimeout(to); to=setTimeout(()=>ac.abort(),90000); } full+=t; onText(t); } }catch(e){} } }
+      clearTimeout(to); if(full){ modelOk='or:'+model; return full; }
+    }catch(e){ clearTimeout(to); } }
+  return null; }
 async function geminiStream(body,onText){
-  const order=vivos(MODELOS);
+  // 1) los listos de Google · 2) OpenRouter · 3) los «lite»
+  const listos=MODELOS.filter(m=>MODELOS_LISTOS.includes(m)&&!agotado(m)), resto=MODELOS.filter(m=>!MODELOS_LISTOS.includes(m));
+  if(!listos.length){ const t=await orStream(body,onText); if(t) return t; }
+  const order=listos.length?[...listos,'__OR__',...vivos(resto)]:vivos(resto);
   let last='';
   for(const m of order){
-    const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),m==='gemini-3.8-flash'?20000:9000);
+    if(m==='__OR__'){ const t=await orStream(body,onText); if(t) return t; continue; }
+    const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),6500);
     try{
       const b=Object.assign({},body,{generationConfig:cfgFor(m,body.generationConfig)});
       const r=await fetch(API+m+':streamGenerateContent?alt=sse',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},body:JSON.stringify(b)});
@@ -889,7 +908,7 @@ async function geminiStream(body,onText){
       last='vacío';
     }catch(e){ clearTimeout(to); last=(last?last+' | ':'')+m.replace('gemini-','')+' '+(e.name==='AbortError'?'sin respuesta en 15 s':e.message); if(lastStreamHadText) throw e; }
   }
-  const rs=await orRespaldo(body); if(rs){ onText(rs); return rs; }
+  if(!order.includes('__OR__')){ const rs=await orStream(body,onText); if(rs) return rs; }
   throw new Error(last||'sin respuesta');
 }
 
@@ -1002,16 +1021,16 @@ async function send(text,opts={}){
   // recuerdos y apuntes relacionados con lo que dice
   let extra='';
   if(text){ try{
-    const [rc,rn]=await Promise.all([recallSmart(text),recallNotes(text)]);
+    const [rc,rn]=(await withTimeout(Promise.all([recallSmart(text),recallNotes(text)]),2500))||[[],[]];
     if(rc.length) extra+='\nRECUERDOS RELACIONADOS (de vuestras conversaciones antiguas):\n'+rc.join('\n---\n');
     if(rn.length) extra+='\nAPUNTES RELACIONADOS (de sus apuntes):\n'+rn.join('\n---\n');
   }catch(e){} }
   if(text && WEATHER_RE.test(text)){ const w=await weatherFor(text); if(w) extra+='\n'+w+'\n(Usa estos datos reales para hablar del tiempo.)'; }
   let useWeb=false;
-  if(text && (/https?:\/\/\S+/.test(text) || /\b(hoy|ahora|actual|[uú]ltim[oa]s?|noticias?|precio|cu[aá]nto cuesta|horario|abre|cierra|resultado|partido|gan[oó]|busca|buscar|b[uú]scame|internet|google|web|p[aá]gina|cu[aá]ndo es|cartelera|estreno|cotizaci[oó]n|tiempo real)\b/i.test(text))){
+  if(text && (/https?:\/\/\S+/.test(text) || /\b(busca|buscar|b[uú]scame|busques|internet|google|noticias?|precio|cu[aá]nto cuesta|resultado del|cotizaci[oó]n|cartelera)\b/i.test(text))){
     showSub('Mor buscar en internet…',text); setEmotion('concentrado');
     try{ const url=(text.match(/https?:\/\/\S+/)||[])[0]; const q=text.replace(/https?:\/\/\S+/g,'').replace(/[¿?¡!]/g,'').trim();
-      const info=await withTimeout(webAsk(q||'¿De qué trata esta página?',url),25000);
+      const info=await withTimeout(webAsk(q||'¿De qué trata esta página?',url),20000);
       if(info) extra+='\nINFORMACIÓN DE INTERNET (real y actual, acabas de buscarla tú):\n'+String(info).slice(0,2500)+'\nContesta con estos datos, con tu estilo, y di de qué web los sacas.'; }catch(e){} }
   if(text){ try{ const pt=await patternsForPrompt(); if(pt) extra+='\n'+pt; }catch(e){} }
   let skL=[];
@@ -1086,7 +1105,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15f</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v16</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1412,7 +1431,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v15f · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v16 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2175,7 +2194,7 @@ $('bChat').onclick=()=>{ renderChat(); $('sheetChat').classList.add('open'); };
 /* =====================================================================
    41. PROYECTOS GRANDES (Mor programa como un equipo: plan → archivo a archivo → .zip)
    ===================================================================== */
-const MODELOS_CODIGO=['gemini-3.5-flash','gemini-3-flash-preview','gemini-3.8-flash','gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-lite-latest'];
+const MODELOS_CODIGO=['gemini-3.5-flash','gemini-3-flash-preview','gemini-3.7-flash','gemini-3.6-flash','gemini-flash-latest','gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-3.8-flash'];
 const stripFence=t=>{ t=String(t||''); const m=t.match(/^\s*```[^\n]*\n([\s\S]*?)\n?```\s*$/); return (m?m[1]:t.replace(/^\s*```[^\n]*\n/,'').replace(/\n?```\s*$/,'')); };
 async function genLong(prompt,onPart){ // escribe un archivo entero; si se corta, sigue donde lo dejó
   let code='', rounds=0;
