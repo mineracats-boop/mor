@@ -796,7 +796,10 @@ async function send(text,opts={}){
   if(text && WEATHER_RE.test(text)){ const w=await weatherFor(text); if(w) extra+='\n'+w+'\n(Usa estos datos reales para hablar del tiempo.)'; }
   let useWeb=false;
   if(text && (/https?:\/\/\S+/.test(text) || /\b(hoy|ahora|actual|[uú]ltim[oa]s?|noticias?|precio|cu[aá]nto cuesta|horario|abre|cierra|resultado|partido|gan[oó]|busca|buscar|b[uú]scame|internet|google|web|p[aá]gina|cu[aá]ndo es|cartelera|estreno|cotizaci[oó]n|tiempo real)\b/i.test(text))){
-    useWeb=true; if(!/https?:\/\//.test(text)) extra+='\nINTERNET: tienes estos resultados de búsqueda para su pregunta, léelos y abre los útiles si hace falta: '+ddg(text.slice(0,140))+'\nResponde con datos reales de ahí y di de qué web lo sacas. Si no encuentras nada fiable, dilo.'; }
+    showSub('Mor buscar en internet…',text); setEmotion('concentrado');
+    try{ const url=(text.match(/https?:\/\/\S+/)||[])[0]; const q=text.replace(/https?:\/\/\S+/g,'').replace(/[¿?¡!]/g,'').trim();
+      const info=await withTimeout(webAsk(q||'¿De qué trata esta página?',url),25000);
+      if(info) extra+='\nINFORMACIÓN DE INTERNET (real y actual, acabas de buscarla tú):\n'+String(info).slice(0,2500)+'\nContesta con estos datos, con tu estilo, y di de qué web los sacas.'; }catch(e){} }
   if(text){ try{ const pt=await patternsForPrompt(); if(pt) extra+='\n'+pt; }catch(e){} }
   if(opts.extra) extra+='\n'+opts.extra;
   const contents=MEM.history.slice(-20).map(h=>({role:h.r==='u'?'user':'model',parts:[{text: h.r==='u'&&/^\[/.test(h.t) ? '(nota del sistema, NO lo ha dicho él: '+h.t.slice(1,-1)+')' : h.t}]}));
@@ -806,7 +809,7 @@ async function send(text,opts={}){
   const slow=setTimeout(()=>{ if(!raw) showSub(rnd(['MOR pensar…','Mmm… MOR buscar en cabeza…']),text); },1800);
   try{
     lastStreamHadText=false;
-    await geminiStream(Object.assign({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:.85,maxOutputTokens:1000}},useWeb?{tools:[{url_context:{}}]}:{}),chunk=>{
+    await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:.85,maxOutputTokens:1000}},chunk=>{
       lastStreamHadText=true; raw+=chunk; pending+=chunk;
       let m; const re=/\[([\wáéíóúñÁÉÍÓÚÑ]+)\]|\{\{([^{}]*)\}\}/g; let clean=''; let lastIdx=0;
       while((m=re.exec(pending))){ clean+=pending.slice(lastIdx,m.index); lastIdx=re.lastIndex;
@@ -843,7 +846,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v7</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v7b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1169,7 +1172,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v7 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v7b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1748,7 +1751,7 @@ const insideForPrompt=()=>{ const L=(MEM.inside||[]).slice(-12); return L.length
 /* =====================================================================
    34. INTERNET (buscar y leer páginas, gratis con Gemini)
    ===================================================================== */
-const ddg=q=>'https://html.duckduckgo.com/html/?q='+encodeURIComponent(q);
+const ddg=q=>'https://html.duckduckgo.com/html/?q='+encodeURIComponent(String(q).replace(/[¿?¡!]/g,'').trim()).replace(/%20/g,'+');
 async function webAsk(pregunta,url){
   const prompt=url?`Lee ${url} y responde en español, breve y con datos concretos: ${pregunta}`
     :`Busca en internet leyendo ${ddg(pregunta)} (y si hace falta, abre los resultados más útiles). Responde en español, breve y con datos concretos y actuales, a: ${pregunta}. Di de qué web lo sacas.`;
