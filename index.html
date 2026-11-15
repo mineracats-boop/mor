@@ -200,7 +200,8 @@ const VOZ_ID = 'bIHbv24MWmeRgasZH58o';   // Will
 const VOZ_TONO = 1.35;                    // versión "peque"
 const VOZ_GEMINI = 'Puck';
 const VOZ_PIPER = 'es_ES-davefx-medium';  // voz ilimitada dentro del dispositivo (se descarga una vez, ~60 MB)
-const VOZ_PIPER_TONO = 1.08;           // >1 más aguda pero también más rápida                // voz de respaldo de Gemini si ElevenLabs no tiene créditos
+const VOZ_PIPER_TONO = 1.08;
+const MOVIL = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);           // >1 más aguda pero también más rápida                // voz de respaldo de Gemini si ElevenLabs no tiene créditos
 const VOZ_MAX = 450;                      // caracteres hablados por respuesta (el resto se lee); ahorra créditos
 const VIGILAR_CADA = 50;                  // segundos entre miradas de la cámara mientras estudias
 
@@ -1030,7 +1031,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 // diagnóstico: comprueba cerebro, voces y permisos y lo enseña en pantalla
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v4c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v4d · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?'sí':'NO (abre el enlace de configuración)')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1039,7 +1040,7 @@ $('bDiag').onclick=async()=>{
     catch(e){ L.push(m+': '+(e.name==='AbortError'?'no contesta en 15 s':e.message)); }
     clearTimeout(t); show(); }
   L.push('ElevenLabs: '+(!ELEVEN_KEY?'sin llave':Voice.eleven?'activa':'sin créditos'));
-  L.push('Voz ilimitada: '+({off:'sin cargar',loading:'descargando…',ready:'lista',fail:'no funciona en este aparato'}[Voice.piperState]));
+  L.push('Voz ilimitada: '+(MOVIL&&Voice.piperState==='off'?'desactivada en el móvil':'')+({off:MOVIL?'':'sin cargar',loading:'descargando…',ready:'lista',fail:'no funciona en este aparato'}[Voice.piperState]));
   L.push('Micrófono (dictado): '+(SR?'sí':'no disponible')+' · Cámara: '+(navigator.mediaDevices?'sí':'no'));
   L.push('Último error: '+(window._lastErr||'ninguno')); show();
 };
@@ -1052,7 +1053,7 @@ $('gate').onclick=async()=>{
   $('gate').classList.add('fade'); setTimeout(()=>$('gate').remove(),900);
   Voice.ensure(); if(AC.state==='suspended') AC.resume();
   awake=true; Life.touch(); Sfx.play('hola');
-  setTimeout(()=>Voice.loadPiper(),6000);
+  if(!MOVIL) setTimeout(()=>Voice.loadPiper(),6000);   // en el móvil la voz ilimitada pesa demasiado (60 MB y bloquea el cerebro)
   if(!GEMINI_KEY){ setEmotion('triste'); face.sleep=0; showSub('MOR no tener llave del cerebro… Abrir a MOR con tu enlace de configuración (solo hace falta una vez en cada aparato).'); return; }
   const t0=performance.now(); (function wake(){ const p=(performance.now()-t0)/1400; face.sleep=Math.max(0,1-p); if(p<1) requestAnimationFrame(wake); else squash(.25); })();
   setEmotion('curioso',2500);
