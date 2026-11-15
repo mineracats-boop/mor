@@ -452,8 +452,14 @@ const MODELOS = ['gemini-3.5-flash','gemini-3.5-flash-lite','gemini-flash-lite-l
 const MODELOS_RAPIDOS = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];             // vigilancia
 const MODELOS_MEMORIA = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];            // memoria y apuntes
 // el plan gratis da pocas respuestas al día del modelo listo: si se agota, se salta hasta mañana
-const agotado=m=>localStorage.getItem('mor_agotado_'+m)===new Date().toDateString();
-const marcarAgotado=(m,msg)=>{ if(/quota|exhaust/i.test(msg||'')) localStorage.setItem('mor_agotado_'+m,new Date().toDateString()); };
+// un modelo «agotado» se salta solo hasta que vuelve a tener cupo: 1 minuto si es el límite por minuto, hasta el reinicio diario (9:00 en España) si es el diario
+const agotado=m=>{ const v=+localStorage.getItem('mor_agotado_'+m); return v>Date.now(); };
+const marcarAgotado=(m,msg)=>{ msg=String(msg||''); if(!/quota|exhaust|rate|limit/i.test(msg)) return; let hasta;
+  if(/per ?day|daily|PerDay/i.test(msg)){ const d=new Date(); d.setHours(9,5,0,0); if(d<=new Date()) d.setDate(d.getDate()+1); hasta=d.getTime(); }
+  else if(/per ?minute|PerMinute|rate/i.test(msg)) hasta=Date.now()+65000; else hasta=Date.now()+10*60000;
+  localStorage.setItem('mor_agotado_'+m,String(hasta)); };
+// si todos parecen agotados, se prueban igualmente (mejor intentarlo que quedarse mudo)
+const vivos=L=>{ const v=L.filter(x=>!agotado(x)); return v.length?v:L; };
 let ELEVEN_KEY = (KEYS.e||'').trim();
 const VOZ_ID = 'bIHbv24MWmeRgasZH58o';   // Will
 const VOZ_TONO = 1.35;                    // versión "peque"
@@ -833,7 +839,7 @@ function cfgFor(m,extra){ const c=Object.assign({},extra||{}); if(/^gemini-3/.te
 
 async function gemini(body,models=MODELOS_RAPIDOS,timeout=20000){
   let last='';
-  for(const m of models.filter(x=>!agotado(x))){
+  for(const m of vivos(models)){
     const ac=new AbortController(), to=setTimeout(()=>ac.abort(),timeout);
     try{
       const b=Object.assign({},body,{generationConfig:cfgFor(m,body.generationConfig)});
@@ -850,7 +856,7 @@ async function geminiJSON(prompt,schema,parts=[],models=MODELOS_RAPIDOS,timeout=
   return JSON.parse(t);
 }
 async function geminiStream(body,onText){
-  const order=MODELOS.filter(m=>!agotado(m));
+  const order=vivos(MODELOS);
   let last='';
   for(const m of order){
     const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),m==='gemini-3.8-flash'?20000:9000);
@@ -1068,7 +1074,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15b</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15c</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1394,7 +1400,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v15b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v15c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2165,7 +2171,7 @@ async function genLong(prompt,onPart){ // escribe un archivo entero; si se corta
     const body={contents:[{role:'user',parts:[{text: rounds===0?prompt:prompt+`\n\nYA HAS ESCRITO ESTO (no lo repitas):\n…\n${code.split('\n').slice(-40).join('\n')}\n\nCONTINÚA exactamente desde la línea siguiente, sin repetir nada y sin \`\`\`.`}]}],
       generationConfig:{temperature:.25,maxOutputTokens:65536}};
     let finish='', part='';
-    for(const m of MODELOS_CODIGO.filter(x=>!agotado(x))){
+    for(const m of vivos(MODELOS_CODIGO)){
       const ac=new AbortController(), to=setTimeout(()=>ac.abort(),240000);
       try{ const b=Object.assign({},body,{generationConfig:cfgFor(m,body.generationConfig)});
         const r=await fetch(API+m+':generateContent',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},body:JSON.stringify(b)});
