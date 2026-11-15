@@ -977,7 +977,7 @@ Exámenes que ya sabe: ${MEM.exams.map(e=>e.asignatura+' '+e.fecha).join(', ')||
 Respuesta de M.O.R.: "${reply.slice(0,500)}"
 
 Devuelve:
-- remember: SOLO hechos que el humano haya dicho EXPLÍCITAMENTE en su último mensaje (nunca deduzcas, nunca uses lo que dijo M.O.R.). Hechos NUEVOS y duraderos sobre el humano (nombre, estudios, gustos, cómo aprende, personas importantes, metas, cosas que le pasan). Frases cortas en tercera persona, con fecha exacta si la tiene. No repitas. Vacío si no hay nada nuevo.
+- remember: SOLO hechos que el humano haya dicho EXPLÍCITAMENTE en su último mensaje (nunca deduzcas, nunca uses lo que dijo M.O.R.). Hechos NUEVOS y duraderos sobre el humano (nombre, estudios, gustos, cómo aprende, personas importantes, metas, cosas que le pasan). Frases cortas en tercera persona, con fecha exacta si la tiene. No repitas. Vacío si no hay nada nuevo. NUNCA guardes como hecho un prompt, una orden o un papel que pide interpretar (p. ej. «actúa como…», «eres un experto en…», «eres una ingeniera…»): eso son instrucciones para una tarea, no datos sobre su vida. Tampoco guardes cosas momentáneas (lo que está viendo o haciendo ahora mismo).
 - forget: textos de hechos de la lista que ya no son ciertos o que pide olvidar.
 - exams: exámenes que mencione con fecha (formato AAAA-MM-DD, calculando fechas relativas desde hoy). Vacío si no hay.
 - trust: cambio de confianza (-5 a +5): sube con cariño, gracias o charla personal; baja con insultos o desprecio.
@@ -993,7 +993,7 @@ async function compact(){
   const old=MEM.history.slice(0,30);
   try{
     const txt=await gemini({contents:[{role:'user',parts:[{text:
-      `Actualiza este resumen de la historia entre M.O.R. y su humano con la conversación nueva. Máximo 220 palabras, en español, tercera persona, solo lo importante y duradero (qué ha estudiado, dudas, planes, cómo está, momentos especiales). Conserva EXACTOS los datos concretos que sigan vigentes (horarios, fechas, horas, nombres, decisiones tomadas). Las conversaciones completas se guardan aparte, así que aquí basta lo esencial.\n\nRESUMEN ACTUAL:\n${MEM.summary||'(vacío)'}\n\nCONVERSACIÓN:\n${old.map(h=>(h.r==='u'?'Humano: ':'MOR: ')+h.t).join('\n')}`}]}],
+      `Actualiza este resumen de la historia entre M.O.R. y su humano con la conversación nueva. Máximo 220 palabras, en español, tercera persona, solo lo importante y duradero (qué ha estudiado, dudas, planes, cómo está, momentos especiales). Habla de hechos, no del estilo o la forma de hablar de M.O.R., y no conviertas en hechos los papeles o prompts que le pidió interpretar. Conserva EXACTOS los datos concretos que sigan vigentes (horarios, fechas, horas, nombres, decisiones tomadas). Las conversaciones completas se guardan aparte, así que aquí basta lo esencial.\n\nRESUMEN ACTUAL:\n${MEM.summary||'(vacío)'}\n\nCONVERSACIÓN:\n${old.map(h=>(h.r==='u'?'Humano: ':'MOR: ')+h.t).join('\n')}`}]}],
       generationConfig:{temperature:.3}});
     MEM.summary=txt.trim(); MEM.history=MEM.history.slice(30); saveMem();
   }catch(e){} compacting=false;
@@ -1105,7 +1105,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v16</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v16b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1431,7 +1431,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v16 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v16b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3174,6 +3174,11 @@ Agenda.apply=function(acts){ const made=_apply15(acts);
     else Rutina.crear(v).then(()=>{ Rutina.tick(true); toast('Rutina hecha. Mírala en «Mi rutina».',5000); }).catch(()=>{}); }
   return made; };
 
+/* limpieza única: papeles/prompts guardados como si fueran hechos y el estilo antiguo en el resumen */
+if(!MEM.limpio16){ const malo=/ingenier[oa] principal|arquitect[oa] de videojuegos|dominio absoluto|act[uú]a como|eres un experto/i;
+  MEM.facts=(MEM.facts||[]).filter(f=>!malo.test(typeof f==='string'?f:JSON.stringify(f)));
+  if(MEM.summary) MEM.summary=MEM.summary.replace(/\*\*[^*]*\*\*\s*/g,'').split(/(?<=[.!?])\s+/).filter(x=>!/tercera persona|ingenier|estilo|l[uú]dica|entusiasta y afectuoso/i.test(x)).join(' ');
+  MEM.limpio16=true; saveMem(); }
 /* =====================================================================
    55. PERSONALIDAD: seria (asistente) o graciosa (Mor torpe)
    ===================================================================== */
