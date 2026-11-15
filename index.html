@@ -131,6 +131,7 @@ video{display:none}
     <button class="tbtn" id="bVoice">Voz: sí</button>
     <button class="tbtn" id="bMem">Memoria</button>
     <button class="tbtn" id="bSearch">Buscar recuerdos</button>
+    <button class="tbtn" id="bDiag">Probar conexión</button>
   </div>
   <div class="note" id="installNote"></div>
 </div>
@@ -712,7 +713,7 @@ async function send(text,opts={}){
     await Voice.flush();
     Ears.followUp();
   }catch(e){
-    clearTimeout(slow); console.warn('Gemini:',e.message);
+    clearTimeout(slow); console.warn('Gemini:',e.message); window._lastErr=new Date().toLocaleTimeString('es-ES')+' '+e.message;
     if(!raw && !opts.retry){ busy=false; $('bSend').disabled=false; await sleep(2500); return send(text,Object.assign({},opts,{retry:true})); }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado'); }
@@ -1026,6 +1027,22 @@ $('bInstall').onclick=async()=>{
 };
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 
+// diagnóstico: comprueba cerebro, voces y permisos y lo enseña en pantalla
+$('bDiag').onclick=async()=>{
+  const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
+  L.push('Versión: v4c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Llave Gemini: '+(GEMINI_KEY?'sí':'NO (abre el enlace de configuración)')); show();
+  for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
+    try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
+        body:JSON.stringify({contents:[{role:'user',parts:[{text:'di hola'}]}],generationConfig:cfgFor(m,{})})});
+      const j=await r.json().catch(()=>({})); L.push(m+': '+(r.ok?'OK':'ERROR '+r.status+' '+((j.error&&j.error.message)||'').slice(0,90))+' ('+Math.round(performance.now()-t0)+' ms)'); }
+    catch(e){ L.push(m+': '+(e.name==='AbortError'?'no contesta en 15 s':e.message)); }
+    clearTimeout(t); show(); }
+  L.push('ElevenLabs: '+(!ELEVEN_KEY?'sin llave':Voice.eleven?'activa':'sin créditos'));
+  L.push('Voz ilimitada: '+({off:'sin cargar',loading:'descargando…',ready:'lista',fail:'no funciona en este aparato'}[Voice.piperState]));
+  L.push('Micrófono (dictado): '+(SR?'sí':'no disponible')+' · Cámara: '+(navigator.mediaDevices?'sí':'no'));
+  L.push('Último error: '+(window._lastErr||'ninguno')); show();
+};
 /* =====================================================================
    15. DESPERTAR
    ===================================================================== */
