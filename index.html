@@ -86,6 +86,9 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
 .snew{border:1px solid rgba(127,216,255,.35);margin-bottom:4px;font-weight:700}
 .schat{font-size:13px;opacity:.9}
 #sideShade{display:none}
+.schats{display:flex;flex-direction:column;gap:2px;flex:1;min-height:60px;overflow:auto}
+.sfoot{border-top:1px solid rgba(127,216,255,.14);margin-top:6px;padding-top:6px;display:flex;flex-direction:column;gap:4px}.sfoot small{color:var(--dim);font-size:11px;padding:0 10px}
+.tgrid{display:flex;flex-wrap:wrap;gap:6px}
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .work{flex:1;min-height:0;display:flex}
 .col{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid rgba(127,216,255,.08)}
@@ -461,6 +464,7 @@ body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area
   <div id="skList"></div>
   <div class="row"><button class="tbtn on" id="skAdd">＋ Skill nueva</button></div>
 </div>
+<div class="sheet" id="sheetTools"><button class="close" data-close>×</button><h3 style="margin-top:0">HERRAMIENTAS Y AJUSTES</h3><div class="note" style="margin-top:0">Todo esto también se lo puedes pedir a Mor en el chat, o con <b>/</b>.</div><div id="toolsBox"></div></div>
 <input type="file" id="fileAttach" multiple hidden>
 <input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
 <div class="toast" id="toast"></div>
@@ -1142,7 +1146,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v18</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v18b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1468,7 +1472,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v18 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v18b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3511,6 +3515,35 @@ $('inp').placeholder='Escribe a Mor…  (/ para atajos)';
 // el último texto del usuario, para elegir skills
 const _send66=send; send=async function(text,opts={}){ if(text&&!opts.event) { ultimoTexto=String(text); PARAR.on=false; } else if(opts.event) PARAR.on=false; return _send66(text,opts); };
 SIDE[5][1].unshift(['📘 Skills',()=>Skills.open()]);
+renderSide();
+
+/* =====================================================================
+   72. MENÚ IZQUIERDO SENCILLO (como Claude): chat nuevo, 3 atajos, tus chats y «Herramientas y ajustes»
+   ===================================================================== */
+const ATAJOS=[['☀️ Hoy',()=>cardHoy()],['🎮 Crear un juego',()=>$('bGameStudio').click()],['📖 Estudiar',()=>$('bStudy').click()]];
+function etiqueta(t,a){ const b=typeof a==='string'?$(a):null;
+  if(a==='bTexto'||a==='bVoice') return (a==='bTexto'?'⌨️ ':'🔊 ')+b.textContent;
+  if(/Personalidad/.test(t)) return '🎭 Personalidad: '+(MEM.personalidad==='graciosa'?'graciosa':'seria');
+  return t; }
+renderSide=function(){
+  const convs=Convs.list().sort((a,b)=>(b.id==='main')-(a.id==='main')||b.at-a.at).slice(0,40);
+  $('side').innerHTML=`<div class="sbrand">M.O.R.</div><button class="sitem snew" id="sNew">＋ Chat nuevo</button>`
+    +ATAJOS.map(([t],i)=>`<button class="sitem" data-at="${i}">${t}</button>`).join('')
+    +`<div class="shead">CHATS</div><div class="schats">`+convs.map(c=>`<button class="sitem schat${c.id===Convs.cur?' on':''}" data-c="${c.id}">${c.proj?'📁 ':''}${esc(c.title)}</button>`).join('')+`</div>`
+    +`<button class="sitem" id="sAllChats">Todos los chats y proyectos…</button>`
+    +`<div class="sfoot"><button class="sitem" id="sTools">🧰 Herramientas y ajustes</button><small>Pídeme lo que sea en el chat · escribe <b>/</b> para atajos</small></div>`;
+  const cerrar=()=>document.body.classList.remove('sideOpen');
+  $('side').querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{ cierraPaneles(); cerrar(); ATAJOS[+b.dataset.at][1](); });
+  $('side').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ Convs.switchTo(b.dataset.c); renderFeed(); renderSide(); cerrar(); });
+  $('sNew').onclick=()=>{ Convs.nuevo(Convs.info().proj); renderFeed(); renderSide(); cerrar(); $('inp').focus(); };
+  $('sAllChats').onclick=()=>{ cierraPaneles(); cerrar(); renderChat(); $('sheetChat').classList.add('open'); };
+  $('sTools').onclick=()=>{ cierraPaneles(); cerrar(); renderTools(); $('sheetTools').classList.add('open'); }; };
+// todas las herramientas, ordenadas, en un solo panel
+function renderTools(){
+  $('toolsBox').innerHTML=SIDE.map(([h,L],gi)=>`<h3>${h}</h3><div class="tgrid">`+L.map(([t,a],i)=>{ const b=typeof a==='string'?$(a):null; return `<button class="tbtn${b&&b.classList.contains('on')?' on':''}" data-s="${gi}-${i}">${esc(etiqueta(t,a))}</button>`; }).join('')+`</div>`).join('');
+  $('toolsBox').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ const [g,i]=b.dataset.s.split('-').map(Number), a=SIDE[g][1][i][1];
+    const panel=typeof a!=='string'||!/bEar|bTexto|bVoice|bLive|bQuickPhoto|bCam|bSound|bDiag|bInstall/.test(a);
+    if(panel) cierraPaneles(); if(typeof a==='string') $(a).click(); else a(); setTimeout(()=>{ if($('sheetTools').classList.contains('open')) renderTools(); renderSide(); },300); }); }
 renderSide();
 
 /* =====================================================================
