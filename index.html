@@ -87,7 +87,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
 </div>
 
 <div class="top">
-  <div class="brand">M.O.R.<i id="earDot" title="Escuchando"></i></div>
+  <div class="brand">M.O.R.<i id="earDot" title="Escuchando"></i><small id="convName" style="display:block;font-size:10px;letter-spacing:0;opacity:.7;cursor:pointer;max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></small></div>
   <div class="tb">
     <button class="tbtn" id="bLive">Directo</button>
     <button class="tbtn" id="bEar">Oído</button>
@@ -146,6 +146,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
     <button class="tbtn" id="bCam">Mirar (cámara)</button>
     <button class="tbtn" id="bQuickPhoto">Foto rápida</button>
     <button class="tbtn" id="bDev">Programar en GitHub</button>
+    <button class="tbtn" id="bImgT">Taller de imágenes</button>
     <button class="tbtn" id="bGameStudio">Crear juego</button>
     <button class="tbtn" id="bTaller3d">Taller 3D</button>
     <button class="tbtn" id="bProj">Proyectos grandes</button>
@@ -158,6 +159,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
     <button class="tbtn" id="bSound">Sonido para concentrarse</button>
     <button class="tbtn" id="bNotes">Apuntes</button>
     <button class="tbtn" id="bInstall">Instalar app</button>
+    <button class="tbtn" id="bTexto">Modo texto: no</button>
     <button class="tbtn" id="bVoice">Voz: sí</button>
     <button class="tbtn" id="bVozModo">Elegir voz</button>
     <button class="tbtn" id="bMem">Memoria</button>
@@ -252,7 +254,19 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
 </div>
 <div class="sheet" id="sheetChat" style="max-height:92vh">
   <button class="close" data-close>×</button>
-  <h3>CONVERSACIÓN</h3><div id="chatList"></div>
+  <h3>CHATS</h3>
+  <div class="row"><select id="convSel" style="flex:1;min-width:150px;background:#0e2033;color:var(--cel2);border:1px solid rgba(127,216,255,.35);border-radius:10px;padding:9px"></select><button class="tbtn on" id="convNew">+ Chat nuevo</button><button class="tbtn" id="convDel">Borrar chat</button></div>
+  <div id="chatList"></div>
+  <h3>PROYECTOS</h3>
+  <div class="note" style="margin-top:0">Como en Claude: cada proyecto tiene sus chats, sus instrucciones y sus documentos, y Mor los tiene en cuenta en todos sus chats.</div>
+  <ul id="projChatList"></ul>
+  <div class="row"><button class="tbtn" id="cpNew">+ Proyecto nuevo</button></div>
+  <div id="cpBox" style="display:none">
+    <div class="row"><input type="text" id="cpName" placeholder="Nombre del proyecto (p. ej. Minera Cats)" style="flex:1"></div>
+    <div class="row"><textarea id="cpInstr" rows="3" placeholder="Instrucciones: cómo quieres que trabaje Mor en este proyecto" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></textarea></div>
+    <div class="row"><textarea id="cpKnow" rows="4" placeholder="Conocimiento: pega aquí textos, notas o código que Mor debe saber" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></textarea></div>
+    <div class="row"><label class="tbtn">Añadir archivos de texto<input type="file" id="cpFiles" multiple hidden></label><button class="tbtn on" id="cpSave">Guardar proyecto</button></div>
+  </div>
 </div>
 <div class="sheet" id="sheetConn">
   <button class="close" data-close>×</button>
@@ -262,6 +276,8 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="row"><input type="text" id="ghUser" placeholder="Usuario de GitHub" style="flex:1"></div>
   <div class="row"><input type="text" id="ghToken" placeholder="Token (opcional, para repos privados)" style="flex:1" autocomplete="off"></div>
   <div class="note">Para que Mor programe y suba cambios: github.com › Settings › Developer settings › <b>Fine-grained tokens</b> › elige SOLO los repos que quieras y da permiso <b>Contents: Read and write</b> (y <b>Administration: Read and write</b> si quieres que cree repos nuevos). Se guarda solo en este aparato.</div>
+  <h3>SKETCHFAB (para descargar modelos)</h3>
+  <div class="row"><input type="text" id="skToken" placeholder="Token de Sketchfab (sketchfab.com › Settings › Password &amp; API)" style="flex:1" autocomplete="off"></div>
   <h3>CEREBRO PROGRAMADOR (opcional, gratis)</h3>
   <div class="row"><input type="text" id="orKey" placeholder="Llave de OpenRouter (openrouter.ai › Keys)" style="flex:1" autocomplete="off"></div>
   <div class="row"><input type="text" id="orModel" placeholder="Modelo (vacío = el mejor gratis disponible)" style="flex:1"><input type="text" id="orUrl" placeholder="https://openrouter.ai/api/v1" style="flex:1"></div>
@@ -275,7 +291,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <button class="close" data-close>×</button>
   <h3 id="skTitle">MODELO 3D</h3>
   <iframe id="skFrame" style="width:100%;height:55vh;border:0;border-radius:12px;background:#000" allow="autoplay; fullscreen; xr-spatial-tracking" allowfullscreen></iframe>
-  <div class="row"><a class="tbtn on" id="skLink" target="_blank" rel="noopener" style="text-decoration:none">Abrir en Sketchfab (descargar)</a></div>
+  <div class="row"><a class="tbtn" id="skLink" target="_blank" rel="noopener" style="text-decoration:none">Abrir en Sketchfab</a><button class="tbtn on" id="skDl" style="display:none">Descargar modelo</button></div>
 </div>
 <div class="sheet" id="sheetCourse">
   <button class="close" data-close>×</button>
@@ -318,9 +334,23 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="note" style="margin-top:0">Mor lee tu repositorio, hace el cambio, lo prueba y te lo enseña. <b>Solo sube a GitHub cuando pulses «Subir».</b></div>
   <div class="row"><select id="devRepo" style="flex:1;background:#0e2033;color:var(--cel2);border:1px solid rgba(127,216,255,.35);border-radius:10px;padding:9px"></select><input type="text" id="devBranch" placeholder="rama" style="width:110px;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></div>
   <div class="row"><textarea id="devReq" rows="4" placeholder="Qué quieres: p. ej. «añade un botón de pausa al juego y que guarde la partida»" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></textarea></div>
-  <div class="row"><button class="tbtn on" id="devGo">Programar</button><span id="devHooks" class="row" style="margin:0"></span></div>
+  <div class="row"><button class="tbtn on" id="devGo">Programar</button><label class="tbtn">📷 Captura del fallo<input type="file" id="devShot" accept="image/*" hidden></label><small id="devShotName"></small></div>
+  <div class="row"><button class="tbtn" id="devStudy">Estudiar el repo (ficha MOR.md)</button><button class="tbtn" id="devTest">Probar el juego</button><button class="tbtn" id="devMain">Pasar a main</button><button class="tbtn" id="devUndo">Deshacer último cambio</button><span id="devHooks" class="row" style="margin:0"></span></div>
   <div class="note" id="devLog"></div>
   <div id="devRes"></div>
+</div>
+<div class="sheet" id="sheetImgT" style="max-height:94vh">
+  <button class="close" data-close>×</button>
+  <h3>1 · PEDIR IMÁGENES A CHATGPT</h3>
+  <div class="row"><textarea id="itWant" rows="3" placeholder="Qué necesitas: p. ej. «el gato minero con disfraz de pirata en sus 10 poses» o «los ojos cerrados del gato verde»" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></textarea></div>
+  <div class="row"><label class="tbtn">Añadir imágenes de referencia<input type="file" id="itRefs" accept="image/*" multiple hidden></label><span id="itRefList" class="row" style="margin:0"></span><button class="tbtn on" id="itPrompt">Escribir prompt</button></div>
+  <div id="itPromptOut"></div>
+  <h3>2 · PREPARAR LO QUE TE DIO CHATGPT</h3>
+  <div class="note" style="margin-top:0">Mor quita el fondo blanco (y el falso «damero»), separa las poses, las recorta y las deja a la misma altura. Te avisa si alguna está cortada, pegada o es de baja resolución.</div>
+  <div class="row"><label class="tbtn on">Elegir imágenes<input type="file" id="itImgs" accept="image/*" multiple hidden></label><label style="display:flex;align-items:center;gap:6px;color:var(--cel2)"><input type="checkbox" id="itBg" checked> Quitar fondo</label></div>
+  <div class="row"><input type="number" id="itRows" placeholder="filas (vacío = auto)" style="width:130px"><input type="number" id="itCols" placeholder="columnas" style="width:110px"><input type="number" id="itH" placeholder="altura final px (opcional)" style="width:190px"><input type="text" id="itName" placeholder="nombre (p. ej. gato_pirata)" style="flex:1;min-width:140px"></div>
+  <div class="row"><button class="tbtn on" id="itGo">Preparar</button></div>
+  <div id="itOut"></div>
 </div>
 <input type="file" id="fileAttach" multiple hidden>
 <input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
@@ -397,7 +427,7 @@ const DB={p:null,
   async del(store,k){ const d=await this.open(); if(!d) return; return new Promise(r=>{ const t=d.transaction(store,'readwrite'); t.objectStore(store).delete(k); t.oncomplete=r; t.onerror=r; }); },
   async clear(store){ const d=await this.open(); if(!d) return; return new Promise(r=>{ const t=d.transaction(store,'readwrite'); t.objectStore(store).clear(); t.oncomplete=r; t.onerror=r; }); }
 };
-const logChat=(r,t)=>DB.put('chats',{r,t,at:Date.now()});
+let logChat=(r,t)=>DB.put('chats',{r,t,at:Date.now()});
 
 // búsqueda en recuerdos: por palabras importantes (sin acentos, sin palabras vacías)
 const STOP=new Set('el la los las un una unos unas de del al a y o u e que en por para con sin se me te le lo mi tu su es son ser fue era como mas más pero ya muy si no yo tú tu él ella esto eso este esta ese esa hay qué que cómo cuando donde dónde cual cuál mor oye hola vale bueno pues porque también tambien algo nada todo'.split(' '));
@@ -811,7 +841,7 @@ AGENDA — cuando te pida apuntar, recordar o marcar algo, escríbelo en tu resp
   {{tarea: texto}}  ·  {{hecha: texto de la tarea}}  ·  {{recordar: AAAA-MM-DD HH:MM | texto}}  ·  {{borrar_recordatorio: texto}}  ·  {{ciudad: nombre}} (si te dice dónde vive)
   {{temporizador: minutos | motivo}}  ·  {{mensaje: destinatario | texto del mensaje}} (cuando te pida escribir/redactar un mensaje o correo)
   {{objetivo: título | paso 1; paso 2; paso 3}} (cuando quiera conseguir algo: divídelo tú en pasos concretos)  ·  {{paso_hecho: objetivo | paso}}  ·  {{cosa_nuestra: frase}} (una broma, apodo o frase vuestra que merezca recordarse)
-  {{github: usuario/repo | qué cambiar, detallado}} (cuando te pida programar, arreglar o cambiar algo de uno de SUS repos de GitHub: Mor lo hace aparte, lo prueba y le pide permiso antes de subir)  ·  {{modelo3d: descripción detallada del modelo | normal/alto/maximo}} (cuando te pida HACER o MODELAR un modelo/objeto/personaje 3D: Mor lo modela aparte y lo exporta a GLB)  ·  {{juego: descripción detallada del juego | 2D o 3D}} (cuando te pida CREAR o HACER un juego: Mor lo diseña, dibuja, programa, prueba y corrige aparte; NO escribas el código en la respuesta)  ·  {{proyecto: descripción técnica detallada | pequeño/mediano/grande/enorme}} (programas GRANDES: más de 3 archivos o de ~800 líneas; NO escribas ese código en la respuesta, Mor lo programa aparte archivo a archivo y se lo da en .zip)  ·  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
+  {{github: usuario/repo | qué cambiar, detallado}} (si te pasa una captura de un fallo de su juego, descríbelo bien en la petición) (cuando te pida programar, arreglar o cambiar algo de uno de SUS repos de GitHub: Mor lo hace aparte, lo prueba y le pide permiso antes de subir)  ·  {{modelo3d: descripción detallada del modelo | normal/alto/maximo}} (cuando te pida HACER o MODELAR un modelo/objeto/personaje 3D: Mor lo modela aparte y lo exporta a GLB)  ·  {{juego: descripción detallada del juego | 2D o 3D}} (cuando te pida CREAR o HACER un juego: Mor lo diseña, dibuja, programa, prueba y corrige aparte; NO escribas el código en la respuesta)  ·  {{proyecto: descripción técnica detallada | pequeño/mediano/grande/enorme}} (programas GRANDES: más de 3 archivos o de ~800 líneas; NO escribas ese código en la respuesta, Mor lo programa aparte archivo a archivo y se lo da en .zip)  ·  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
   {{idea: tema | texto}} (cuando dicte una idea o nota)  ·  {{habito: nombre | meta}} (hábito nuevo)  ·  {{habito_hecho: nombre}}  ·  {{sonido: lluvia|olas|marron|parar}}
   Para las fechas usa la fecha y hora de AHORA. Si no dice hora, pregúntasela o usa 09:00. Nunca digas que lo has apuntado sin poner la etiqueta.
 ${MEM.study.length?'ÚLTIMAS SESIONES DE ESTUDIO:\n'+MEM.study.slice(-6).map(s=>`- ${new Date(s.at).toLocaleDateString('es-ES')}: ${s.tema} (${s.min} min${s.distracciones?', '+s.distracciones+' distracciones':''})`).join('\n'):''}
@@ -961,7 +991,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v12d</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v13</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1287,7 +1317,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v12d · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v13 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2003,8 +2033,8 @@ function showSketchfab(L){
   $('sub').appendChild(box);
   box.querySelectorAll('[data-sk]').forEach(d=>d.onclick=()=>{ const x=L[+d.dataset.sk]; $('skFrame').src='https://sketchfab.com/models/'+x.uid+'/embed?autostart=1&ui_infos=0'; $('skTitle').textContent=x.name+' · '+(x.user||'')+' · '+(x.lic||''); $('skLink').href=x.url; $('sheet3d').classList.add('open'); });
 }
-$('bConn').onclick=()=>{ $('sheetMore').classList.remove('open'); const c=Conn.get(); $('ghUser').value=c.ghUser||'mineracats-boop'; $('ghToken').value=c.ghToken?'••••••••':''; $('orKey').value=c.orKey?'••••••••':''; $('orModel').value=c.orModel||''; $('orUrl').value=c.orUrl||''; $('hooksTxt').value=c.hooks||''; $('sheetConn').classList.add('open'); };
-$('connSave').onclick=()=>{ const t=$('ghToken').value.trim(); Conn.set({ghUser:$('ghUser').value.trim()||'mineracats-boop'}); if(t&&!/^•+$/.test(t)) Conn.set({ghToken:t}); if(!t) Conn.set({ghToken:''}); const ok=$('orKey').value.trim(); if(ok&&!/^•+$/.test(ok)) Conn.set({orKey:ok}); if(!ok) Conn.set({orKey:''}); Conn.set({orModel:$('orModel').value.trim(),orUrl:$('orUrl').value.trim(),hooks:$('hooksTxt').value.trim()}); $('devRepo').innerHTML=''; $('sheetConn').classList.remove('open'); toast('Conectores guardados'); };
+$('bConn').onclick=()=>{ $('sheetMore').classList.remove('open'); const c=Conn.get(); $('ghUser').value=c.ghUser||'mineracats-boop'; $('ghToken').value=c.ghToken?'••••••••':''; $('orKey').value=c.orKey?'••••••••':''; $('skToken').value=c.skToken?'••••••••':''; $('orModel').value=c.orModel||''; $('orUrl').value=c.orUrl||''; $('hooksTxt').value=c.hooks||''; $('sheetConn').classList.add('open'); };
+$('connSave').onclick=()=>{ const t=$('ghToken').value.trim(); Conn.set({ghUser:$('ghUser').value.trim()||'mineracats-boop'}); if(t&&!/^•+$/.test(t)) Conn.set({ghToken:t}); if(!t) Conn.set({ghToken:''}); const ok=$('orKey').value.trim(); if(ok&&!/^•+$/.test(ok)) Conn.set({orKey:ok}); if(!ok) Conn.set({orKey:''}); { const sk=$('skToken').value.trim(); if(sk&&!/^•+$/.test(sk)) Conn.set({skToken:sk}); if(!sk) Conn.set({skToken:''}); } Conn.set({orModel:$('orModel').value.trim(),orUrl:$('orUrl').value.trim(),hooks:$('hooksTxt').value.trim()}); $('devRepo').innerHTML=''; $('sheetConn').classList.remove('open'); toast('Conectores guardados'); };
 $('sheet3d').querySelector('[data-close]').addEventListener('click',()=>{ $('skFrame').src='about:blank'; });
 
 /* =====================================================================
@@ -2607,6 +2637,208 @@ async function projToGitHub(P){
 $('bDev').onclick=devOpen;
 $('devRepo').onchange=()=>{ const o=$('devRepo').selectedOptions[0]; if(o) $('devBranch').value=o.dataset.b||'main'; };
 $('devGo').onclick=()=>{ const q=$('devReq').value.trim(), repo=$('devRepo').value, br=$('devBranch').value.trim()||'main'; if(!q||!repo) return; Dev.run(repo,br,q); };
+
+/* =====================================================================
+   45. CHATS Y PROYECTOS (como Claude): varias conversaciones, cada una con su historial; proyectos con instrucciones y conocimiento
+   ===================================================================== */
+const Convs={
+  list(){ try{ return JSON.parse(localStorage.getItem('mor_convs')||'[]'); }catch(e){ return []; } },
+  save(L){ localStorage.setItem('mor_convs',JSON.stringify(L)); },
+  projs(){ try{ return JSON.parse(localStorage.getItem('mor_cproj')||'[]'); }catch(e){ return []; } },
+  saveProjs(L){ localStorage.setItem('mor_cproj',JSON.stringify(L)); },
+  get cur(){ return localStorage.getItem('mor_conv')||'main'; },
+  info(id=this.cur){ return this.list().find(c=>c.id===id)||{id:'main',title:'Chat principal'}; },
+  proj(){ const c=this.info(); return c.proj?this.projs().find(p=>p.id===c.proj):null; },
+  init(){ const L=this.list(); if(!L.some(c=>c.id==='main')){ L.unshift({id:'main',title:'Chat principal',at:Date.now()}); this.save(L); } },
+  // guarda el historial del chat actual y carga el del otro
+  switchTo(id){ if(id===this.cur) return; localStorage.setItem('mor_h_'+this.cur,JSON.stringify(MEM.history));
+    try{ MEM.history=JSON.parse(localStorage.getItem('mor_h_'+id)||'[]'); }catch(e){ MEM.history=[]; } localStorage.setItem('mor_conv',id); saveMem();
+    const c=this.info(id); $('convName').textContent=c.title; showSub('Chat: '+c.title); },
+  nuevo(proj){ const id='c'+Date.now(); const L=this.list(); L.unshift({id,title:'Chat nuevo',proj:proj||null,at:Date.now()}); this.save(L); this.switchTo(id); return id; },
+  touch(text){ const L=this.list(), c=L.find(x=>x.id===this.cur); if(!c) return; c.at=Date.now(); if(c.title==='Chat nuevo'&&text) c.title=text.replace(/\s+/g,' ').slice(0,42); this.save(L); $('convName').textContent=c.title; },
+  forPrompt(){ const p=this.proj(); if(!p) return ''; return `\nESTÁS EN EL PROYECTO «${p.name}».${p.instr?'\nINSTRUCCIONES DEL PROYECTO (síguelas siempre): '+p.instr:''}${p.know?'\nCONOCIMIENTO DEL PROYECTO (documentos que te ha dado):\n'+p.know.slice(0,60000):''}`; },
+  async borrar(id){ if(id==='main') return; const L=this.list().filter(c=>c.id!==id); this.save(L); localStorage.removeItem('mor_h_'+id); for(const m of (await DB.all('chats')).filter(x=>x.cid===id)) await DB.del('chats',m.id); if(this.cur===id){ localStorage.setItem('mor_conv','main'); try{ MEM.history=JSON.parse(localStorage.getItem('mor_h_main')||'[]'); }catch(e){ MEM.history=[]; } saveMem(); } }
+};
+Convs.init();
+// cada mensaje guardado se apunta al chat actual
+logChat=(r,t)=>{ if(r==='u') Convs.touch(t); return DB.put('chats',{r,t,at:Date.now(),cid:Convs.cur}); };
+const _sysPrompt=systemPrompt; systemPrompt=function(extra){ return _sysPrompt(extra)+Convs.forPrompt(); };
+renderChat=async function(){
+  const cid=Convs.cur, all=(await DB.all('chats')).filter(c=>(c.cid||'main')===cid);
+  $('chatList').innerHTML=all.length?all.map(c=>`<div class="cm ${c.r}"><small>${c.r==='u'?'Tú':'Mor'} · ${new Date(c.at).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'})}</small><div>${mdLite(c.t)}</div></div>`).join(''):'<div class="note">Chat vacío. Escríbele a Mor abajo.</div>';
+  renderConvs(); setTimeout(()=>{ const l=$('chatList').lastElementChild; l&&l.scrollIntoView({block:'end'}); },60);
+};
+function renderConvs(){
+  const L=Convs.list().sort((a,b)=>(b.id==='main')-(a.id==='main')||b.at-a.at), P=Convs.projs();
+  $('convSel').innerHTML=L.map(c=>`<option value="${c.id}" ${c.id===Convs.cur?'selected':''}>${c.proj?'📁 '+esc((P.find(p=>p.id===c.proj)||{}).name||'')+' · ':''}${esc(c.title)}</option>`).join('');
+  $('projChatList').innerHTML=P.length?P.map(p=>`<li style="display:block"><b>📁 ${esc(p.name)}</b> <small>${L.filter(c=>c.proj===p.id).length} chats${p.know?' · '+Math.round(p.know.length/1000)+'k de conocimiento':''}</small>
+    <div class="row"><button class="tbtn on" data-cpn="${p.id}">Chat nuevo aquí</button><button class="tbtn" data-cpe="${p.id}">Editar</button><button class="tbtn" data-cpx="${p.id}" style="color:var(--red)">×</button></div></li>`).join(''):'<li>Sin proyectos. Crea uno para agrupar chats con sus propias instrucciones y documentos.</li>';
+  $('projChatList').querySelectorAll('[data-cpn]').forEach(b=>b.onclick=()=>{ Convs.nuevo(b.dataset.cpn); renderChat(); });
+  $('projChatList').querySelectorAll('[data-cpe]').forEach(b=>b.onclick=()=>editProj(b.dataset.cpe));
+  $('projChatList').querySelectorAll('[data-cpx]').forEach(b=>b.onclick=()=>{ Convs.saveProjs(Convs.projs().filter(p=>p.id!==b.dataset.cpx)); renderConvs(); });
+}
+function editProj(id){ const P=Convs.projs(), p=P.find(x=>x.id===id)||{id:'p'+Date.now(),name:'',instr:'',know:''};
+  $('cpName').value=p.name; $('cpInstr').value=p.instr; $('cpKnow').value=p.know; $('cpBox').style.display='block'; $('cpBox').dataset.id=p.id; $('cpName').focus(); }
+$('cpSave').onclick=()=>{ const id=$('cpBox').dataset.id, P=Convs.projs(); let p=P.find(x=>x.id===id); if(!p){ p={id}; P.push(p); }
+  p.name=$('cpName').value.trim()||'Proyecto'; p.instr=$('cpInstr').value.trim(); p.know=$('cpKnow').value; Convs.saveProjs(P); $('cpBox').style.display='none'; renderConvs(); toast('Proyecto guardado'); };
+$('cpFiles').onchange=async()=>{ for(const f of $('cpFiles').files){ try{ const t=/\.pdf$/i.test(f.name)?'(PDF: pásaselo en el chat para que lo lea)':await f.text(); $('cpKnow').value+=`\n\n=== ${f.name} ===\n${t.slice(0,200000)}`; }catch(e){} } $('cpFiles').value=''; };
+$('convSel').onchange=()=>{ Convs.switchTo($('convSel').value); renderChat(); };
+$('convNew').onclick=()=>{ Convs.nuevo(Convs.info().proj); renderChat(); };
+$('convDel').onclick=async()=>{ const c=Convs.info(); if(c.id==='main') return toast('El chat principal no se borra'); if($('convDel').dataset.ok!=='1'){ $('convDel').dataset.ok='1'; $('convDel').textContent='¿Seguro? Pulsa otra vez'; setTimeout(()=>{ $('convDel').dataset.ok=''; $('convDel').textContent='Borrar chat'; },3000); return; } $('convDel').dataset.ok=''; $('convDel').textContent='Borrar chat'; await Convs.borrar(c.id); renderChat(); };
+$('cpNew').onclick=()=>editProj(null);
+$('convName').textContent=Convs.info().title;
+$('convName').onclick=()=>{ renderChat(); $('sheetChat').classList.add('open'); };
+
+/* =====================================================================
+   46. MODO TEXTO (Mor no tiene por qué hablar)
+   ===================================================================== */
+function modoTextoUI(){ const t=!MEM.voice&&!Ears.on; $('bTexto').textContent='Modo texto: '+(t?'sí':'no'); $('bTexto').classList.toggle('on',t); }
+$('bTexto').onclick=()=>{ const ahora=!(!MEM.voice&&!Ears.on);
+  if(ahora){ MEM.voice=false; Voice.on=false; Voice.stop(); if(Ears.on) Ears.stop(); toast('Modo texto: Mor solo escribe'); }
+  else { MEM.voice=true; Voice.on=true; toast('Mor vuelve a hablar'); }
+  saveMem(); $('bVoice').textContent='Voz: '+(MEM.voice?'sí':'no'); modoTextoUI(); };
+modoTextoUI();
+
+/* =====================================================================
+   47. SKETCHFAB: descargar modelos (con tu token gratis de Sketchfab)
+   ===================================================================== */
+async function sketchfabDownload(uid){
+  const t=Conn.get().skToken; if(!t){ toast('Pon tu token de Sketchfab en Conectores para descargar',5000); return; }
+  try{ const r=await fetch(`https://api.sketchfab.com/v3/models/${uid}/download`,{headers:{Authorization:'Token '+t}});
+    if(r.status===401) throw new Error('token de Sketchfab no válido'); if(r.status===403||r.status===404) throw new Error('este modelo no se puede descargar');
+    if(!r.ok) throw new Error('Sketchfab '+r.status); const j=await r.json(); const f=j.glb||j.gltf||j.usdz; if(!f) throw new Error('sin archivo');
+    window.open(f.url,'_blank'); toast(j.glb?'Descargando GLB':'Descargando glTF (.zip)',4000);
+  }catch(e){ toast(e.message,5000); } }
+const _showSk=showSketchfab; showSketchfab=function(L){ _showSk(L); window.__skL=L; };
+$('skDl').onclick=()=>{ const u=$('skDl').dataset.uid; if(u) sketchfabDownload(u); };
+document.addEventListener('click',e=>{ const d=e.target.closest&&e.target.closest('[data-sk]'); if(!d||!window.__skL) return; const x=window.__skL[+d.dataset.sk]; if(!x) return; $('skDl').dataset.uid=x.uid; $('skDl').style.display=x.dl?'':'none'; },true);
+
+/* =====================================================================
+   48. PROGRAMADOR+: ficha del repo (MOR.md), pasar a main, deshacer, probar el juego y fallos desde una captura
+   ===================================================================== */
+GH.blob=async function(repo,sha){ return (await this.api(`repos/${repo}/git/blobs/${sha}`)).content.replace(/\n/g,''); };
+const _devRun=Dev.run.bind(Dev);
+Dev.run=async function(repo,branch,req){
+  // si hay captura del fallo, Mor la mira primero y la convierte en una descripción
+  const shot=Dev.shot; Dev.shot=null; $('devShotName').textContent='';
+  if(shot){ try{ this.log('Mor mirar la captura…'); const d=await geminiJSON(`Captura de pantalla de un juego o web con un fallo. El usuario dice: «${req}». Describe con precisión qué se ve y cuál parece el fallo (posición, textos visibles, botones, qué está mal), para que un programador lo encuentre en el código.`,{type:'OBJECT',properties:{descripcion:{type:'STRING'}},required:['descripcion']},[{inline_data:{mime_type:'image/jpeg',data:shot}}],MODELOS_RAPIDOS,40000); req+=`\n\nLO QUE SE VE EN LA CAPTURA DEL FALLO: ${d.descripcion}`; }catch(e){} }
+  // la ficha MOR.md del repo (si existe) le dice cómo está hecho
+  let ficha=''; try{ ficha=await GH.read(repo,branch,'MOR.md'); }catch(e){}
+  Dev.ficha=ficha; return _devRun(repo,branch,ficha?`${req}\n\nFICHA DEL PROYECTO (MOR.md, léela: explica cómo está hecho y qué no se debe tocar):\n${ficha.slice(0,40000)}`:req);
+};
+Dev.estudiar=async function(repo,branch){
+  if(this.running) return; this.running=true; setEmotion('concentrado'); $('devRes').innerHTML='';
+  try{ this.log('Mor estudiar el repositorio…'); await GH.ensureBranch(repo,branch);
+    const tree=await GH.tree(repo,branch), lista=tree.filter(x=>!/(^|\/)(node_modules|dist|build|\.git)\//.test(x.path));
+    const el=await geminiJSON(`Repositorio ${repo}. Archivos (ruta · bytes):\n${lista.slice(0,2000).map(x=>x.path+' · '+x.size).join('\n')}\n\nElige los archivos de CÓDIGO más importantes para entender cómo está hecho el proyecto (máximo 12; los principales, la configuración y los que tienen la lógica).`,{type:'OBJECT',properties:{leer:{type:'ARRAY',items:{type:'STRING'}}},required:['leer']},[],MODELOS_CODIGO,90000);
+    let ctx='', total=0; for(const p of el.leer.filter(p=>lista.some(x=>x.path===p)).slice(0,12)){ this.log('Mor leer '+p+'…'); const c=await GH.read(repo,branch,p); const t=c.length>150000?c.slice(0,150000)+'\n…(sigue)':c; if(total+t.length>800000) break; ctx+=`\n##### ${p} (${c.split('\n').length} líneas)\n${t}`; total+=t.length; }
+    const code=await genLong(`Eres un programador experto. Escribe la FICHA TÉCNICA (MOR.md, en español, Markdown) del repositorio ${repo}, para que otro programador (una IA) pueda hacer cambios sin romper nada. Incluye:\n1) Qué es y cómo se ejecuta/publica.\n2) Mapa de archivos y carpetas (para qué sirve cada uno).\n3) Arquitectura: sistemas principales, flujo del juego/app, estado global, bucle, pantallas.\n4) Funciones, objetos, ids y variables clave (con el archivo donde están).\n5) Estilo del código y convenciones (nombres, idioma, cómo se añaden cosas nuevas: p. ej. un personaje, un nivel, un objeto).\n6) Cuidado: partes delicadas, cosas que NO hay que tocar, dependencias entre archivos.\nSé concreto y exacto (nombres reales del código). No inventes.\n\nTODOS LOS ARCHIVOS: ${lista.map(x=>x.path).slice(0,400).join(', ')}\n\nARCHIVOS PRINCIPALES:${ctx}\n\nResponde SOLO con el Markdown.`,n=>this.log(`Mor escribir la ficha… (${n} líneas)`));
+    let old=null; try{ old=await GH.read(repo,branch,'MOR.md'); }catch(e){}
+    this.pend={repo,branch,msg:'Ficha técnica del proyecto para M.O.R. (MOR.md)',out:{'MOR.md':{code,nuevo:old==null}},orig:{'MOR.md':old||''},probs:[]};
+    this.running=false; this.show(); localSay('Mor estudiar tu proyecto y escribir su ficha. Mírala y súbela: así Mor programar mejor en este repo.','feliz');
+  }catch(e){ this.running=false; this.log('Error: '+e.message); }
+};
+const dosVeces=(btn,txt,fn)=>{ if(btn.dataset.ok!=='1'){ btn.dataset.ok='1'; const o=btn.textContent; btn.textContent=txt; setTimeout(()=>{ btn.dataset.ok=''; btn.textContent=o; },4000); return; } btn.dataset.ok=''; fn(); };
+Dev.aMain=async function(repo,branch){ const info=await GH.api(`repos/${repo}`), base=info.default_branch; if(branch===base) return toast('Ya estás en '+base);
+  this.log(`Mor pasar «${branch}» a «${base}»…`);
+  try{ const r=await GH.api(`repos/${repo}/merges`,{method:'POST',body:JSON.stringify({base,head:branch,commit_message:`Pasar «${branch}» a «${base}» (M.O.R.)`})});
+    this.log(r?`¡Hecho! «${branch}» ya está en «${base}». Si está conectado a Cloudflare, se publica en un par de minutos.`:`«${base}» ya tenía todo lo de «${branch}».`); localSay('Pasado a '+base+'. Ya estar publicado en unos minutos.','feliz'); }
+  catch(e){ this.log(/409/.test(e.message)?'Hay un conflicto: los dos cambiaron lo mismo. Pídele a Mor que lo arregle en la rama o hazlo en GitHub.':'Error: '+e.message); } };
+Dev.deshacer=async function(repo,branch){
+  try{ const ref=await GH.api(`repos/${repo}/git/ref/heads/${encodeURIComponent(branch)}`), c=await GH.api(`repos/${repo}/git/commits/${ref.object.sha}`);
+    if(!c.parents.length) return toast('No hay nada que deshacer'); const p=await GH.api(`repos/${repo}/git/commits/${c.parents[0].sha}`);
+    const n=await GH.api(`repos/${repo}/git/commits`,{method:'POST',body:JSON.stringify({message:`Deshacer: ${c.message.split('\n')[0]} (M.O.R.)`,tree:p.tree.sha,parents:[c.sha]})});
+    await GH.api(`repos/${repo}/git/refs/heads/${encodeURIComponent(branch)}`,{method:'PATCH',body:JSON.stringify({sha:n.sha})});
+    this.log(`Deshecho: «${c.message.split('\n')[0]}». Vuelve a estar como antes.`); localSay('Deshecho. Todo como antes.','feliz');
+  }catch(e){ this.log('Error al deshacer: '+e.message); } };
+// abre el juego del repo (con sus archivos metidos dentro), lo juega un poco y dice qué ve
+Dev.probar=async function(repo,branch){
+  if(this.running) return; this.running=true; setEmotion('concentrado'); $('devRes').innerHTML='';
+  try{ this.log('Mor buscar el juego en el repo…'); const tree=await GH.tree(repo,branch);
+    const htmls=tree.filter(x=>/(^|\/)index\.html?$/i.test(x.path)).sort((a,b)=>a.path.split('/').length-b.path.split('/').length);
+    const entry=(htmls[0]||tree.find(x=>/\.html?$/i.test(x.path))); if(!entry) throw new Error('no hay ningún HTML en el repo');
+    const dir=entry.path.includes('/')?entry.path.replace(/[^/]+$/,''):''; let html=await GH.read(repo,branch,entry.path);
+    const mime=p=>/\.png$/i.test(p)?'image/png':/\.jpe?g$/i.test(p)?'image/jpeg':/\.webp$/i.test(p)?'image/webp':/\.gif$/i.test(p)?'image/gif':/\.svg$/i.test(p)?'image/svg+xml':/\.(mp3)$/i.test(p)?'audio/mpeg':/\.(ogg)$/i.test(p)?'audio/ogg':/\.wav$/i.test(p)?'audio/wav':/\.css$/i.test(p)?'text/css':/\.json$/i.test(p)?'application/json':/\.m?js$/i.test(p)?'text/javascript':'application/octet-stream';
+    const files=tree.filter(x=>x.path!==entry.path&&x.path.startsWith(dir)&&x.size<4e6); let total=0, n=0;
+    for(const f of files){ const rel=f.path.slice(dir.length); if(!html.includes(rel)) continue; if(total+f.size>25e6) break;
+      this.log('Mor cargar '+rel+'…'); const b64=await GH.blob(repo,f.sha); total+=f.size; n++;
+      if(/\.m?js$/i.test(rel)&&new RegExp(`<script[^>]*src=["']\\.?/?${rel.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}["'][^>]*>\\s*<\/script>`,'i').test(html)){
+        const code=decodeURIComponent(escape(atob(b64))).replace(/<\/script/gi,'<\\/script'); html=html.replace(new RegExp(`<script([^>]*)src=["']\\.?/?${rel.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}["']([^>]*)>\\s*<\/script>`,'i'),(m,a,b)=>`<script${a}${b}>${code}<\/script>`); }
+      else html=html.split(rel).join(`data:${mime(rel)};base64,${b64}`); }
+    this.log(`Mor jugar a ${entry.path} (${n} archivos cargados)…`);
+    const t=await testGame(html,[]); let rv={funciona:!t.errs.length,problemas:[]};
+    if(t.shot){ try{ rv=await geminiJSON(`Captura de un juego/web tras unos segundos y algunas pulsaciones. Errores de consola: ${t.errs.join(' | ')||'ninguno'}. Evalúa como un probador de juegos: ¿se ve funcionando? Lista problemas concretos que se vean (pantalla vacía o negra, textos cortados, cosas descolocadas, imágenes borrosas o de baja resolución, personajes que no tocan el suelo, botones tapados).`,REVIEWSCHEMA,[{inline_data:{mime_type:'image/jpeg',data:t.shot}}],MODELOS_RAPIDOS,40000); }catch(e){} }
+    this.running=false; const probs=[...t.errs.map(e=>'Error: '+e),...(rv.problemas||[])];
+    $('devRes').innerHTML=`<b>Prueba de ${esc(entry.path)}</b>${t.shot?`<img src="data:image/jpeg;base64,${t.shot}" style="width:100%;max-width:420px;border-radius:10px;margin:6px 0;display:block">`:''}${probs.length?'<ul>'+probs.map(p=>'<li>'+esc(p.slice(0,300))+'</li>').join('')+'</ul><div class="row"><button class="tbtn on" id="devFixAll">Que Mor lo arregle</button></div>':'<div class="note">No he visto problemas. 👍</div>'}<div class="note">Ojo: algunos juegos cargan partes desde internet o desde el servidor y aquí pueden fallar aunque en la web funcionen.</div>`;
+    if(probs.length) $('devFixAll').onclick=()=>{ $('devReq').value='Arregla estos problemas que salen al probar el juego:\n'+probs.map(p=>'- '+p).join('\n'); Dev.run(repo,branch,$('devReq').value); };
+    this.log(probs.length?`He encontrado ${probs.length} cosa(s).`:'Prueba terminada: todo bien.');
+  }catch(e){ this.running=false; this.log('Error al probar: '+e.message); } };
+const devSel=()=>[$('devRepo').value,$('devBranch').value.trim()||'main'];
+$('devStudy').onclick=()=>{ const [r,b]=devSel(); if(r) Dev.estudiar(r,b); };
+$('devTest').onclick=()=>{ const [r,b]=devSel(); if(r) Dev.probar(r,b); };
+$('devMain').onclick=()=>{ const [r,b]=devSel(); if(r) dosVeces($('devMain'),'¿Seguro? Se publica. Pulsa otra vez',()=>Dev.aMain(r,b)); };
+$('devUndo').onclick=()=>{ const [r,b]=devSel(); if(r) dosVeces($('devUndo'),'¿Deshacer el último cambio? Pulsa otra vez',()=>Dev.deshacer(r,b)); };
+$('devShot').onchange=async()=>{ const f=$('devShot').files[0]; if(!f) return; const img=new Image(); img.src=URL.createObjectURL(f); await img.decode(); const c=document.createElement('canvas'), k=Math.min(1,1280/Math.max(img.width,img.height)); c.width=img.width*k; c.height=img.height*k; c.getContext('2d').drawImage(img,0,0,c.width,c.height); Dev.shot=c.toDataURL('image/jpeg',.85).split(',')[1]; $('devShotName').textContent='📷 '+f.name; $('devShot').value=''; };
+
+/* =====================================================================
+   49. TALLER DE IMÁGENES: prompts para ChatGPT y preparar sprites (quitar fondo, separar poses, recortar, igualar tamaño)
+   ===================================================================== */
+const ImgT={refs:[],out:[]};
+$('bImgT').onclick=()=>{ $('sheetMore').classList.remove('open'); $('sheetImgT').classList.add('open'); };
+$('itRefs').onchange=async()=>{ for(const f of $('itRefs').files){ const d=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(f); }); ImgT.refs.push({name:f.name,data:d}); } $('itRefs').value='';
+  $('itRefList').innerHTML=ImgT.refs.map(r=>`<img src="${r.data}" title="${esc(r.name)}" style="height:56px;border-radius:6px;background:#fff">`).join(''); };
+$('itPrompt').onclick=async()=>{ const q=$('itWant').value.trim(); if(!q) return $('itWant').focus(); $('itPromptOut').innerHTML='<div class="note">Mor escribir el prompt…</div>';
+  try{ const parts=ImgT.refs.slice(0,4).map(r=>({inline_data:{mime_type:r.data.slice(5,r.data.indexOf(';')),data:r.data.split(',')[1]}}));
+    const o=await geminiJSON(`Eres experto en pedir imágenes de videojuegos a ChatGPT. El usuario necesita: «${q}». ${parts.length?'Te paso '+parts.length+' imagen(es) de referencia del juego, en este orden: '+ImgT.refs.slice(0,4).map((r,i)=>(i+1)+') '+r.name).join(', ')+'.':''}
+Escribe el prompt en español para ChatGPT siguiendo estas reglas que funcionan:
+- Si se adjunta una hoja de poses: "Redibuja ESTA MISMA hoja": mismas poses, mismo orden, mismo tamaño, mismos efectos y armas.
+- Es el MISMO personaje: misma cara, colores, proporciones y estilo cartoon con contorno negro grueso; solo cambia lo que se pide.
+- Si hay disfraz o cambio, IDÉNTICO en todas las poses.
+- Fondo blanco liso, MUCHO espacio entre cada pose, ninguna pegada a otra ni cortada por el borde, sin texto.
+- Para un único cambio: "EXACTAMENTE la misma imagen con un único cambio… no muevas al personaje ni cambies el encuadre".
+- Para algo nuevo: describe estilo, vista (lateral/frontal), tamaño relativo, colores, y pide fondo blanco liso y buena resolución.
+Da también los pasos: qué imágenes adjuntar y en qué orden, y qué revisar en el resultado.`,{type:'OBJECT',properties:{prompt:{type:'STRING'},adjuntar:{type:'STRING'},revisar:{type:'STRING'}},required:['prompt']},parts,MODELOS_RAPIDOS,60000);
+    $('itPromptOut').innerHTML=`<div class="note">1) Abre una conversación NUEVA en ChatGPT. ${o.adjuntar?'2) Adjunta: '+esc(o.adjuntar)+'.':''} 3) Pega el prompt. 4) Revisa: ${esc(o.revisar||'que no haya poses cortadas ni pegadas y que el fondo sea blanco')}. Si falla: «repítelo, X está mal en la pose N».</div><textarea id="itP" rows="8" style="width:100%;box-sizing:border-box;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px">${esc(o.prompt)}</textarea><div class="row"><button class="tbtn on" id="itCopy">Copiar prompt</button></div>`;
+    $('itCopy').onclick=()=>{ navigator.clipboard.writeText($('itP').value).then(()=>toast('Prompt copiado')); };
+  }catch(e){ $('itPromptOut').innerHTML='<div class="note">Error: '+esc(e.message)+'</div>'; } };
+// quita el fondo blanco (y el «damero» falso de transparencia) desde los bordes
+function quitaFondo(cv){ const x=cv.getContext('2d'), W=cv.width, H=cv.height, d=x.getImageData(0,0,W,H), p=d.data, seen=new Uint8Array(W*H), st=[];
+  const bg=i=>{ const r=p[i*4],g=p[i*4+1],b=p[i*4+2], mx=Math.max(r,g,b), mn=Math.min(r,g,b); return p[i*4+3]<20||(mn>175&&mx-mn<22); };
+  for(let i=0;i<W;i++) st.push(i,(H-1)*W+i); for(let j=0;j<H;j++) st.push(j*W,j*W+W-1);
+  while(st.length){ const i=st.pop(); if(seen[i]||!bg(i)) continue; seen[i]=1; p[i*4+3]=0; const xx=i%W; if(xx>0) st.push(i-1); if(xx<W-1) st.push(i+1); if(i>=W) st.push(i-W); if(i<W*(H-1)) st.push(i+W); }
+  // suaviza el borde: píxeles casi blancos pegados al fondo, semitransparentes
+  for(let i=0;i<W*H;i++) if(!seen[i]&&p[i*4+3]>0){ const xx=i%W; const nb=(xx>0&&seen[i-1])||(xx<W-1&&seen[i+1])||(i>=W&&seen[i-W])||(i<W*(H-1)&&seen[i+W]); if(nb&&Math.min(p[i*4],p[i*4+1],p[i*4+2])>200) p[i*4+3]=110; }
+  x.putImageData(d,0,0); }
+function caja(cv,x0=0,y0=0,w=cv.width,h=cv.height){ const d=cv.getContext('2d').getImageData(x0,y0,w,h).data; let a=w,b=h,c=-1,e=-1; for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(d[(y*w+x)*4+3]>40){ if(x<a)a=x; if(x>c)c=x; if(y<b)b=y; if(y>e)e=y; } return c<0?null:{x:x0+a,y:y0+b,w:c-a+1,h:e-b+1}; }
+// separa las piezas sueltas (poses) cuando no se indica la cuadrícula
+function piezas(cv){ const W=cv.width,H=cv.height, s=Math.max(1,Math.round(Math.max(W,H)/400)), w=Math.ceil(W/s), h=Math.ceil(H/s), d=cv.getContext('2d').getImageData(0,0,W,H).data, m=new Uint8Array(w*h), lab=new Int32Array(w*h).fill(-1), out=[];
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ let on=0; for(let yy=y*s;yy<Math.min(H,y*s+s)&&!on;yy++) for(let xx=x*s;xx<Math.min(W,x*s+s);xx++) if(d[(yy*W+xx)*4+3]>40){ on=1; break; } m[y*w+x]=on; }
+  for(let i=0;i<w*h;i++){ if(!m[i]||lab[i]>=0) continue; const st=[i]; let a=1e9,b=1e9,c=-1,e=-1,n=0; lab[i]=out.length;
+    while(st.length){ const k=st.pop(), x=k%w, y=(k/w)|0; n++; if(x<a)a=x; if(x>c)c=x; if(y<b)b=y; if(y>e)e=y;
+      for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){ const X=x+dx,Y=y+dy; if(X<0||Y<0||X>=w||Y>=h) continue; const q=Y*w+X; if(m[q]&&lab[q]<0){ lab[q]=out.length; st.push(q); } } }
+    out.push({x:a*s,y:b*s,w:(c-a+1)*s,h:(e-b+1)*s,n}); }
+  const big=Math.max(...out.map(o=>o.n),1); const L=out.filter(o=>o.n>big*.04);
+  const fila=Math.max(...L.map(o=>o.h),1)*.5; L.sort((A,B)=>Math.abs(A.y-B.y)<fila?A.x-B.x:A.y-B.y); return L; }
+$('itGo').onclick=async()=>{ const files=[...$('itImgs').files]; if(!files.length) return toast('Elige las imágenes de ChatGPT');
+  const rows=+$('itRows').value||0, cols=+$('itCols').value||0, alto=+$('itH').value||0, fondo=$('itBg').checked, pref=($('itName').value.trim()||'sprite').replace(/[^\w-]/g,'_');
+  ImgT.out=[]; const avisos=[]; $('itOut').innerHTML='<div class="note">Mor preparar las imágenes…</div>';
+  for(const f of files){ const img=new Image(); img.src=URL.createObjectURL(f); await img.decode(); const cv=document.createElement('canvas'); cv.width=img.width; cv.height=img.height; cv.getContext('2d').drawImage(img,0,0);
+    if(Math.min(img.width,img.height)<700) avisos.push(`${f.name}: baja resolución (${img.width}×${img.height}). Pide a ChatGPT más calidad.`);
+    if(fondo) quitaFondo(cv);
+    let cajas=[];
+    if(rows&&cols){ const cw=cv.width/cols, ch=cv.height/rows; for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ const b=caja(cv,Math.round(c*cw),Math.round(r*ch),Math.round(cw),Math.round(ch)); if(!b){ avisos.push(`${f.name}: la celda ${r*cols+c+1} está vacía`); continue; }
+        if(b.x<=Math.round(c*cw)+1||b.y<=Math.round(r*ch)+1||b.x+b.w>=Math.round((c+1)*cw)-1||b.y+b.h>=Math.round((r+1)*ch)-1) avisos.push(`${f.name}: la pose ${r*cols+c+1} toca el borde de su celda (puede estar cortada o pegada a otra)`); cajas.push(b); } }
+    else { cajas=piezas(cv); cajas.forEach((b,i)=>{ if(b.x<=1||b.y<=1||b.x+b.w>=cv.width-1||b.y+b.h>=cv.height-1) avisos.push(`${f.name}: la pieza ${i+1} toca el borde de la imagen (¿cortada?)`); }); }
+    const base=files.length>1?pref+'_'+f.name.replace(/\.\w+$/,'').replace(/[^\w-]/g,'_'):pref;
+    cajas.forEach((b,i)=>{ const k=alto?alto/b.h:1, o=document.createElement('canvas'); o.width=Math.max(1,Math.round(b.w*k)); o.height=Math.max(1,Math.round(b.h*k)); const g=o.getContext('2d'); g.imageSmoothingQuality='high'; g.drawImage(cv,b.x,b.y,b.w,b.h,0,0,o.width,o.height);
+      if(alto&&k>1.6) avisos.push(`${base} ${i+1}: se agranda ×${k.toFixed(1)} y quedará borrosa; mejor una imagen más grande.`);
+      ImgT.out.push({name:`${base}${cajas.length>1?'_'+(i+1):''}.png`,data:o.toDataURL('image/png')}); }); }
+  $('itOut').innerHTML=`${avisos.length?'<div class="note" style="color:#ffcf6b">⚠ '+avisos.map(esc).join('<br>⚠ ')+'</div>':''}<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin:8px 0">${ImgT.out.map(o=>`<div style="text-align:center"><img src="${o.data}" style="max-width:100%;max-height:110px;background:repeating-conic-gradient(#2a3b4d 0 25%,#1d2c3b 0 50%) 0 0/16px 16px;border-radius:6px"><br><small>${esc(o.name)}</small></div>`).join('')}</div>
+    <div class="row"><button class="tbtn on" id="itZip">Descargar .zip</button><input type="text" id="itPath" placeholder="carpeta del repo (p. ej. public/img)" style="flex:1;min-width:150px"><button class="tbtn" id="itUp">Subir al repo</button></div><div class="note">«Subir al repo» usa el repo y la rama elegidos en «Programar en GitHub».</div>`;
+  $('itZip').onclick=()=>Files.zip(ImgT.out.map(o=>({name:o.name,b64:o.data.split(',')[1]})),pref);
+  $('itUp').onclick=async()=>{ const [r,b]=devSel(); if(!r) return toast('Abre antes «Programar en GitHub» y elige el repo',5000); const dir=$('itPath').value.trim().replace(/^\/+|\/+$/g,'');
+    try{ await GH.ensureBranch(r,b); const u=await GH.commit(r,b,ImgT.out.map(o=>({ruta:(dir?dir+'/':'')+o.name,b64:o.data.split(',')[1]})),`Imágenes ${pref} (M.O.R.)`); toast('Subidas a '+r+' ('+b+')',5000); window.open(u,'_blank'); }catch(e){ toast(e.message,6000); } };
+};
 
 /* =====================================================================
    15. DESPERTAR
