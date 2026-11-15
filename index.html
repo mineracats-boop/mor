@@ -62,6 +62,14 @@ video{display:none}
 .cam canvas{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
 .toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#0e2033;border:1px solid rgba(127,216,255,.4);color:var(--cel2);padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
+.tchip{background:rgba(127,216,255,.15);border:1px solid var(--cel);border-radius:999px;padding:4px 10px;font:700 13px ui-monospace,monospace;color:var(--cel);cursor:pointer}
+#timers{display:none;gap:6px;flex-wrap:wrap;justify-content:center;margin:4px 0}
+.mcard{margin:10px auto 0;max-width:480px;text-align:left;background:rgba(127,216,255,.07);border:1px solid rgba(127,216,255,.35);border-radius:14px;padding:10px 12px;font-size:16px}
+.mcard small{color:var(--dim)}
+#photoList{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+#photoList .ph{position:relative;background:#0e2033;border-radius:12px;overflow:hidden}
+#photoList img{width:100%;display:block}#photoList small{display:block;padding:6px 8px;color:var(--cel2)}
+#photoList button{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.5);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer}
 .grade{display:none;gap:8px;justify-content:center;margin-top:6px}
 .grade.show{display:flex}
 </style>
@@ -110,6 +118,7 @@ video{display:none}
       <path id="mouth" fill="#7fd8ff" stroke="#7fd8ff" stroke-width=".09" stroke-linecap="round" stroke-linejoin="round"/>
     </g>
   </svg>
+  <div id="timers"></div>
   <div class="sub" id="sub"></div>
   <div class="grade" id="grade"><button class="tbtn" data-g="no">No lo sabía</button><button class="tbtn" data-g="casi">Casi</button><button class="tbtn" data-g="si">Lo sabía</button></div>
   <div class="hear" id="hear"></div>
@@ -128,6 +137,12 @@ video{display:none}
   <h3>M.O.R.</h3>
   <div class="row">
     <button class="tbtn" id="bCam">Mirar (cámara)</button>
+    <button class="tbtn" id="bQuickPhoto">Foto rápida</button>
+    <button class="tbtn" id="bPeople">Personas</button>
+    <button class="tbtn" id="bInterp">Intérprete</button>
+    <button class="tbtn" id="bGames">Jugar</button>
+    <button class="tbtn" id="bPhotos">Caja de recuerdos</button>
+    <button class="tbtn" id="bSound">Sonido para concentrarse</button>
     <button class="tbtn" id="bNotes">Apuntes</button>
     <button class="tbtn" id="bInstall">Instalar app</button>
     <button class="tbtn" id="bVoice">Voz: sí</button>
@@ -193,7 +208,35 @@ video{display:none}
   <ul id="agDone" style="margin-top:6px"></ul>
   <h3>RECORDATORIOS</h3><ul id="agRem"></ul>
   <div class="note">Pulsa «Calendar» para que Google Calendar te avise aunque M.O.R. esté cerrado. Con M.O.R. abierto, te avisa él.</div>
+  <h3>HÁBITOS</h3><ul id="agHab"></ul>
+  <h3>IDEAS Y NOTAS</h3><ul id="agIdeas"></ul>
 </div>
+<div class="sheet" id="sheetPeople">
+  <button class="close" data-close>×</button>
+  <h3>PERSONAS QUE MOR CONOCE DE CARA</h3><ul id="peopleList"></ul>
+  <div class="row"><input type="text" id="pName" placeholder="Nombre (p. ej. Antonio)" style="flex:1"><input type="text" id="pRel" placeholder="Quién es (yo, mi padre…)" style="flex:1"></div>
+  <div class="row"><button class="tbtn on" id="pAdd">Enseñarle esta cara</button></div>
+  <div class="note">Se pone la persona sola delante de la cámara frontal, de frente y con luz. Las caras se guardan solo en este aparato y no se envían a ningún sitio. Pide permiso a cada persona antes de registrarla.</div>
+</div>
+<div class="sheet" id="sheetGames">
+  <button class="close" data-close>×</button>
+  <h3>JUGAR CON MOR</h3>
+  <div class="row"><button class="tbtn" data-g="piedra">Piedra</button><button class="tbtn" data-g="papel">Papel</button><button class="tbtn" data-g="tijera">Tijera</button></div>
+  <div class="row"><button class="tbtn on" data-g="trivial">Trivial</button><button class="tbtn on" data-g="adivina">Adivina la palabra</button><button class="tbtn on" data-g="historia">Inventar una historia</button></div>
+</div>
+<div class="sheet" id="sheetPhotos">
+  <button class="close" data-close>×</button>
+  <h3>CAJA DE RECUERDOS</h3>
+  <div class="row" style="margin-bottom:10px"><button class="tbtn on" id="bSnap">Foto con Mor</button></div>
+  <div id="photoList"></div>
+</div>
+<div class="sheet" id="sheetInterp">
+  <button class="close" data-close>×</button>
+  <h3>INTÉRPRETE</h3>
+  <div class="row"><input type="text" id="iLang" placeholder="Idioma (inglés, francés, árabe…)" style="flex:1"><button class="tbtn on" id="iGo">Empezar</button></div>
+  <div class="note">Mor traducirá en voz alta: lo que digas en español, al otro idioma, y lo que te digan, al español. Pulsa «Colgar» para terminar.</div>
+</div>
+<input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
 <div class="toast" id="toast"></div>
 <video id="video" playsinline muted></video>
 <input type="file" id="fileImp" accept="application/json" hidden>
@@ -257,9 +300,10 @@ const daysTo=f=>Math.round((new Date(f+'T09:00')-new Date(new Date().toDateStrin
 const upcomingExams=()=>MEM.exams.filter(e=>daysTo(e.fecha)>=0);
 
 const DB={p:null,
-  open(){ return this.p||(this.p=new Promise(res=>{ try{ const q=indexedDB.open('mor_db',1);
-    q.onupgradeneeded=()=>{ const d=q.result; d.createObjectStore('chats',{keyPath:'id',autoIncrement:true});
-      d.createObjectStore('docs',{keyPath:'id'}); d.createObjectStore('cards',{keyPath:'id'}); };
+  open(){ return this.p||(this.p=new Promise(res=>{ try{ const q=indexedDB.open('mor_db',2);
+    q.onupgradeneeded=()=>{ const d=q.result, has=n=>d.objectStoreNames.contains(n);
+      if(!has('chats')) d.createObjectStore('chats',{keyPath:'id',autoIncrement:true});
+      for(const n of ['docs','cards','people','photos']) if(!has(n)) d.createObjectStore(n,{keyPath:'id'}); };
     q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }catch(e){ res(null); } })); },
   async all(store){ const d=await this.open(); if(!d) return []; return new Promise(r=>{ const q=d.transaction(store).objectStore(store).getAll(); q.onsuccess=()=>r(q.result||[]); q.onerror=()=>r([]); }); },
   async put(store,v){ const d=await this.open(); if(!d) return; return new Promise(r=>{ const t=d.transaction(store,'readwrite'); t.objectStore(store).put(v); t.oncomplete=r; t.onerror=r; }); },
@@ -503,20 +547,21 @@ const Cam={on:false,stream:null,prev:null,cv:document.createElement('canvas'),
   async start(){
     try{ this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false}); }
     catch(e){ localSay('MOR no poder abrir ojos de cámara… ¿tú dar permiso?','triste'); return false; }
-    const v=$('video'); v.srcObject=this.stream; await v.play(); this.on=true; $('camBox').style.display='block'; this.track(); return true;
+    const v=$('video'); v.srcObject=this.stream; await v.play(); this.on=true; $('camBox').style.display='block'; this.track();
+    DB.all('people').then(p=>{ if(p.length) Faces.load(); }); if(typeof Live!=='undefined'&&Live.on) Live.videoLoop(); return true;
   },
   stop(){ this.on=false; this.stream&&this.stream.getTracks().forEach(t=>t.stop()); $('camBox').style.display='none'; },
   track(){ // detecta dónde hay movimiento y M.O.R. mira hacia allí
-    if(!this.on) return; const v=$('video'), W=64,H=48, c=this.cv; c.width=W; c.height=H; const x=c.getContext('2d',{willReadFrequently:true});
+    if(!this.on) return; if(document.hidden){ setTimeout(()=>this.track(),800); return; } const v=$('video'), W=48,H=36, c=this.cv; c.width=W; c.height=H; const x=c.getContext('2d',{willReadFrequently:true});
     x.drawImage(v,0,0,W,H); const d=x.getImageData(0,0,W,H).data;
-    $('camView').getContext('2d').drawImage(v,0,0,160,120);
+    if((this.fr=(this.fr||0)+1)%2) $('camView').getContext('2d').drawImage(v,0,0,160,120);
     if(this.prev){ let sx=0,sy=0,n=0; for(let i=0;i<d.length;i+=4){ const diff=Math.abs(d[i]-this.prev[i])+Math.abs(d[i+1]-this.prev[i+1]);
         if(diff>60){ const p=i/4; sx+=p%W; sy+=(p/W)|0; n++; } }
       if(n>25){ face.tx=-((sx/n)/W*2-1)*1.1; face.ty=((sy/n)/H*2-1)*.8; face.lastInput=performance.now(); } }
-    this.prev=d; setTimeout(()=>requestAnimationFrame(()=>this.track()),90);
+    this.prev=d; setTimeout(()=>requestAnimationFrame(()=>this.track()),MOVIL?220:150);
   },
-  snapshot(){ if(!this.on) return null; const v=$('video'), c=document.createElement('canvas'); c.width=512; c.height=Math.round(512*v.videoHeight/v.videoWidth)||384;
-    c.getContext('2d').drawImage(v,0,0,c.width,c.height); return c.toDataURL('image/jpeg',.7).split(',')[1]; }
+  snapshot(w){ if(!this.on) return null; const v=$('video'), c=document.createElement('canvas'); c.width=w||384; c.height=Math.round(c.width*v.videoHeight/v.videoWidth)||288;
+    c.getContext('2d').drawImage(v,0,0,c.width,c.height); return c.toDataURL('image/jpeg',.6).split(',')[1]; }
 };
 
 /* =====================================================================
@@ -653,9 +698,15 @@ LO QUE SABES DE ÉL:
 ${MEM.facts.length?MEM.facts.map(f=>'- '+f).join('\n'):'(nada todavía)'}
 ${MEM.summary?'RESUMEN DE VUESTRA HISTORIA:\n'+MEM.summary:''}
 ${Agenda.forPrompt()}
+${Timers.list.length?'TEMPORIZADORES EN MARCHA: '+Timers.list.map(t=>t.why+' (quedan '+Math.ceil((t.end-Date.now())/60000)+' min)').join('; '):''}
+${Habits.forPrompt()}
+${Ideas.forPrompt()}
+${Faces.forPrompt()}
 ${MEM.ciudad?'VIVE EN: '+MEM.ciudad:'(No sabes en qué ciudad vive.)'}
 AGENDA — cuando te pida apuntar, recordar o marcar algo, escríbelo en tu respuesta con estas etiquetas EXACTAS (no se leen en voz alta) y confírmaselo con naturalidad:
   {{tarea: texto}}  ·  {{hecha: texto de la tarea}}  ·  {{recordar: AAAA-MM-DD HH:MM | texto}}  ·  {{borrar_recordatorio: texto}}  ·  {{ciudad: nombre}} (si te dice dónde vive)
+  {{temporizador: minutos | motivo}}  ·  {{mensaje: destinatario | texto del mensaje}} (cuando te pida escribir/redactar un mensaje o correo)
+  {{idea: tema | texto}} (cuando dicte una idea o nota)  ·  {{habito: nombre | meta}} (hábito nuevo)  ·  {{habito_hecho: nombre}}  ·  {{sonido: lluvia|olas|marron|parar}}
   Para las fechas usa la fecha y hora de AHORA. Si no dice hora, pregúntasela o usa 09:00. Nunca digas que lo has apuntado sin poner la etiqueta.
 ${MEM.study.length?'ÚLTIMAS SESIONES DE ESTUDIO:\n'+MEM.study.slice(-6).map(s=>`- ${new Date(s.at).toLocaleDateString('es-ES')}: ${s.tema} (${s.min} min${s.distracciones?', '+s.distracciones+' distracciones':''})`).join('\n'):''}
 ${extra||''}`;
@@ -716,7 +767,9 @@ async function send(text,opts={}){
   if(text) showSub('…',text);
   setEmotion('pensativo'); face.lastInput=performance.now();
   Voice.reset();
-  const img=opts.image!==undefined?opts.image:(Cam.on?Cam.snapshot():null);
+  const VISUAL=/\b(mira|mirar|ves|ver|veo|esto|esta|este|aqu[ií]|qu[eé] es|qui[eé]n|c[aá]mara|foto|lee|pone|enfoca|cara|llevo|ropa|color|delante|detr[aá]s|cuantos|cu[aá]ntas)\b/i;
+  let img=opts.image!==undefined?opts.image:(pendingPhoto||(Cam.on&&text&&VISUAL.test(text)?Cam.snapshot():null));
+  if(pendingPhoto&&opts.image===undefined){ pendingPhoto=null; clearTimeout(window._qp); }
   // recuerdos y apuntes relacionados con lo que dice
   let extra='';
   if(text){ try{
@@ -754,6 +807,7 @@ async function send(text,opts={}){
     Voice.end();
     const reply=shown.trim();
     const made=Agenda.apply(acts); if(made.reminders.length) showCalendarButtons(made.reminders);
+    (made.msgs||[]).forEach(([to,t])=>showMessageCard(to,t));
     if(made.tasks.length||made.done.length||made.reminders.length) toast((made.tasks.length?'Apuntado: '+made.tasks.map(x=>x.t).join(', ')+'. ':'')+(made.done.length?'Hecho: '+made.done.map(x=>x.t).join(', ')+'. ':'')+(made.reminders.length?'Recordatorio guardado.':''),3500);
     const uTxt=text?text+(img?' [MOR veía la cámara]':''):'['+opts.event.split('.')[0].slice(0,90)+']';
     MEM.history.push({r:'u',t:uTxt,at:Date.now()}); MEM.history.push({r:'m',t:reply,at:Date.now()});
@@ -768,7 +822,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v5b</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v6</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1092,7 +1146,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v5b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v6 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1169,12 +1223,18 @@ RECORDATORIOS: ${r.length?r.map(x=>fmtFecha(new Date(x.when))+' → '+x.t).join(
     const made={reminders:[],tasks:[],done:[],city:null};
     for(const a of acts){
       const m=a.match(/^\s*([a-záéíóú_]+)\s*:\s*([\s\S]*)$/i); if(!m) continue;
-      const k=norm(m[1]).trim(), v=m[2].trim();
+      const k=norm(m[1].replace(/_/g,' ')).trim().replace(/\s+/g,'_'), v=m[2].trim();
       if(k==='tarea'){ const x=this.addTask(v); if(x) made.tasks.push(x); }
       else if(k==='hecha'||k==='completar'){ const x=this.doneTask(v); if(x) made.done.push(x); }
       else if(k==='recordar'){ const [f,...rest]=v.split('|'); const x=this.addReminder(rest.join('|').trim(),f.trim()); if(x) made.reminders.push(x); }
       else if(k==='borrar_recordatorio'){ this.delReminder(v); }
       else if(k==='ciudad'){ MEM.ciudad=v; saveMem(); made.city=v; }
+      else if(k==='temporizador'){ const [mi,...w]=v.split('|'); const t=Timers.add(mi,w.join('|').trim()); if(t) made.timers=(made.timers||0)+1; }
+      else if(k==='mensaje'){ const [to,...w]=v.split('|'); (made.msgs=made.msgs||[]).push([to.trim(),w.join('|').trim()]); }
+      else if(k==='idea'){ const [te,...w]=v.split('|'); w.length?Ideas.add(te,w.join('|')):Ideas.add('general',te); made.idea=true; }
+      else if(k==='habito'){ const [n,...w]=v.split('|'); Habits.add(n,w.join('|').trim()); }
+      else if(k==='habito_hecho'){ const h=Habits.done(v); if(h){ made.habit=h; Sfx.play('risa'); } }
+      else if(k==='sonido'){ /parar|quitar|apagar/i.test(v)?Ambient.stop():Ambient.start(/lluv/i.test(v)?'lluvia':/ola/i.test(v)?'olas':'marron'); }
     }
     if(made.tasks.length||made.done.length) Sfx.play('si');
     return made;
@@ -1205,6 +1265,10 @@ function renderAgenda(){
   $('agTasks').innerHTML=t.length?t.map(x=>`<li><label style="flex:1"><input type="checkbox" data-t="${x.id}"> ${esc(x.t)}</label><button data-dt="${x.id}">×</button></li>`).join(''):'<li>Nada pendiente. Dile «apunta…».</li>';
   $('agDone').innerHTML=done.map(x=>`<li><small>✓ ${esc(x.t)}</small></li>`).join('');
   $('agRem').innerHTML=r.length?r.map(x=>`<li><span>${esc(x.t)}<br><small>${esc(fmtFecha(new Date(x.when)))}${x.fired?' · ya avisado':''}</small></span><span style="display:flex;gap:6px;align-items:center"><a class="tbtn" style="text-decoration:none;font-size:11px" target="_blank" rel="noopener" href="${Agenda.calUrl(x)}">Calendar</a><button data-dr="${x.id}">×</button></span></li>`).join(''):'<li>Ninguno. Dile «recuérdame mañana a las 9…».</li>';
+  const H=Habits.list(); $('agHab').innerHTML=H.length?H.map((h,i)=>`<li><span>${esc(h.n)} <small>${esc(h.meta)} · hoy ${h.log[hoyKey()]||0} · racha ${Habits.streak(h)} días</small></span><span style="display:flex;gap:6px"><button class="tbtn" style="color:var(--cel);font-size:12px" data-hd="${i}">+1</button><button data-hx="${i}">×</button></span></li>`).join(''):'<li>Dile «quiero beber 8 vasos de agua al día».</li>';
+  $('agHab').querySelectorAll('[data-hd]').forEach(b=>b.onclick=()=>{ const h=H[+b.dataset.hd]; h.log[hoyKey()]=(h.log[hoyKey()]||0)+1; saveMem(); Sfx.play('si'); renderAgenda(); });
+  $('agHab').querySelectorAll('[data-hx]').forEach(b=>b.onclick=()=>{ H.splice(+b.dataset.hx,1); saveMem(); renderAgenda(); });
+  const I=(MEM.ideas||[]).slice(-15).reverse(); $('agIdeas').innerHTML=I.length?I.map(x=>`<li><span><small>${esc(x.tema)}</small><br>${esc(x.t)}</span></li>`).join(''):'<li>Dile «apunta idea para el podcast: …».</li>';
   $('agTasks').querySelectorAll('input').forEach(c=>c.onchange=()=>{ const x=MEM.tasks.find(y=>y.id===c.dataset.t); if(x){ x.done=true; x.doneAt=Date.now(); saveMem(); Sfx.play('si'); renderAgenda(); } });
   $('agTasks').querySelectorAll('[data-dt]').forEach(b=>b.onclick=()=>{ MEM.tasks=MEM.tasks.filter(y=>y.id!==b.dataset.dt); saveMem(); renderAgenda(); });
   $('agRem').querySelectorAll('[data-dr]').forEach(b=>b.onclick=()=>{ MEM.reminders=MEM.reminders.filter(y=>y.id!==b.dataset.dr); saveMem(); renderAgenda(); });
@@ -1246,17 +1310,22 @@ const LIVE_TOOLS=[{functionDeclarations:[
   {name:'crear_recordatorio',description:'Crea un recordatorio a una fecha y hora',parameters:{type:'OBJECT',properties:{texto:{type:'STRING'},fecha_hora:{type:'STRING',description:'AAAA-MM-DD HH:MM en hora local'}},required:['texto','fecha_hora']}},
   {name:'ver_agenda',description:'Devuelve tareas pendientes y recordatorios',parameters:{type:'OBJECT',properties:{}}},
   {name:'consultar_tiempo',description:'Tiempo actual y de los próximos días en una ciudad',parameters:{type:'OBJECT',properties:{ciudad:{type:'STRING'}}}},
-  {name:'guardar_ciudad',description:'Guarda la ciudad donde vive el usuario',parameters:{type:'OBJECT',properties:{ciudad:{type:'STRING'}},required:['ciudad']}}
+  {name:'guardar_ciudad',description:'Guarda la ciudad donde vive el usuario',parameters:{type:'OBJECT',properties:{ciudad:{type:'STRING'}},required:['ciudad']}},
+  {name:'poner_temporizador',description:'Pone un temporizador',parameters:{type:'OBJECT',properties:{minutos:{type:'NUMBER'},motivo:{type:'STRING'}},required:['minutos']}},
+  {name:'redactar_mensaje',description:'Deja un mensaje redactado en pantalla para que lo envíe por WhatsApp o lo copie',parameters:{type:'OBJECT',properties:{destinatario:{type:'STRING'},texto:{type:'STRING'}},required:['texto']}},
+  {name:'guardar_idea',description:'Guarda una idea o nota dictada',parameters:{type:'OBJECT',properties:{tema:{type:'STRING'},texto:{type:'STRING'}},required:['texto']}},
+  {name:'habito',description:'Crea un hábito nuevo o marca uno como hecho hoy',parameters:{type:'OBJECT',properties:{nombre:{type:'STRING'},accion:{type:'STRING',description:'crear o hecho'},meta:{type:'STRING'}},required:['nombre','accion']}},
+  {name:'sonido_ambiente',description:'Pone o quita un sonido para concentrarse',parameters:{type:'OBJECT',properties:{tipo:{type:'STRING',description:'lluvia, olas, marron o parar'}},required:['tipo']}}
 ]}];
 const Live={on:false,ws:null,mic:null,micCtx:null,node:null,next:0,srcs:[],inT:'',outT:'',model:null,handle:null,
   b64(buf){ let s=''; const b=new Uint8Array(buf); for(let i=0;i<b.length;i+=0x8000) s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000)); return btoa(s); },
-  async start(){
-    if(this.on) return; if(!GEMINI_KEY) return askKey();
+  async start(o={}){
+    if(this.on) return; if(!GEMINI_KEY) return askKey(); this.mode=o.interprete||null;
     Voice.stop(); Voice.ensure(); if(AC.state==='suspended') await AC.resume();
     if(Ears.on){ this.earsWas=true; Ears.stop(); } else this.earsWas=false;
     try{ this.mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}}); }
     catch(e){ return localSay('Mor no poder oír: falta permiso del micrófono.','triste'); }
-    this.on=true; $('bLive').classList.add('on'); $('bLive').textContent='Colgar'; setEmotion('curioso'); Sfx.play('hola'); showSub('Conectando con Mor…');
+    this.on=true; $('bLive').classList.add('on'); $('bLive').textContent='Colgar'; if(Cam.on) this.videoLoop(); setEmotion('curioso'); Sfx.play('hola'); showSub('Conectando con Mor…');
     this.connect(0);
   },
   connect(i){
@@ -1265,12 +1334,12 @@ const Live={on:false,ws:null,mic:null,micCtx:null,node:null,next:0,srcs:[],inT:'
     this.ws=ws; let ok=false;
     ws.onopen=()=>ws.send(JSON.stringify({setup:{model:'models/'+model,
       generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:vozGemini()}},languageCode:'es-ES'}},
-      systemInstruction:{parts:[{text:systemPrompt('\n'+Agenda.forPrompt()+`
-ESTÁS EN UNA CONVERSACIÓN DE VOZ EN DIRECTO, como una llamada. Habla en español de España, natural, con tu personalidad, frases cortas y respuestas breves (salvo que te pida una explicación). No uses etiquetas ni corchetes: todo lo que escribes se oye. Usa las herramientas para tareas, recordatorios, agenda y el tiempo; nunca digas que has apuntado algo sin usar la herramienta.`)}]},
-      tools:LIVE_TOOLS, inputAudioTranscription:{}, outputAudioTranscription:{} }}));
+      systemInstruction:{parts:[{text: this.mode ? `Eres un intérprete simultáneo. Cuando oigas español, repítelo traducido al ${this.mode}. Cuando oigas ${this.mode} (o cualquier otro idioma), tradúcelo al español de España. Traduce solo, sin añadir comentarios, con naturalidad y con el mismo tono. Si algo no se entiende, pide que lo repitan en ese idioma.` : systemPrompt('\n'+Agenda.forPrompt()+`
+ESTÁS EN UNA CONVERSACIÓN DE VOZ EN DIRECTO, como una llamada. Habla en español de España, natural, con tu personalidad, frases cortas y respuestas breves (salvo que te pida una explicación). No uses etiquetas ni corchetes: todo lo que escribes se oye. Usa las herramientas para tareas, recordatorios, agenda, temporizadores, mensajes, ideas, hábitos, sonidos y el tiempo; nunca digas que has hecho algo sin usar la herramienta. Si te llega vídeo de la cámara, es lo que ves ahora.`)}]},
+      tools:this.mode?undefined:LIVE_TOOLS, inputAudioTranscription:{}, outputAudioTranscription:{} }}));
     ws.onmessage=async ev=>{ const raw=typeof ev.data==='string'?ev.data:await ev.data.text(); let j; try{ j=JSON.parse(raw); }catch(e){ return; }
       if(j.setupComplete!==undefined){ ok=true; this.model=model; this.micStart(); showSub('Te escucho. Habla cuando quieras.'); setEmotion('feliz',3000);
-        ws.send(JSON.stringify({clientContent:{turns:[{role:'user',parts:[{text:'(nota del sistema: acaba de empezar la llamada; salúdale en una frase corta)'}]}],turnComplete:true}})); return; }
+        ws.send(JSON.stringify({clientContent:{turns:[{role:'user',parts:[{text: this.mode?'(nota del sistema: di en español y en '+this.mode+' que estás listo para traducir)':'(nota del sistema: acaba de empezar la llamada; salúdale en una frase corta)'}]}],turnComplete:true}})); return; }
       if(j.toolCall) return this.tools(j.toolCall.functionCalls||[]);
       const sc=j.serverContent; if(!sc) return;
       if(sc.interrupted){ this.flushAudio(); setEmotion('curioso',3000); }
@@ -1310,6 +1379,11 @@ ESTÁS EN UNA CONVERSACIÓN DE VOZ EN DIRECTO, como una llamada. Habla en españ
     if(!this.handle){ this.handle={pause:()=>this.flushAudio()}; Voice.cur=this.handle; if(face.emo==='curioso'||face.emo==='neutral') setEmotion('feliz',8000); }
     s.onended=()=>{ this.srcs=this.srcs.filter(x=>x!==s); if(!this.srcs.length){ if(Voice.cur===this.handle) Voice.cur=null; this.handle=null; } };
   },
+  note(t){ if(this.ws&&this.ws.readyState===1) this.ws.send(JSON.stringify({clientContent:{turns:[{role:'user',parts:[{text:'(nota del sistema: '+t+')'}]}],turnComplete:false}})); },
+  videoLoop(){ if(this._vl) return; this._vl=true;
+    const tick=()=>{ if(!this.on||!Cam.on){ this._vl=false; return; }
+      if(this.ws&&this.ws.readyState===1){ const d=Cam.snapshot(320); if(d) this.ws.send(JSON.stringify({realtimeInput:{video:{data:d,mimeType:'image/jpeg'}}})); }
+      setTimeout(tick,MOVIL?1500:1000); }; tick(); },
   flushAudio(){ this.srcs.forEach(s=>{ try{s.stop()}catch(e){} }); this.srcs=[]; this.next=0; if(Voice.cur===this.handle) Voice.cur=null; this.handle=null; },
   async tools(calls){
     const out=[];
@@ -1321,6 +1395,11 @@ ESTÁS EN UNA CONVERSACIÓN DE VOZ EN DIRECTO, como una llamada. Habla en españ
         else if(c.name==='ver_agenda'){ r={agenda:Agenda.forPrompt()}; }
         else if(c.name==='consultar_tiempo'){ r={tiempo:(await Weather.get(a.ciudad))||'No sé la ciudad: pregúntasela.'}; }
         else if(c.name==='guardar_ciudad'){ MEM.ciudad=a.ciudad; saveMem(); r={ok:true}; }
+        else if(c.name==='poner_temporizador'){ const t=Timers.add(a.minutos,a.motivo||'temporizador'); r=t?{ok:true}:{ok:false}; }
+        else if(c.name==='redactar_mensaje'){ showMessageCard(a.destinatario,a.texto); r={ok:true,nota:'está en pantalla con botones para enviar'}; }
+        else if(c.name==='guardar_idea'){ Ideas.add(a.tema||'general',a.texto); r={ok:true}; }
+        else if(c.name==='habito'){ if(/crea/i.test(a.accion)){ Habits.add(a.nombre,a.meta); r={ok:true}; } else { const h=Habits.done(a.nombre); r=h?{ok:true,racha:Habits.streak(h)}:{ok:false,motivo:'no existe ese hábito'}; } }
+        else if(c.name==='sonido_ambiente'){ /parar/i.test(a.tipo)?Ambient.stop():Ambient.start(/lluv/i.test(a.tipo)?'lluvia':/ola/i.test(a.tipo)?'olas':'marron'); r={ok:true}; }
         else r={ok:false};
       }catch(e){ r={ok:false,error:e.message}; }
       out.push({id:c.id,name:c.name,response:r});
@@ -1345,6 +1424,194 @@ ESTÁS EN UNA CONVERSACIÓN DE VOZ EN DIRECTO, como una llamada. Habla en españ
   }
 };
 $('bLive').onclick=()=>Live.on?Live.stop():Live.start();
+/* =====================================================================
+   19. PERSONAS: reconoce caras (todo dentro del móvil, nada sale de él)
+   ===================================================================== */
+const Faces={api:null,state:'off',people:[],seen:{},now:[],busyDet:false,last:0,
+  async load(){
+    if(this.state==='ready'||this.state==='loading') return this.state==='ready';
+    this.state='loading';
+    try{
+      this.api=await import('./lib/face-api.esm.js');
+      const base='./lib/models';
+      await this.api.nets.tinyFaceDetector.loadFromUri(base);
+      await this.api.nets.faceLandmark68TinyNet.loadFromUri(base);
+      await this.api.nets.faceRecognitionNet.loadFromUri(base);
+      this.people=await DB.all('people'); this.state='ready'; return true;
+    }catch(e){ console.warn('Caras:',e); this.state='fail'; return false; }
+  },
+  opts(){ return new this.api.TinyFaceDetectorOptions({inputSize:224,scoreThreshold:.5}); },
+  async describe(src){ // descriptor de la cara más grande
+    const r=await this.api.detectAllFaces(src,this.opts()).withFaceLandmarks(true).withFaceDescriptors();
+    if(!r.length) return null; r.sort((a,b)=>b.detection.box.area-a.detection.box.area); return r;
+  },
+  match(desc){ let best=null,bd=1;
+    for(const p of this.people) for(const d of p.descs){ let s=0; for(let i=0;i<128;i++){ const x=desc[i]-d[i]; s+=x*x; } const dist=Math.sqrt(s); if(dist<bd){ bd=dist; best=p; } }
+    return bd<.5?best:null; },
+  async enroll(name,rel){
+    if(!Cam.on){ if(!(await Cam.start())) return; $('bCam').classList.add('on'); }
+    if(!(await this.load())) return localSay('Mor no poder cargar ojos de reconocer caras en este aparato.','triste');
+    const descs=[]; showSub(`Mor mirar a ${name}… quieto, quieto.`); setEmotion('concentrado');
+    for(let k=0;k<5&&descs.length<3;k++){ await sleep(700); const r=await this.describe($('video')); if(r&&r.length===1) descs.push(Array.from(r[0].descriptor)); }
+    if(descs.length<2) return localSay('Mor no ver bien la cara. Que se ponga solo, de frente y con luz.','triste');
+    const p={id:'p'+Date.now(),name,rel,descs,at:Date.now()}; await DB.put('people',p); this.people.push(p);
+    logChat('u',`[Le presenta a ${name}${rel?' ('+rel+')':''} por la cámara]`);
+    if(rel&&/^(yo|mi|soy)/i.test(rel)===false) addFacts([`${name} es ${rel} del usuario`]); saveMem();
+    send(null,{event:`ACABAS DE APRENDER LA CARA DE ${name.toUpperCase()}${rel?' ('+rel+')':''}. Salúdale por su nombre con alegría, en una frase.`,image:null});
+  },
+  // cada pocos segundos, mira quién hay delante
+  async tick(){
+    if(!Cam.on||this.state!=='ready'||!this.people.length||this.busyDet||document.hidden) return;
+    if(Date.now()-this.last<(MOVIL?5000:3000)) return; this.last=Date.now(); this.busyDet=true;
+    try{
+      const r=await this.describe($('video')); const names=[];
+      for(const f of (r||[])){ const p=this.match(f.descriptor); names.push(p?p.name:'desconocido'); }
+      this.now=names;
+      for(const n of names){ if(n==='desconocido') continue; const p=this.people.find(x=>x.name===n);
+        if(!this.seen[n]||Date.now()-this.seen[n]>15*60000){ const first=!this.seen[n]; this.seen[n]=Date.now();
+          if(Live.on) Live.note(`ahora mismo ves por la cámara a ${n}${p&&p.rel?' ('+p.rel+')':''}`);
+          else if(!busy&&!Study.on&&!Review.on&&first) send(null,{event:`VES POR LA CÁMARA A ${n.toUpperCase()}${p&&p.rel?' ('+p.rel+')':''}. Salúdale por su nombre, con cariño y breve.`,image:null}); } else this.seen[n]=Date.now(); }
+    }catch(e){} this.busyDet=false;
+  },
+  forPrompt(){ const p=this.people.map(x=>x.name+(x.rel?' ('+x.rel+')':'')).join(', ');
+    return (p?'PERSONAS QUE CONOCES DE CARA: '+p+'.':'')+(Cam.on&&this.now.length?' AHORA VES A: '+this.now.join(', ')+'.':''); }
+};
+setInterval(()=>Faces.tick(),1000);
+async function renderPeople(){
+  Faces.people=await DB.all('people');
+  $('peopleList').innerHTML=Faces.people.length?Faces.people.map(p=>`<li><span><b>${esc(p.name)}</b> <small>${esc(p.rel||'')}</small></span><button data-p="${p.id}">×</button></li>`).join(''):'<li>Todavía no conoce a nadie de cara.</li>';
+  $('peopleList').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ await DB.del('people',b.dataset.p); renderPeople(); });
+}
+$('bPeople').onclick=()=>{ $('sheetMore').classList.remove('open'); renderPeople(); $('sheetPeople').classList.add('open'); };
+$('pAdd').onclick=()=>{ const n=$('pName').value.trim(); if(!n) return $('pName').focus(); const r=$('pRel').value.trim();
+  $('sheetPeople').classList.remove('open'); $('pName').value=''; $('pRel').value=''; Faces.enroll(n,r); };
+
+/* =====================================================================
+   20. TEMPORIZADORES
+   ===================================================================== */
+const Timers={list:[],
+  add(min,why){ min=parseFloat(String(min).replace(',','.')); if(!(min>0)) return null;
+    const t={id:'tm'+Date.now(),end:Date.now()+min*60000,why:why||'temporizador',min}; this.list.push(t); this.ui(); return t; },
+  cancel(q){ const i=q?this.list.findIndex(t=>score(words(q),t.why)>0):this.list.length-1; if(i>=0){ const t=this.list.splice(i,1)[0]; this.ui(); return t; } return null; },
+  tick(){ const now=Date.now();
+    for(const t of [...this.list]) if(now>=t.end){ this.list=this.list.filter(x=>x!==t); this.ring(t); }
+    this.ui(); },
+  async ring(t){ notify('⏰ M.O.R.',t.why); Life.touch(); squash(.4);
+    for(let i=0;i<4;i++){ Sfx.play('hola'); await sleep(450); }
+    localSay('¡Tiempo! '+t.why+'.','sorprendido'); },
+  ui(){ const el=$('timers'); if(!this.list.length){ el.style.display='none'; return; } el.style.display='flex';
+    el.innerHTML=this.list.map(t=>{ const s=Math.max(0,Math.round((t.end-Date.now())/1000)); return `<span class="tchip" data-t="${t.id}">${esc(t.why)} ${Math.floor(s/60)}:${pad2(s%60)} ✕</span>`; }).join('');
+    el.querySelectorAll('.tchip').forEach(c=>c.onclick=()=>{ this.list=this.list.filter(x=>x.id!==c.dataset.t); this.ui(); }); }
+};
+setInterval(()=>Timers.tick(),1000);
+
+/* =====================================================================
+   21. REDACTOR (mensajes listos para enviar)
+   ===================================================================== */
+function showMessageCard(to,text){
+  const id='m'+Date.now(); const wa='https://wa.me/?text='+encodeURIComponent(text);
+  $('sub').insertAdjacentHTML('beforeend',`<div class="mcard" id="${id}"><small>Para ${esc(to||'—')}:</small><div>${esc(text)}</div>
+    <div class="row" style="justify-content:center"><button class="tbtn on" data-a="share">Compartir</button><button class="tbtn" data-a="copy">Copiar</button><a class="tbtn" style="text-decoration:none" target="_blank" rel="noopener" href="${wa}">WhatsApp</a></div></div>`);
+  const c=$(id);
+  c.querySelector('[data-a=share]').onclick=async()=>{ try{ if(navigator.share) await navigator.share({text}); else { await navigator.clipboard.writeText(text); toast('Copiado'); } }catch(e){} };
+  c.querySelector('[data-a=copy]').onclick=async()=>{ try{ await navigator.clipboard.writeText(text); toast('Copiado'); }catch(e){ toast('No se pudo copiar'); } };
+}
+
+/* =====================================================================
+   22. IDEAS Y NOTAS por voz
+   ===================================================================== */
+const Ideas={
+  add(tema,t){ MEM.ideas=MEM.ideas||[]; t=String(t||'').trim(); if(!t) return null; const x={tema:(tema||'general').trim().toLowerCase(),t,at:Date.now()}; MEM.ideas.push(x); saveMem(); logChat('u','[Idea para '+x.tema+'] '+t); return x; },
+  forPrompt(){ const L=(MEM.ideas||[]); if(!L.length) return ''; const temas={}; L.forEach(x=>(temas[x.tema]=temas[x.tema]||[]).push(x));
+    return 'IDEAS Y NOTAS QUE TE HA DICTADO:\n'+Object.entries(temas).map(([k,v])=>`- ${k}: `+v.slice(-12).map(x=>'«'+x.t+'»').join(' ')).join('\n'); }
+};
+
+/* =====================================================================
+   23. HÁBITOS con rachas
+   ===================================================================== */
+const hoyKey=()=>new Date().toISOString().slice(0,10);
+const Habits={
+  list(){ return MEM.habits=MEM.habits||[]; },
+  add(n,meta){ n=String(n||'').trim(); if(!n) return null; if(this.list().some(h=>norm(h.n)===norm(n))) return null;
+    const h={n,meta:meta||'',log:{},at:Date.now()}; this.list().push(h); saveMem(); return h; },
+  done(q){ const qw=words(q); let best=null,bs=0; this.list().forEach(h=>{ const s=score(qw,h.n); if(s>bs){bs=s;best=h;} }); if(!best&&this.list().length===1) best=this.list()[0];
+    if(!best) return null; best.log[hoyKey()]=(best.log[hoyKey()]||0)+1; saveMem(); return best; },
+  streak(h){ let n=0; const d=new Date(); if(!h.log[hoyKey()]) d.setDate(d.getDate()-1);
+    while(h.log[d.toISOString().slice(0,10)]){ n++; d.setDate(d.getDate()-1); } return n; },
+  forPrompt(){ const L=this.list(); if(!L.length) return '';
+    return 'HÁBITOS: '+L.map(h=>`${h.n}${h.meta?' ('+h.meta+')':''}: hoy ${h.log[hoyKey()]||0}, racha ${this.streak(h)} días`).join('; '); }
+};
+
+/* =====================================================================
+   24. SONIDOS PARA CONCENTRARSE (lluvia, ruido suave, olas)
+   ===================================================================== */
+const Ambient={node:null,gain:null,kind:null,
+  start(kind){ this.stop(); Voice.ensure(); const n=AC.sampleRate*4, b=AC.createBuffer(2,n,AC.sampleRate);
+    for(let ch=0;ch<2;ch++){ const x=b.getChannelData(ch); let last=0;
+      for(let i=0;i<n;i++){ const w=Math.random()*2-1; if(kind==='marron'){ last=(last+.02*w)/1.02; x[i]=last*3.5; } else x[i]=w; } }
+    const s=AC.createBufferSource(); s.buffer=b; s.loop=true; const f=AC.createBiquadFilter(), g=AC.createGain();
+    if(kind==='lluvia'){ f.type='highpass'; f.frequency.value=900; g.gain.value=.06; }
+    else if(kind==='olas'){ f.type='lowpass'; f.frequency.value=700; g.gain.value=.0; const lfo=AC.createOscillator(), lg=AC.createGain(); lfo.frequency.value=.09; lg.gain.value=.07; lfo.connect(lg); lg.connect(g.gain); lfo.start(); this.lfo=lfo; g.gain.value=.08; }
+    else { f.type='lowpass'; f.frequency.value=500; g.gain.value=.12; }
+    s.connect(f); f.connect(g); g.connect(AC.destination); s.start(); this.node=s; this.gain=g; this.kind=kind; $('bSound').classList.add('on'); $('bSound').textContent='Sonido: '+kind; },
+  stop(){ try{ this.node&&this.node.stop(); this.lfo&&this.lfo.stop(); }catch(e){} this.node=null; this.lfo=null; this.kind=null; if($('bSound')){ $('bSound').classList.remove('on'); $('bSound').textContent='Sonido para concentrarse'; } },
+  cycle(){ const k={null:'lluvia',lluvia:'olas',olas:'marron',marron:null}[this.kind]; k?this.start(k):this.stop(); }
+};
+$('bSound').onclick=()=>Ambient.cycle();
+
+/* =====================================================================
+   25. MINIJUEGOS
+   ===================================================================== */
+const PPT=['piedra','papel','tijera'];
+async function playPPT(mine){
+  const his=PPT[Math.floor(Math.random()*3)]; const win=(mine==='piedra'&&his==='tijera')||(mine==='papel'&&his==='piedra')||(mine==='tijera'&&his==='papel');
+  MEM.ppt=MEM.ppt||{t:0,m:0}; if(win) MEM.ppt.t++; else if(mine!==his) MEM.ppt.m++; saveMem();
+  squash(.3);
+  if(mine===his) localSay(`¡${his}! ¡Empate! Mor y tú pensar igual.`,'sorprendido','pop');
+  else if(win) localSay(rnd([`¿${his}? ¡Nooo! Tú ganar… Mor exigir revancha.`,`Mor sacar ${his}… y perder. Esto estar amañado.`])+` (Tú ${MEM.ppt.t} - Mor ${MEM.ppt.m})`,'enfadado','enfado');
+  else localSay(rnd([`¡${his}! ¡Mor ganar! ¡Mor ser el mejor!`,`Jijiji, ${his}. Mor campeón.`])+` (Tú ${MEM.ppt.t} - Mor ${MEM.ppt.m})`,'feliz','risa');
+}
+$('bGames').onclick=()=>{ $('sheetMore').classList.remove('open'); $('sheetGames').classList.add('open'); };
+document.querySelectorAll('#sheetGames [data-g]').forEach(b=>b.onclick=()=>{ const g=b.dataset.g; $('sheetGames').classList.remove('open');
+  if(PPT.includes(g)) return playPPT(g);
+  if(g==='trivial') return send(null,{event:'QUIERE JUGAR AL TRIVIAL. Hazle UNA pregunta tipo test (a, b, c) sobre algo que esté estudiando (mira sus apuntes, exámenes y sesiones) o, si no hay nada, de cultura general. Cuando conteste, dile si acierta, lleva la cuenta de puntos y haz la siguiente. Sé divertido.',image:null});
+  if(g==='adivina') return send(null,{event:'QUIERE JUGAR A ADIVINA LA PALABRA. Piensa en una palabra (no la digas) y dale una primera pista divertida. Él irá diciendo palabras; dale pistas más fáciles hasta que acierte (máximo 5 pistas) y celébralo.',image:null});
+  if(g==='historia') return send(null,{event:'QUIERE QUE INVENTÉIS UNA HISTORIA JUNTOS. Empieza tú con 2 frases muy divertidas en las que salgas tú, Mor, y deja que él continúe.',image:null}); });
+
+/* =====================================================================
+   26. CAJA DE RECUERDOS (fotos con M.O.R.)
+   ===================================================================== */
+async function memoryPhoto(){
+  if(!Cam.on){ if(!(await Cam.start())) return; $('bCam').classList.add('on'); await sleep(800); }
+  setEmotion('feliz'); showSub('¡Foto! Tres, dos, uno…'); Sfx.play('pop'); await sleep(1500);
+  const v=$('video'), c=document.createElement('canvas'); c.width=640; c.height=Math.round(640*v.videoHeight/v.videoWidth)||480;
+  c.getContext('2d').drawImage(v,0,0,c.width,c.height); const data=c.toDataURL('image/jpeg',.8); squash(.3); Sfx.play('si');
+  let cap='Un momento juntos';
+  try{ cap=await gemini({contents:[{role:'user',parts:[{inline_data:{mime_type:'image/jpeg',data:data.split(',')[1]}},{text:`Eres Mor, mascota digital tierna y torpe. Esta foto se guarda en tu caja de recuerdos con tu humano. ${Faces.now.length?'En la foto está: '+Faces.now.join(', ')+'. ':''}Escribe un título cariñoso de máximo 12 palabras, a tu estilo (verbos en infinitivo). Solo el título.`}]}],generationConfig:{temperature:.9}},MODELOS_MEMORIA,15000); cap=cap.trim().replace(/^["«]|["»]$/g,''); }catch(e){}
+  await DB.put('photos',{id:'f'+Date.now(),data,cap,at:Date.now()}); logChat('m','[Foto en la caja de recuerdos] '+cap);
+  localSay('Guardar en caja de recuerdos: '+cap,'carinoso');
+}
+async function renderPhotos(){ const L=(await DB.all('photos')).sort((a,b)=>b.at-a.at);
+  $('photoList').innerHTML=L.length?L.map(p=>`<div class="ph"><img src="${p.data}"><small>${esc(p.cap)}<br>${new Date(p.at).toLocaleDateString('es-ES')}</small><button data-f="${p.id}">×</button></div>`).join(''):'<p class="note">Vacía. Pulsa «Foto con Mor».</p>';
+  $('photoList').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ await DB.del('photos',b.dataset.f); renderPhotos(); }); }
+$('bPhotos').onclick=()=>{ $('sheetMore').classList.remove('open'); renderPhotos(); $('sheetPhotos').classList.add('open'); };
+$('bSnap').onclick=()=>{ $('sheetPhotos').classList.remove('open'); memoryPhoto(); };
+
+/* =====================================================================
+   27. FOTO RÁPIDA (ticket, menú, ejercicio, nevera…)
+   ===================================================================== */
+let pendingPhoto=null;
+$('bQuickPhoto').onclick=()=>{ $('sheetMore').classList.remove('open'); $('fileQuick').click(); };
+$('fileQuick').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  pendingPhoto=await shrinkImage(f); setEmotion('curioso'); Sfx.play('pop');
+  showSub('Mor tener la foto. Dime qué hacer (o espera y Mor mirar solo).');
+  clearTimeout(window._qp); window._qp=setTimeout(()=>{ if(pendingPhoto&&!busy) send('Mira esta foto: dime qué ves y cómo me puedes ayudar con ella.'); },9000); };
+
+/* =====================================================================
+   28. INTÉRPRETE (en directo)
+   ===================================================================== */
+$('bInterp').onclick=()=>{ $('sheetMore').classList.remove('open'); $('sheetInterp').classList.add('open'); };
+$('iGo').onclick=()=>{ const l=$('iLang').value.trim()||'inglés'; $('sheetInterp').classList.remove('open'); Live.start({interprete:l}); };
 /* =====================================================================
    15. DESPERTAR
    ===================================================================== */
