@@ -76,18 +76,71 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
 #attachBar{display:none;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 12px}
 .grade{display:none;gap:8px;justify-content:center;margin-top:6px}
 .grade.show{display:flex}
+/* ===== diseño estilo Claude ===== */
+.app{display:flex;height:100dvh;width:100%}
+#side{width:260px;flex:none;background:#07111d;border-right:1px solid rgba(127,216,255,.14);overflow:auto;padding:calc(12px + env(safe-area-inset-top)) 8px calc(14px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:2px;z-index:17}
+.sbrand{font-weight:800;letter-spacing:.35em;font-size:13px;color:var(--cel);padding:4px 10px 10px}
+.shead{font:700 10px system-ui;letter-spacing:.14em;color:var(--dim);padding:12px 10px 4px}
+.sitem{background:none;border:none;color:var(--cel2);text-align:left;font:500 14px system-ui;padding:8px 10px;border-radius:9px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none}
+.sitem:hover{background:rgba(127,216,255,.08)}.sitem.on{background:rgba(127,216,255,.16);color:#fff}
+.snew{border:1px solid rgba(127,216,255,.35);margin-bottom:4px;font-weight:700}
+.schat{font-size:13px;opacity:.9}
+#sideShade{display:none}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.work{flex:1;min-height:0;display:flex}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid rgba(127,216,255,.08)}
+#feed{flex:1;overflow:auto;padding:12px 16px 6px;scroll-behavior:smooth}
+.fm{margin:8px 0;padding:9px 13px;border-radius:14px;max-width:86%;width:fit-content;line-height:1.45;font-size:15px;background:rgba(127,216,255,.06);word-wrap:break-word;overflow-wrap:anywhere}
+.fm.u{background:rgba(127,216,255,.17);margin-left:auto}.fm.note{background:none;color:var(--dim);font-size:12px;padding:2px 6px;margin:4px auto;max-width:100%}
+.fm .mcard{margin:8px 0 0}.fempty{color:var(--dim);text-align:center;margin-top:20vh;line-height:1.6}
+.col .sub{width:auto;max-width:none;text-align:left;font-size:15px;margin:0 16px;max-height:34vh;padding:6px 12px;border-left:2px solid var(--cel);min-height:0;text-shadow:none}
+.col .sub:empty{display:none}.sub .you{display:none}
+.col .hear{width:auto;text-align:left;padding:0 16px}
+.main .bottom{max-width:none;border-top:1px solid rgba(127,216,255,.08)}
+.stage{width:min(40%,560px);flex:none;justify-content:flex-start;padding-top:4vh}
+#face{width:100%;max-height:42vh}
+.tb{display:none!important}
+#bSideT{display:none;background:none;border:none;color:var(--cel);font-size:22px;cursor:pointer;margin-right:6px}
+#nowCard{display:none;margin:10px auto 0;width:86%;background:rgba(127,216,255,.07);border:1px solid rgba(127,216,255,.3);border-radius:14px;padding:10px 12px;font-size:14px;text-align:center}
+#nowCard small{color:var(--dim)}
+.hclock{font:800 46px ui-monospace,monospace;color:var(--cel);letter-spacing:.05em}
+.hcard{background:rgba(127,216,255,.07);border:1px solid rgba(127,216,255,.25);border-radius:14px;padding:10px 12px;margin-top:10px}
+.sheet input[type=time]{background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:8px 10px;color-scheme:dark}
+.sheet select{background:#0e2033;color:var(--cel2);border:1px solid rgba(127,216,255,.35);border-radius:8px;padding:6px}
+.sheet{inset:0 auto 0 260px;width:min(480px,100vw);max-height:none;height:100dvh;border-radius:0 18px 18px 0;border-top:none;border-right:1px solid rgba(127,216,255,.3);transform:translateX(-120%);padding-top:calc(18px + env(safe-area-inset-top));box-shadow:8px 0 30px rgba(0,0,0,.4);z-index:15}
+.sheet.open{transform:none}
+#login{z-index:40;cursor:default}
+#login form{display:flex;flex-direction:column;gap:10px;width:min(320px,86vw)}
+#login input{background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:12px;color:var(--cel2);font:inherit;font-size:16px;padding:12px 14px;outline:none}
+#login button{background:var(--cel);color:var(--bg);border:none;border-radius:12px;font:700 15px system-ui;padding:12px;cursor:pointer}
+#lgErr{color:var(--red);font-size:13px;min-height:1.2em;text-align:center}
+@media (max-width:760px){
+  #side{position:fixed;left:0;top:0;bottom:0;width:min(290px,84vw);transform:translateX(-105%);transition:transform .25s ease;box-shadow:8px 0 30px rgba(0,0,0,.5)}
+  body.sideOpen #side{transform:none} body.sideOpen #sideShade{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:16}
+  #bSideT{display:inline-block}
+  .sheet{left:0;width:100vw;border-radius:0}
+  .stage{width:34%;padding-top:2vh}
+  #face{max-height:24vh}
+  #nowCard{width:94%;font-size:12px;padding:7px 8px}
+  #feed{padding:8px 10px 4px}.fm{font-size:14px;max-width:92%}
+  .col .sub{margin:0 10px;font-size:14px}
+}
 </style>
 </head>
 <body>
 
+<div class="gate" id="login"><div class="brand" style="font-size:18px;color:var(--cel)">M.O.R.</div>
+  <form id="lgForm" autocomplete="on"><input id="lgUser" placeholder="Usuario" autocomplete="username" autocapitalize="none"><input id="lgPass" type="password" placeholder="Contraseña" autocomplete="current-password"><button type="submit">Entrar</button><div id="lgErr"></div></form>
+</div>
 <div class="gate" id="gate">
   <svg viewBox="-3.2 -2.2 6.4 4.6" width="260"><g fill="none" stroke="#7fd8ff" stroke-width=".12" stroke-linecap="round" opacity=".7">
     <path d="M-2.2,0 Q-1.35,.35 -.5,0"/><path d="M.5,0 Q1.35,.35 2.2,0"/></g></svg>
   <p>TOCA PARA DESPERTAR A M.O.R.</p>
 </div>
 
+<div class="app"><aside id="side"></aside><div id="sideShade"></div><div class="main">
 <div class="top">
-  <div class="brand">M.O.R.<i id="earDot" title="Escuchando"></i><small id="convName" style="display:block;font-size:10px;letter-spacing:0;opacity:.7;cursor:pointer;max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></small></div>
+  <div class="brand"><button id="bSideT" title="Menú">☰</button>M.O.R.<i id="earDot" title="Escuchando"></i><small id="convName" style="display:block;font-size:10px;letter-spacing:0;opacity:.7;cursor:pointer;max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></small></div>
   <div class="tb">
     <button class="tbtn" id="bLive">Directo</button>
     <button class="tbtn" id="bEar">Oído</button>
@@ -99,6 +152,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   </div>
 </div>
 
+<div class="work"><div class="col" id="col"><div id="feed"></div></div>
 <div class="stage">
   <div class="timer" id="timer"></div>
   <svg id="face" viewBox="-3.4 -2.4 6.8 5.2">
@@ -127,7 +181,9 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="sub" id="sub"></div>
   <div class="grade" id="grade"><button class="tbtn" data-g="no">No lo sabía</button><button class="tbtn" data-g="casi">Casi</button><button class="tbtn" data-g="si">Lo sabía</button></div>
   <div class="hear" id="hear"></div>
+  <div id="nowCard"></div>
   <div class="cam" id="camBox"><canvas id="camView" width="160" height="120"></canvas></div>
+</div>
 </div>
 
 <div id="attachBar"></div>
@@ -137,6 +193,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <input class="inp" id="inp" placeholder="Habla con M.O.R.… (o di «oye MOR»)" autocomplete="off">
   <button class="rbtn" id="bSend" title="Enviar">OK</button>
 </div>
+</div></div>
 
 <!-- MÁS -->
 <div class="sheet" id="sheetMore">
@@ -351,6 +408,24 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="row"><input type="number" id="itRows" placeholder="filas (vacío = auto)" style="width:130px"><input type="number" id="itCols" placeholder="columnas" style="width:110px"><input type="number" id="itH" placeholder="altura final px (opcional)" style="width:190px"><input type="text" id="itName" placeholder="nombre (p. ej. gato_pirata)" style="flex:1;min-width:140px"></div>
   <div class="row"><button class="tbtn on" id="itGo">Preparar</button></div>
   <div id="itOut"></div>
+</div>
+<div class="sheet" id="sheetHoy"><button class="close" data-close>×</button><h3>HOY</h3><div id="hoyBox"></div></div>
+<div class="sheet" id="sheetRutina"><button class="close" data-close>×</button>
+  <h3>MI RUTINA</h3>
+  <div class="note" style="margin-top:0">Cuéntale a Mor tu día (a qué hora te levantas, clases, deberes, entreno, comidas, a qué hora te acuestas…) y te monta el horario. Luego puedes cambiar lo que quieras.</div>
+  <div class="row"><textarea id="rtTxt" rows="4" placeholder="P. ej.: me levanto a las 7:30, cole de 8:30 a 15:00, como a las 15:30, entreno martes y jueves de 18 a 19:30, me acuesto a las 23…" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></textarea></div>
+  <div class="row"><button class="tbtn on" id="rtGo">Crear mi rutina</button></div>
+  <div class="row"><button class="tbtn" id="rtLab">Entre semana</button><button class="tbtn" id="rtFin">Fin de semana</button><button class="tbtn" id="rtAdd">＋ Bloque</button></div>
+  <div id="rtList"></div>
+  <h3>AVISOS</h3>
+  <div class="row"><button class="tbtn" id="rtAvisos">Avisos: sí</button><button class="tbtn on" id="rtIcs">Añadir a mi calendario (.ics)</button></div>
+  <div class="note">Con Mor abierto, te avisa al empezar cada bloque. Para que el móvil te avise aunque Mor esté cerrado, descarga el .ics y ábrelo con tu calendario (en Google Calendar: calendar.google.com › Ajustes › Importar). Si cambias la rutina, vuelve a importarlo.</div>
+</div>
+<div class="sheet" id="sheetProto"><button class="close" data-close>×</button>
+  <h3>PROTOCOLOS</h3>
+  <div class="note" style="margin-top:0">Di la frase (o escríbela) y Mor hace todo a la vez. Cámbialos o crea los tuyos.</div>
+  <div id="prList"></div>
+  <div class="row"><button class="tbtn on" id="prAdd">＋ Protocolo nuevo</button></div>
 </div>
 <input type="file" id="fileAttach" multiple hidden>
 <input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
@@ -991,7 +1066,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v14</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1317,7 +1392,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v14 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v15 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2861,6 +2936,182 @@ $('itGo').onclick=async()=>{ const files=[...$('itImgs').files]; if(!files.lengt
   $('itUp').onclick=async()=>{ const [r,b]=devSel(); if(!r) return toast('Abre antes «Programar en GitHub» y elige el repo',5000); const dir=$('itPath').value.trim().replace(/^\/+|\/+$/g,'');
     try{ await GH.ensureBranch(r,b); const u=await GH.commit(r,b,ImgT.out.map(o=>({ruta:(dir?dir+'/':'')+o.name,b64:o.data.split(',')[1]})),`Imágenes ${pref} (M.O.R.)`); toast('Subidas a '+r+' ('+b+')',5000); window.open(u,'_blank'); }catch(e){ toast(e.message,6000); } };
 };
+
+/* =====================================================================
+   50. INICIO DE SESIÓN (candado del aparato: la contraseña no está en el código, solo su huella)
+   ===================================================================== */
+const LOGIN_HASH='fdee60d62cf6fba88d5bd239e58048b5f67ce53ab9cac8c90a3d4646a40f3bb3';
+async function loginHash(u,p){ const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(u.trim().toLowerCase()+'\n'+p),'PBKDF2',false,['deriveBits']);
+  const b=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:new TextEncoder().encode('mor-rocketjam-v1'),iterations:150000},k,256);
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+if(localStorage.getItem('mor_sesion')===LOGIN_HASH) $('login').style.display='none';
+$('lgForm').onsubmit=async e=>{ e.preventDefault(); $('lgErr').textContent='Comprobando…';
+  try{ const h=await loginHash($('lgUser').value,$('lgPass').value); if(h===LOGIN_HASH){ localStorage.setItem('mor_sesion',h); $('lgPass').value=''; $('login').style.display='none'; $('lgErr').textContent=''; }
+    else $('lgErr').textContent='Usuario o contraseña incorrectos'; }catch(err){ $('lgErr').textContent='Error: '+err.message; } };
+function cerrarSesion(){ localStorage.removeItem('mor_sesion'); location.reload(); }
+
+/* =====================================================================
+   51. DISEÑO ESTILO CLAUDE: menú a la izquierda, chat a la izquierda, ojos a la derecha
+   ===================================================================== */
+['sub','grade','hear'].forEach(id=>$('col').appendChild($(id))); document.querySelector('.main').append($('attachBar'),document.querySelector('.bottom'));
+const SIDE=[
+  ['DÍA',[['☀️ Hoy',()=>Hoy.open()],['🕒 Mi rutina',()=>Rutina.open()],['⚡ Protocolos',()=>Proto.open()],['📅 Agenda','bAgenda']]],
+  ['HABLAR',[['🎙️ Directo','bLive'],['👂 Oído','bEar'],['⌨️ Modo texto','bTexto'],['🔊 Voz','bVoice'],['🗣️ Elegir voz','bVozModo']]],
+  ['ESTUDIO',[['📖 Estudiar','bStudy'],['🔁 Repasar','bReview'],['📝 Apuntes','bNotes'],['💻 Aprender a programar','bCourse']]],
+  ['CREAR',[['🎮 Crear juego','bGameStudio'],['🧊 Taller 3D','bTaller3d'],['🖼️ Taller de imágenes','bImgT'],['📦 Proyectos grandes','bProj'],['🐙 Programar en GitHub','bDev']]],
+  ['MOR',[['📷 Mirar (cámara)','bCam'],['📸 Foto rápida','bQuickPhoto'],['🧑 Personas','bPeople'],['🌍 Intérprete','bInterp'],['🎲 Jugar','bGames'],['💝 Caja de recuerdos','bPhotos'],['🌧️ Sonido para concentrarse','bSound'],['🧠 Memoria','bMem'],['🔎 Buscar recuerdos','bSearch'],['🔌 Conectores','bConn']]],
+  ['AJUSTES',[['📲 Instalar app','bInstall'],['🩺 Probar conexión','bDiag'],['🔑 Cambiar llave','bKey'],['🚪 Cerrar sesión',()=>cerrarSesion()]]]];
+const cierraPaneles=()=>document.querySelectorAll('.sheet.open').forEach(s=>s.classList.remove('open'));
+function renderSide(){
+  const convs=Convs.list().sort((a,b)=>(b.id==='main')-(a.id==='main')||b.at-a.at).slice(0,25);
+  $('side').innerHTML=`<div class="sbrand">M.O.R.</div><button class="sitem snew" id="sNew">＋ Chat nuevo</button>`
+    +SIDE.map(([h,L],gi)=>`<div class="shead">${h}</div>`+L.map(([t,a],i)=>{ const b=typeof a==='string'?$(a):null; const on=b&&b.classList.contains('on');
+      const lab=a==='bTexto'||a==='bVoice'?b.textContent:t; return `<button class="sitem${on?' on':''}" data-s="${gi}-${i}">${a==='bTexto'?'⌨️ ':a==='bVoice'?'🔊 ':''}${esc(lab.replace(/^[^\wÁÉÍÓÚáéíóúñ¿¡]+/,'')===lab?lab:lab)}</button>`; }).join('')).join('')
+    +`<div class="shead">CHATS</div>`+convs.map(c=>`<button class="sitem schat${c.id===Convs.cur?' on':''}" data-c="${c.id}">${c.proj?'📁 ':''}${esc(c.title)}</button>`).join('')
+    +`<button class="sitem" id="sAllChats">Ver todos los chats y proyectos…</button>`;
+  $('side').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ const [g,i]=b.dataset.s.split('-').map(Number), a=SIDE[g][1][i][1]; cierraPaneles(); document.body.classList.remove('sideOpen');
+    if(typeof a==='string') $(a).click(); else a(); setTimeout(renderSide,300); });
+  $('side').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ Convs.switchTo(b.dataset.c); renderFeed(); renderSide(); document.body.classList.remove('sideOpen'); });
+  $('sNew').onclick=()=>{ Convs.nuevo(Convs.info().proj); renderFeed(); renderSide(); document.body.classList.remove('sideOpen'); $('inp').focus(); };
+  $('sAllChats').onclick=()=>{ cierraPaneles(); document.body.classList.remove('sideOpen'); renderChat(); $('sheetChat').classList.add('open'); };
+}
+$('bSideT').onclick=()=>{ renderSide(); document.body.classList.toggle('sideOpen'); };
+$('sideShade').onclick=()=>document.body.classList.remove('sideOpen');
+// el chat completo, a la izquierda
+function fmHtml(c){ const note=c.r==='m'&&/^\[[\s\S]*\]$/.test(c.t.trim()); return `<div class="fm ${c.r}${note?' note':''}">${note?esc(c.t.trim().slice(1,-1)):mdLite(c.t)}</div>`; }
+async function renderFeed(){ const cid=Convs.cur, L=(await DB.all('chats')).filter(c=>(c.cid||'main')===cid).slice(-120);
+  $('feed').innerHTML=L.length?L.map(fmHtml).join(''):`<div class="fempty">Hola 👋 Escríbeme o pulsa HABLA.<br><small>Tus chats y todos los paneles están en el menú de la izquierda.</small></div>`;
+  $('convName').textContent=Convs.info().title; requestAnimationFrame(()=>$('feed').scrollTop=1e9); }
+const _logChat15=logChat;
+logChat=(r,t)=>{ const p=_logChat15(r,t); const f=$('feed'); f.querySelector('.fempty')?.remove();
+  const sub=$('sub'), note=r==='m'&&/^\[[\s\S]*\]$/.test(String(t).trim());
+  if(r==='m'&&!note&&sub.textContent.trim()){ const d=document.createElement('div'); d.className='fm m'; const c=sub.cloneNode(true); c.querySelectorAll('.you').forEach(x=>x.remove()); d.innerHTML=mdLite(String(t)); [...c.querySelectorAll('.mcard')].forEach(x=>d.appendChild(x)); f.appendChild(d); sub.innerHTML=''; }
+  else f.insertAdjacentHTML('beforeend',fmHtml({r,t:String(t)}));
+  f.scrollTop=1e9; if(r==='u') setTimeout(renderSide,50); return p; };
+const _switch15=Convs.switchTo.bind(Convs); Convs.switchTo=id=>{ _switch15(id); renderFeed(); };
+renderFeed(); renderSide();
+
+/* =====================================================================
+   52. MI RUTINA (horario de entre semana y fin de semana, «ahora toca», avisos y calendario)
+   ===================================================================== */
+const hm=s=>{ const [h,m]=String(s||'0:0').split(':').map(Number); return h*60+(m||0); };
+const Rutina={
+  data(){ return MEM.rutina=MEM.rutina||{lab:[],fin:[]}; },
+  tipoHoy(d=new Date()){ const w=d.getDay(); return w===0||w===6?'fin':'lab'; },
+  hoy(){ const sk=(MEM.rutinaSkip||{})[hoyKey()]||[]; return (this.data()[this.tipoHoy()]||[]).filter(b=>!sk.includes(norm(b.t))).sort((a,b)=>hm(a.i)-hm(b.i)); },
+  ahora(){ const n=new Date(), m=n.getHours()*60+n.getMinutes(), L=this.hoy(); const cur=L.find(b=>hm(b.i)<=m&&m<hm(b.f||b.i)+(b.f?0:30)); const sig=L.find(b=>hm(b.i)>m); return {cur,sig,L}; },
+  forPrompt(){ const L=this.hoy(); if(!L.length) return ''; const {cur,sig}=this.ahora();
+    return `\nRUTINA DE HOY (${this.tipoHoy()==='fin'?'fin de semana':'entre semana'}): ${L.map(b=>b.i+(b.f?'-'+b.f:'')+' '+b.t).join('; ')}.${cur?' AHORA TOCA: '+cur.t+'.':''}${sig?' DESPUÉS: '+sig.t+' a las '+sig.i+'.':''}\nSi hoy no toca un bloque, escribe {{saltar_bloque: nombre del bloque}}. Si te cuenta su día para que le hagas o rehagas la rutina, escribe {{rutina: lo que te ha contado}}.`; },
+  async crear(txt){ const o=await geminiJSON(`Eres un asistente personal experto en organizar el tiempo de un estudiante. Con lo que cuenta, monta su rutina diaria realista y equilibrada (horas de levantarse, clase, comidas, estudio, entreno, ocio, pantallas fuera y dormir), por bloques con hora de inicio y fin (HH:MM, 24 h). Una para ENTRE SEMANA (lab) y otra para FIN DE SEMANA (fin). Respeta lo que diga; si falta algo, pon algo sensato. Títulos cortos.\n\nLO QUE CUENTA: ${txt}`,
+      {type:'OBJECT',properties:{lab:{type:'ARRAY',items:{type:'OBJECT',properties:{i:{type:'STRING'},f:{type:'STRING'},t:{type:'STRING'}},required:['i','f','t']}},fin:{type:'ARRAY',items:{type:'OBJECT',properties:{i:{type:'STRING'},f:{type:'STRING'},t:{type:'STRING'}},required:['i','f','t']}}},required:['lab','fin']},[],MODELOS_RAPIDOS,60000);
+    const ok=b=>/^\d{1,2}:\d{2}$/.test(b.i)&&b.t; MEM.rutina={lab:o.lab.filter(ok),fin:o.fin.filter(ok)}; saveMem(); return MEM.rutina; },
+  tab:'lab',
+  open(){ cierraPaneles(); this.render(); $('sheetRutina').classList.add('open'); },
+  render(){ const L=this.data()[this.tab]||[]; $('rtLab').classList.toggle('on',this.tab==='lab'); $('rtFin').classList.toggle('on',this.tab==='fin');
+    $('rtList').innerHTML=L.map((b,i)=>`<div class="row" style="margin-top:6px"><input type="time" value="${esc(b.i)}" data-ri="${i}" data-k="i" style="width:110px"><input type="time" value="${esc(b.f||'')}" data-ri="${i}" data-k="f" style="width:110px"><input type="text" value="${esc(b.t)}" data-ri="${i}" data-k="t" style="flex:1;min-width:130px"><button class="tbtn" data-rx="${i}">×</button></div>`).join('')||'<div class="note">Vacío. Cuéntale a Mor tu día arriba, o añade bloques a mano.</div>';
+    $('rtList').querySelectorAll('[data-ri]').forEach(x=>x.onchange=()=>{ L[+x.dataset.ri][x.dataset.k]=x.value; L.sort((a,b)=>hm(a.i)-hm(b.i)); saveMem(); this.render(); this.tick(true); });
+    $('rtList').querySelectorAll('[data-rx]').forEach(x=>x.onclick=()=>{ L.splice(+x.dataset.rx,1); saveMem(); this.render(); });
+    $('rtAvisos').textContent='Avisos: '+(MEM.rutinaAvisos===false?'no':'sí'); },
+  // .ics con eventos que se repiten cada semana y aviso a la hora: el móvil avisa aunque Mor esté cerrado
+  ics(){ const p=n=>String(n).padStart(2,'0'), out=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Rocket Jam//MOR//ES','CALSCALE:GREGORIAN'];
+    const lunes=new Date(); lunes.setDate(lunes.getDate()+((8-lunes.getDay())%7||7)); const sab=new Date(lunes); sab.setDate(lunes.getDate()+5);
+    const dt=(d,h)=>{ const [H,M]=h.split(':').map(Number); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}T${p(H)}${p(M)}00`; };
+    [['lab',lunes,'MO,TU,WE,TH,FR'],['fin',sab,'SA,SU']].forEach(([k,d,days])=>(this.data()[k]||[]).forEach((b,i)=>{ const fin=b.f&&hm(b.f)>hm(b.i)?b.f:`${p(Math.floor((hm(b.i)+30)/60)%24)}:${p((hm(b.i)+30)%60)}`;
+      out.push('BEGIN:VEVENT',`UID:mor-${k}-${i}-${Date.now()}@rocketjam`,`DTSTAMP:${dt(new Date(),'00:00')}`,`DTSTART:${dt(d,b.i)}`,`DTEND:${dt(d,fin)}`,`RRULE:FREQ=WEEKLY;BYDAY=${days}`,`SUMMARY:${b.t.replace(/[,;\\]/g,' ')}`,'BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${b.t.replace(/[,;\\]/g,' ')}`,'TRIGGER:-PT0M','END:VALARM','END:VEVENT'); }));
+    out.push('END:VCALENDAR'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([out.join('\r\n')],{type:'text/calendar'})); a.download='rutina-mor.ics'; a.click(); },
+  last:null,
+  tick(silencio){ const {cur,sig}=this.ahora(); const card=$('nowCard');
+    card.innerHTML=cur||sig?`${cur?`<b>Ahora:</b> ${esc(cur.t)}${cur.f?` <small>hasta ${esc(cur.f)}</small>`:''}`:''}${sig?`<div><small>Luego: ${esc(sig.t)} · ${esc(sig.i)}</small></div>`:''}`:''; card.style.display=cur||sig?'block':'none';
+    const k=cur?hoyKey()+cur.i+cur.t:null; if(k===this.last) return; const prev=this.last; this.last=k; if(silencio||!cur||prev===null||MEM.rutinaAvisos===false) return;
+    const msg=`Son las ${cur.i}. Ahora toca: ${cur.t}.`;
+    if(document.hidden){ try{ if(Notification.permission==='granted') new Notification('M.O.R.',{body:msg,icon:'icon-192.png'}); }catch(e){} }
+    else if(!busy&&!(typeof Live!=='undefined'&&Live.on)) localSay(msg,'feliz'); }
+};
+$('rtLab').onclick=()=>{ Rutina.tab='lab'; Rutina.render(); }; $('rtFin').onclick=()=>{ Rutina.tab='fin'; Rutina.render(); };
+$('rtAdd').onclick=()=>{ (Rutina.data()[Rutina.tab]=Rutina.data()[Rutina.tab]||[]).push({i:'12:00',f:'13:00',t:'Nuevo bloque'}); saveMem(); Rutina.render(); };
+$('rtGo').onclick=async()=>{ const t=$('rtTxt').value.trim(); if(!t) return $('rtTxt').focus(); $('rtGo').disabled=true; $('rtGo').textContent='Mor organizar…';
+  try{ await Rutina.crear(t); Rutina.render(); Rutina.tick(true); toast('Rutina creada. Revísala y cambia lo que quieras.',4000); }catch(e){ toast('Error: '+e.message,5000); } $('rtGo').disabled=false; $('rtGo').textContent='Crear mi rutina'; };
+$('rtIcs').onclick=()=>Rutina.ics();
+$('rtAvisos').onclick=()=>{ MEM.rutinaAvisos=MEM.rutinaAvisos===false; saveMem(); Rutina.render(); if(MEM.rutinaAvisos!==false) try{ askNotify(); }catch(e){} };
+setInterval(()=>Rutina.tick(),20000); Rutina.tick(true);
+
+/* =====================================================================
+   53. PANEL «HOY» (todo de un vistazo) e INFORME DE CADA NOCHE
+   ===================================================================== */
+const Informe={
+  async hacer(){ const ini=new Date(); ini.setHours(0,0,0,0); const chats=(await DB.all('chats')).filter(c=>c.at>=ini.getTime()).slice(-120).map(c=>(c.r==='u'?'Él: ':'Mor: ')+String(c.t).slice(0,300)).join('\n').slice(0,14000);
+    const hechas=(MEM.tasks||[]).filter(t=>t.done&&t.doneAt>=ini.getTime()).map(t=>t.t), pend=(MEM.tasks||[]).filter(t=>!t.done).map(t=>t.t);
+    const sem=[...Array(7)].map((_,i)=>{ const d=new Date(); d.setDate(d.getDate()-i); return d.toISOString().slice(0,10); });
+    const hab=Habits.list().map(h=>`${h.n}: hoy ${h.log[hoyKey()]?'sí':'no'}, ${sem.filter(k=>h.log[k]).length}/7 esta semana, racha ${Habits.streak(h)}`).join('; ');
+    const t=await gemini({contents:[{role:'user',parts:[{text:`Eres M.O.R., su asistente personal (estilo JARVIS, cercano y con tu toque torpe). Escribe el INFORME DE HOY en español, breve y útil, con estos apartados en negrita: Lo que has hecho hoy · Pendiente · Tu semana (hábitos y objetivos) · Plan para mañana (3 puntos concretos según su rutina). Solo datos reales; NO inventes nada.\n\nRUTINA DE MAÑANA: ${(Rutina.data()[Rutina.tipoHoy(new Date(Date.now()+864e5))]||[]).map(b=>b.i+' '+b.t).join('; ')||'sin rutina'}\nTAREAS HECHAS HOY: ${hechas.join('; ')||'ninguna'}\nPENDIENTES: ${pend.join('; ')||'ninguna'}\nHÁBITOS: ${hab||'sin hábitos'}\nOBJETIVOS: ${Goals.list().map(g=>g.t+(g.steps?` (${g.steps.filter(s=>s.done).length}/${g.steps.length})`:'')).join('; ')||'ninguno'}\nCONVERSACIONES DE HOY:\n${chats||'(ninguna)'}`}]}],generationConfig:{temperature:.4}},MODELOS_MEMORIA,45000);
+    MEM.informe={d:hoyKey(),t:String(t).trim(),at:Date.now()}; saveMem(); return MEM.informe; },
+  async mostrar(hablar=true){ showSub('Mor preparar tu informe del día…'); try{ const i=await this.hacer(); showSub(i.t); logChat('m','[Informe del día]'); if(hablar) localSay('Aquí tienes tu informe de hoy. '+i.t.replace(/\*\*/g,'').split('\n').slice(0,4).join(' ').slice(0,400),'tierno'); if($('sheetHoy').classList.contains('open')) Hoy.render(); }catch(e){ showSub('No pude hacer el informe: '+e.message); } }
+};
+setInterval(()=>{ const n=new Date(); if(n.getHours()*60+n.getMinutes()>=21*60+30&&(MEM.informe||{}).d!==hoyKey()&&!document.hidden&&!busy&&$('login').style.display==='none'&&MEM.informeAuto!==false) Informe.mostrar(); },60000);
+const Hoy={iv:null,
+  open(){ cierraPaneles(); this.render(); $('sheetHoy').classList.add('open'); clearInterval(this.iv); this.iv=setInterval(()=>{ if($('sheetHoy').classList.contains('open')) this.render(); else clearInterval(this.iv); },30000); },
+  async render(){ const n=new Date(), {cur,sig,L}=Rutina.ahora(), m=n.getHours()*60+n.getMinutes(); const fin=new Date(); fin.setHours(23,59,59,999);
+    const recs=(MEM.reminders||[]).filter(r=>!r.fired&&r.when<=fin.getTime()&&r.when>=Date.now()-3600000), pend=(MEM.tasks||[]).filter(t=>!t.done);
+    $('hoyBox').innerHTML=`<div class="hclock">${n.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</div><div class="note" style="margin-top:0">${n.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</div><div class="note" id="hoyTiempo">${MEM.ciudad?'Mirando el tiempo…':'Dile a Mor tu ciudad para ver el tiempo.'}</div>
+      <div class="hcard">${cur?`<b>Ahora:</b> ${esc(cur.t)}${cur.f?' <small>hasta '+esc(cur.f)+'</small>':''}`:'<b>Ahora:</b> tiempo libre'}${sig?`<br><small>Luego: ${esc(sig.t)} a las ${esc(sig.i)}</small>`:''}</div>
+      <h3>RUTINA DE HOY</h3>${L.length?'<ul>'+L.map(b=>`<li><span>${hm(b.f||b.i)<=m?'✓ ':b===cur?'▶ ':''}${esc(b.i)}${b.f?'–'+esc(b.f):''} · ${esc(b.t)}</span></li>`).join('')+'</ul>':'<div class="note">Sin rutina. Créala en «Mi rutina».</div>'}
+      <h3>TAREAS</h3>${pend.length?'<ul>'+pend.map(t=>`<li><span>${esc(t.t)}</span><button class="tbtn" data-ht="${t.id}" style="color:var(--cel2)">Hecha</button></li>`).join('')+'</ul>':'<div class="note">Nada pendiente. 🎉</div>'}
+      ${recs.length?'<h3>RECORDATORIOS DE HOY</h3><ul>'+recs.map(r=>`<li><span>${new Date(r.when).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} · ${esc(r.t)}</span></li>`).join('')+'</ul>':''}
+      ${Habits.list().length?'<h3>HÁBITOS</h3><ul>'+Habits.list().map(h=>`<li><span>${h.log[hoyKey()]?'✅':'⬜'} ${esc(h.n)} <small>racha ${Habits.streak(h)}</small></span>${h.log[hoyKey()]?'':`<button class="tbtn" data-hh="${esc(h.n)}" style="color:var(--cel2)">Hecho</button>`}</li>`).join('')+'</ul>':''}
+      ${Goals.list().length?'<h3>OBJETIVOS</h3><ul>'+Goals.list().map(g=>`<li><span>${esc(g.t)}${g.steps&&g.steps.length?` <small>${g.steps.filter(s=>s.done).length}/${g.steps.length}</small>`:''}</span></li>`).join('')+'</ul>':''}
+      ${Timers.list&&Timers.list.length?'<h3>TEMPORIZADORES</h3><ul>'+Timers.list.map(t=>`<li><span>${esc(t.why||'Temporizador')} · ${Math.max(0,Math.ceil((t.end-Date.now())/60000))} min</span></li>`).join('')+'</ul>':''}
+      <h3>INFORME DEL DÍA</h3>${(MEM.informe||{}).d===hoyKey()?`<div class="txt">${mdLite(MEM.informe.t)}</div>`:'<div class="note">Se hace solo a partir de las 21:30, o pídelo ahora.</div>'}
+      <div class="row"><button class="tbtn on" id="hoyInf">${(MEM.informe||{}).d===hoyKey()?'Rehacer informe':'Hacer informe ahora'}</button><button class="tbtn" id="hoyAuto">Informe automático: ${MEM.informeAuto===false?'no':'sí'}</button></div>`;
+    $('hoyBox').querySelectorAll('[data-ht]').forEach(b=>b.onclick=()=>{ const t=(MEM.tasks||[]).find(x=>x.id===b.dataset.ht); if(t){ t.done=true; t.doneAt=Date.now(); saveMem(); Sfx.play('risa'); this.render(); } });
+    $('hoyBox').querySelectorAll('[data-hh]').forEach(b=>b.onclick=()=>{ Habits.done(b.dataset.hh); this.render(); });
+    $('hoyInf').onclick=()=>Informe.mostrar(false).then(()=>this.render()); $('hoyAuto').onclick=()=>{ MEM.informeAuto=MEM.informeAuto===false; saveMem(); this.render(); };
+    if(MEM.ciudad){ try{ const w=await Weather.get(MEM.ciudad); if(w&&$('hoyTiempo')) $('hoyTiempo').textContent=String(w).slice(0,220); }catch(e){} } }
+};
+
+/* =====================================================================
+   54. PROTOCOLOS («Mor, modo estudio» → varias cosas a la vez, como JARVIS)
+   ===================================================================== */
+const Proto={
+  list(){ if(!MEM.protos){ MEM.protos=[
+      {n:'Modo estudio',f:'modo estudio|protocolo estudio|a estudiar',estudio:25,vigilar:true,sonido:'marron',decir:'Modo estudio activado. Mor vigilar y estar calladito.'},
+      {n:'Me voy a dormir',f:'me voy a dormir|modo dormir|buenas noches mor',sonido:'parar',informe:true,decir:'Que descanses. Te dejo el informe del día y el plan de mañana.'},
+      {n:'Modo entreno',f:'modo entreno|modo entrenamiento|a entrenar',temporizador:40,pedir:'EMPIEZA A ENTRENAR: propónle una rutina de ejercicios concreta para unos 40 minutos (calentamiento, ejercicios con series/repeticiones o tiempos, estiramientos), adaptada a lo que sepas de él. Corta y clara.'}]; saveMem(); }
+    return MEM.protos; },
+  match(t){ const n=' '+norm(t)+' '; return this.list().find(p=>String(p.f||'').split('|').map(x=>norm(x).trim()).filter(Boolean).some(x=>n.includes(' '+x+' ')||n.includes(x))); },
+  async run(p){ Life.touch(); setEmotion('feliz'); showSub('⚡ '+p.n);
+    try{ if(p.sonido) p.sonido==='parar'?Ambient.stop():Ambient.start(p.sonido); }catch(e){}
+    if(p.texto){ MEM.voice=false; Voice.on=false; Voice.stop(); if(Ears.on) Ears.stop(); try{ modoTextoUI(); }catch(e){} }
+    if(p.temporizador){ try{ Timers.add(p.temporizador,p.n); }catch(e){} }
+    if(p.abrir){ ({hoy:()=>Hoy.open(),rutina:()=>Rutina.open(),agenda:()=>$('bAgenda').click()})[p.abrir]?.(); }
+    if(p.decir) await localSay(p.decir,'feliz');
+    if(p.estudio){ try{ await Study.start(p.n.replace(/^modo /i,'')||'estudio',p.estudio,!!p.vigilar); }catch(e){} }
+    if(p.informe) await Informe.mostrar(false);
+    if(p.pedir) await _send15(null,{event:p.pedir}); },
+  open(){ cierraPaneles(); this.render(); $('sheetProto').classList.add('open'); },
+  render(){ const L=this.list(); const sel=v=>`<select data-k="sonido">${[['','—'],['marron','ruido suave'],['lluvia','lluvia'],['olas','olas'],['parar','parar sonido']].map(([a,b])=>`<option value="${a}" ${(v||'')===a?'selected':''}>${b}</option>`).join('')}</select>`;
+    $('prList').innerHTML=L.map((p,i)=>`<div class="hcard" data-pi="${i}"><div class="row" style="margin-top:0"><input type="text" data-k="n" value="${esc(p.n)}" style="flex:1;font-weight:700"><button class="tbtn" data-prun="${i}">Probar</button><button class="tbtn" data-pdel="${i}" style="color:var(--red)">×</button></div>
+      <div class="row"><input type="text" data-k="f" value="${esc(p.f||'')}" placeholder="frases que lo activan, separadas por |" style="flex:1"></div>
+      <div class="row"><label>Temporizador <input type="number" data-k="temporizador" value="${p.temporizador||''}" style="width:70px"> min</label><label>Estudio <input type="number" data-k="estudio" value="${p.estudio||''}" style="width:70px"> min</label><label><input type="checkbox" data-k="vigilar" ${p.vigilar?'checked':''}> vigilar con cámara</label></div>
+      <div class="row"><label>Sonido ${sel(p.sonido)}</label><label><input type="checkbox" data-k="texto" ${p.texto?'checked':''}> modo texto</label><label><input type="checkbox" data-k="informe" ${p.informe?'checked':''}> informe del día</label><label>Abrir <select data-k="abrir">${[['','—'],['hoy','Hoy'],['rutina','Rutina'],['agenda','Agenda']].map(([a,b])=>`<option value="${a}" ${(p.abrir||'')===a?'selected':''}>${b}</option>`).join('')}</select></label></div>
+      <div class="row"><input type="text" data-k="decir" value="${esc(p.decir||'')}" placeholder="Lo que dice Mor" style="flex:1"></div>
+      <div class="row"><input type="text" data-k="pedir" value="${esc(p.pedir||'')}" placeholder="Algo que Mor hace con su cerebro (p. ej. «propón una rutina de ejercicios»)" style="flex:1"></div></div>`).join('');
+    $('prList').querySelectorAll('[data-pi]').forEach(box=>box.querySelectorAll('[data-k]').forEach(x=>x.onchange=()=>{ const p=L[+box.dataset.pi], k=x.dataset.k; p[k]=x.type==='checkbox'?x.checked:x.type==='number'?(+x.value||0):x.value; saveMem(); }));
+    $('prList').querySelectorAll('[data-prun]').forEach(b=>b.onclick=()=>{ cierraPaneles(); this.run(L[+b.dataset.prun]); });
+    $('prList').querySelectorAll('[data-pdel]').forEach(b=>b.onclick=()=>{ L.splice(+b.dataset.pdel,1); saveMem(); this.render(); }); }
+};
+$('prAdd').onclick=()=>{ Proto.list().push({n:'Nuevo protocolo',f:'modo nuevo'}); saveMem(); Proto.render(); };
+const _send15=send;
+send=async function(text,opts={}){
+  if(text&&!opts.event&&!opts.silent){ const p=Proto.match(text); if(p){ logChat('u',text); await Proto.run(p); return; } }
+  return _send15(text,opts); };
+// la IA también sabe de la rutina y los protocolos
+const _sys15=systemPrompt; systemPrompt=function(extra){ return _sys15(extra)+Rutina.forPrompt()+`\nPROTOCOLOS que él puede activar diciendo su frase: ${Proto.list().map(p=>`«${String(p.f||'').split('|')[0]}» (${p.n})`).join(', ')}.`; };
+const _apply15=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply15(acts);
+  for(const a of acts){ const m=String(a).match(/^\s*(saltar[_ ]bloque|rutina)\s*:\s*([\s\S]*)$/i); if(!m) continue; const v=m[2].trim();
+    if(/^saltar/i.test(m[1])){ const L=Rutina.hoy(); const qw=words(v); let best=null,bs=0; L.forEach(b=>{ const s=score(qw,b.t); if(s>bs){bs=s;best=b;} }); if(best){ MEM.rutinaSkip=MEM.rutinaSkip||{}; (MEM.rutinaSkip[hoyKey()]=MEM.rutinaSkip[hoyKey()]||[]).push(norm(best.t)); saveMem(); Rutina.tick(true); toast('Hoy sin: '+best.t,4000); } }
+    else Rutina.crear(v).then(()=>{ Rutina.tick(true); toast('Rutina hecha. Mírala en «Mi rutina».',5000); }).catch(()=>{}); }
+  return made; };
 
 /* =====================================================================
    15. DESPERTAR
