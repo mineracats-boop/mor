@@ -132,6 +132,13 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
 .stBars{display:flex;align-items:flex-end;gap:4px;height:110px;margin:6px 0 12px}.stBars div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}.stBars span{width:100%;background:linear-gradient(var(--cel),#3b82f6);border-radius:4px 4px 0 0;min-height:2px}.stBars small{font-size:10px;color:var(--dim)}
 .stRow{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px}.stRow span{width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stRow i{height:8px;border-radius:4px;background:var(--cel);min-width:2px}.stRow small{color:var(--dim)}
 .stAviso{margin-top:8px;padding:8px;border-radius:10px;background:rgba(255,207,107,.12);color:#ffdf9e;font-size:13px}
+#appWin{position:fixed;inset:0;z-index:40;background:#000;display:none;flex-direction:column}#appWin.open{display:flex}
+#appBar{display:flex;align-items:center;gap:8px;padding:5px 8px;padding-top:max(5px,env(safe-area-inset-top));background:#071321;border-bottom:1px solid rgba(127,216,255,.2);overflow-x:auto}#appBar b{white-space:nowrap;color:var(--acc,#7fd8ff)}
+.appBtns{display:flex;gap:4px;margin-left:auto}.appBtns .tbtn{padding:4px 9px;font-size:12px;white-space:nowrap}
+#appFrames{flex:1;position:relative}.appFrame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#222}
+#appGuia{position:absolute;right:12px;bottom:12px;width:min(360px,calc(100% - 24px));max-height:45vh;overflow:auto;background:rgba(7,19,33,.96);border:1px solid rgba(127,216,255,.35);border-radius:14px;padding:10px 12px;color:#e8f6ff;font-size:14px;line-height:1.45;box-shadow:0 8px 30px #0008}
+#appGuia .close{position:absolute;right:6px;top:4px}#appGuiaTxt{margin:6px 0}#appAsk{width:100%;box-sizing:border-box;background:#0b1a2a;border:1px solid rgba(127,216,255,.25);border-radius:10px;color:#fff;padding:7px 9px}
+#appChip{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;z-index:20;background:#0b2238;color:#cfefff;border:1px solid rgba(127,216,255,.4);border-radius:20px;padding:8px 16px;font-size:14px;cursor:pointer}
 .skGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:8px 0}.skIt{background:rgba(127,216,255,.05);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:3px;font-size:13px}.skIt small{color:var(--dim);font-size:11px}.skIt .row{margin-top:4px;gap:4px}.skIt .tbtn{padding:4px 8px;font-size:12px}
 .skImg{aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:#0b1a2a;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer}.skImg img{width:100%;height:100%;object-fit:cover}
 .pzBox{height:100%;display:flex;flex-direction:column;padding:8px;box-sizing:border-box}.pzBox svg{flex:1;min-height:0;width:100%;height:auto;border-radius:12px;background:#0f2a22}.pzN{flex:1;text-align:center;color:var(--dim);font-size:13px}
@@ -483,6 +490,9 @@ body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area
   <div id="skList"></div>
   <div class="row"><button class="tbtn on" id="skAdd">＋ Skill nueva</button></div>
 </div>
+<div id="appWin"><div id="appBar"><b id="appTit"></b><span class="appBtns"><button class="tbtn on" id="appGuiaBtn">👀 Guíame</button><button class="tbtn" id="appModelo">📦 Traer modelo</button><button class="tbtn" id="appExp">→ Guardar en Mor</button><button class="tbtn" id="appJuego">🎮 Juego a Mor</button><button class="tbtn" id="appSave">💾 Copias</button><button class="tbtn" id="appMin">— Minimizar</button><button class="tbtn" id="appX">×</button></span></div>
+<div id="appFrames"></div><div id="appGuia" style="display:none"><button class="close" id="appGuiaX">×</button><div class="ctit">🤖 Mor</div><div id="appGuiaTxt"></div><input id="appAsk" placeholder="Pregúntale a Mor sobre lo que estás haciendo…"></div></div>
+<button id="appChip" style="display:none"></button>
 <div class="sheet" id="sheetTools"><button class="close" data-close>×</button><h3 style="margin-top:0">HERRAMIENTAS Y AJUSTES</h3><div class="note" style="margin-top:0">Todo esto también se lo puedes pedir a Mor en el chat, o con <b>/</b>.</div><div id="toolsBox"></div></div>
 <div class="sheet" id="sheetUltima"><button class="close" data-close>×</button>
   <h3 style="margin-top:0">🔒 MODO ÚLTIMA HORA</h3>
@@ -605,10 +615,10 @@ const daysTo=f=>Math.round((new Date(f+'T09:00')-new Date(new Date().toDateStrin
 const upcomingExams=()=>MEM.exams.filter(e=>daysTo(e.fecha)>=0);
 
 const DB={p:null,
-  open(){ return this.p||(this.p=new Promise(res=>{ try{ const q=indexedDB.open('mor_db',5);
+  open(){ return this.p||(this.p=new Promise(res=>{ try{ const q=indexedDB.open('mor_db',6);
     q.onupgradeneeded=()=>{ const d=q.result, has=n=>d.objectStoreNames.contains(n);
       if(!has('chats')) d.createObjectStore('chats',{keyPath:'id',autoIncrement:true});
-      for(const n of ['docs','cards','people','photos','vecs','files','projects']) if(!has(n)) d.createObjectStore(n,{keyPath:'id'}); };
+      for(const n of ['docs','cards','people','photos','vecs','files','projects','copias']) if(!has(n)) d.createObjectStore(n,{keyPath:'id'}); };
     q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }catch(e){ res(null); } })); },
   async all(store){ const d=await this.open(); if(!d) return []; return new Promise(r=>{ const q=d.transaction(store).objectStore(store).getAll(); q.onsuccess=()=>r(q.result||[]); q.onerror=()=>r([]); }); },
   async put(store,v){ const d=await this.open(); if(!d) return; return new Promise(r=>{ const t=d.transaction(store,'readwrite'); t.objectStore(store).put(v); t.oncomplete=r; t.onerror=r; }); },
@@ -1213,7 +1223,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v20b</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v21</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1539,7 +1549,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v20b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v21 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3916,6 +3926,104 @@ const _apply85=Agenda.apply.bind(Agenda);
 Agenda.apply=function(acts){ const made=_apply85(acts); for(const a of acts){ const m=String(a).match(/^\s*sketchfab\s*:\s*([\s\S]*)$/i); if(m&&m[1].trim()) setTimeout(()=>SkChat.chat(m[1].trim()),300); } return made; };
 const _sys85=systemPrompt; systemPrompt=function(extra){ return _sys85(extra)+`\n· {{sketchfab: búsqueda en inglés}} cuando quiera buscar, ver o descargar modelos 3D (Mor los busca en Sketchfab y le enseña tarjetas con Ver 3D, Descargar y Guardar). Úsala tú directamente; no le digas que vaya él a la web.`; };
 CMDS.splice(9,0,['/sketchfab','Buscar y descargar modelos 3D',r=>r?SkChat.chat(r):toast('Escribe qué buscar: /sketchfab dragon')]);
+
+/* =====================================================================
+   86. ESTUDIO 3D: Vértice 3D (tu Blender) y ULTIMATE3D (tu Unreal) dentro de Mor
+   - se abren en una ventana que no se pierde al minimizar
+   - Mor les pasa modelos, recoge lo que haces, te guía viendo la pantalla
+   - copias de seguridad automáticas (las últimas 15 de cada app; la última también va a la nube)
+   ===================================================================== */
+const Apps={
+  L:{vertice:{nombre:'Vértice 3D',url:'apps/vertice3d.html',ic:'🧊'},ultimate:{nombre:'ULTIMATE3D',url:'apps/ultimate3d.html',ic:'🎮'}},
+  cur:null, frames:{}, listo:{}, pend:{}, n:0,
+  clave(t){ t=String(t||'').toLowerCase(); return /ulti|unreal|motor|u3d/.test(t)?'ultimate':/vert|blender|model/.test(t)?'vertice':null; },
+  abrir(k){ k=this.clave(k)||k; const A=this.L[k]; if(!A) return toast('No conozco esa app');
+    if(!this.frames[k]){ const f=document.createElement('iframe'); f.className='appFrame'; f.allow='fullscreen; clipboard-write'; f.src=A.url; f.dataset.app=k; $('appFrames').appendChild(f); this.frames[k]=f; }
+    Object.entries(this.frames).forEach(([n,f])=>f.style.display=n===k?'':'none'); this.cur=k;
+    $('appTit').textContent=A.ic+' '+A.nombre; $('appExp').style.display=k==='vertice'?'':'none'; $('appJuego').style.display=k==='ultimate'?'':'none';
+    $('appWin').classList.add('open'); $('appChip').style.display='none'; },
+  minimizar(){ $('appWin').classList.remove('open'); if(this.cur){ $('appChip').textContent=this.L[this.cur].ic+' Volver a '+this.L[this.cur].nombre; $('appChip').style.display=''; } },
+  cerrar(){ if(this.cur&&!confirm('¿Cerrar '+this.L[this.cur].nombre+'? Lo que no esté guardado se recupera desde 💾 Copias.')) return;
+    const f=this.frames[this.cur]; if(f) f.remove(); delete this.frames[this.cur]; delete this.listo[this.cur]; this.cur=null; $('appWin').classList.remove('open'); $('appChip').style.display='none'; $('appGuia').style.display='none'; },
+  async esperar(k,ms=20000){ const t=Date.now(); while(!this.listo[k]){ if(Date.now()-t>ms) throw new Error(this.L[k].nombre+' no arranca'); await new Promise(r=>setTimeout(r,200)); } },
+  async pedir(k,cmd,extra={},ms=20000){ if(!this.frames[k]) this.abrir(k); await this.esperar(k); const id='m'+(++this.n);
+    return new Promise((res,rej)=>{ const to=setTimeout(()=>{ delete this.pend[id]; rej(new Error('la app no contesta')); },ms); this.pend[id]=d=>{ clearTimeout(to); d.error?rej(new Error(d.error)):res(d); };
+      this.frames[k].contentWindow.postMessage(Object.assign({__mor:1,id,cmd},extra),'*'); }); },
+  // modelo de Mor -> app
+  async enviar(k,dataUrl,nombre){ k=this.clave(k)||k; this.abrir(k); const b64=String(dataUrl).split(',')[1]||dataUrl;
+    try{ await this.pedir(k,'importar',{data:b64,name:(nombre||'modelo').replace(/[^\w\-]+/g,'_')+'.glb'}); toast('Modelo enviado a '+this.L[k].nombre); }catch(e){ toast(e.message,5000); } },
+  // Vértice -> tus modelos de Mor
+  async aMor(){ try{ const r=await this.pedir('vertice','exportar'); const nombre=prompt('Nombre del modelo','Modelo de Vértice')||'Modelo de Vértice';
+      await SkChat.guardar({name:nombre,user:'Guille (Vértice 3D)',lic:'Propio',url:''},new Blob([r.glb],{type:'model/gltf-binary'})); this.minimizar();
+      chatCard(`<div class="ctit">🧊 ${esc(nombre)}</div><small>Guardado desde Vértice 3D. Ya lo puedes usar en tus juegos (Imágenes y modelos › Del Taller 3D) o llevar a ULTIMATE3D.</small>`); }
+    catch(e){ toast(e.message,5000); } },
+  // ULTIMATE3D -> juego jugable en Mor
+  async juego(){ try{ toast('Preparando tu juego…'); const r=await this.pedir('ultimate','juego',{},15000); if(!r.html) throw new Error('No se pudo sacar el juego');
+      const nombre=(r.nombre||'Juego').replace(/\.html$/,'').replace(/_/g,' ');
+      const P={id:'pr'+Date.now(),nombre,desc:'Hecho en ULTIMATE3D',at:Date.now(),estado:'listo',files:[{ruta:'index.html',code:r.html}]};
+      await DB.put('projects',P); try{ renderProjects(); }catch(e){} this.minimizar(); Art.open('🎮 '+nombre,{html:r.html});
+      chatCard(`<div class="ctit">🎮 ${esc(nombre)}</div><small>Tu juego de ULTIMATE3D está guardado en Mor (Mis juegos). Desde ahí lo puedes publicar.</small>`); }
+    catch(e){ toast(e.message,5000); } },
+  // Mor mira la pantalla y te dice qué hacer
+  async guia(pregunta){ const k=this.cur; if(!k) return toast('Abre primero Vértice o ULTIMATE3D'); const box=$('appGuiaTxt'); $('appGuia').style.display=''; box.textContent='Mirando tu pantalla…';
+    try{ const r=await this.pedir(k,'ver',{},8000); let manual=''; if(k==='vertice'&&!this.manual){ try{ this.manual=(await this.pedir(k,'manual')).manual; }catch(e){} } manual=this.manual||'';
+      const parts=[]; if(r.img) parts.push({inline_data:{mime_type:'image/jpeg',data:r.img.split(',')[1]}});
+      parts.push({text:`Eres Mor, el ayudante de Guille. Está usando ${this.L[k].nombre} (${k==='vertice'?'su editor 3D estilo Blender, con atajos de Blender: G mover, R rotar, S escalar, Tab modo edición, E extruir, Shift+A añadir, Ctrl+R corte en bucle':'su motor de juegos 3D estilo Unreal: escena, modelos, mecánicas, mundo, sonidos, exportar juego'}).
+Estado de la app: ${JSON.stringify(r.estado)}
+${manual?'Lecciones del curso de la app:\n'+manual+'\n':''}Mira la captura del visor 3D. ${pregunta?'Guille pregunta: «'+pregunta+'»':'Dile cuál es el siguiente paso concreto para avanzar en lo que está haciendo (o en la lección del curso si está abierta).'}
+Responde en español, muy concreto, máximo 4 frases: qué tecla o botón pulsar y qué va a pasar. Sin saludos.`});
+      const t=await gemini({contents:[{role:'user',parts}],generationConfig:{temperature:.4}},MODELOS_LISTOS,20000);
+      box.textContent=t.trim(); }
+    catch(e){ box.textContent='No he podido mirar: '+e.message; } },
+  // copias de seguridad
+  async guardarCopia(k,data,nombre){ const id=k+'_'+Date.now(); await DB.put('copias',{id,app:k,at:Date.now(),nombre,data});
+    const L=(await DB.all('copias')).filter(c=>c.app===k).sort((a,b)=>b.at-a.at); for(const c of L.slice(15)) await DB.del('copias',c.id);
+    try{ Sync.dirty=true; }catch(e){} $('appSave').textContent='💾 Copia '+new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}); },
+  async copias(){ const L=(await DB.all('copias')).sort((a,b)=>b.at-a.at);
+    const c=chatCard(`<div class="ctit">💾 Copias de seguridad de tus apps</div>${L.length?'':'<small>Aún no hay copias. Mor las hace solo mientras trabajas en Vértice 3D o ULTIMATE3D.</small>'}
+      ${['vertice','ultimate'].map(k=>{ const l=L.filter(x=>x.app===k); return l.length?`<b>${this.L[k].ic} ${this.L[k].nombre}</b>`+l.map(x=>`<div class="row" style="justify-content:space-between;margin:3px 0"><small>${new Date(x.at).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · ${esc(x.nombre||'')} · ${Math.max(1,Math.round(x.data.length/1024))} KB</small><span><button class="tbtn" data-r="${x.id}">Recuperar</button><button class="tbtn" data-d="${x.id}">⬇</button></span></div>`).join(''):''; }).join('')}`);
+    c.querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{ const x=L.find(y=>y.id===b.dataset.r); if(!confirm('¿Cargar esta copia en '+this.L[x.app].nombre+'? Lo que tengas abierto ahora se sustituye (antes se guarda una copia).')) return;
+      try{ this.abrir(x.app); await this.esperar(x.app); await this.pedir(x.app,'restaurar',x.app==='vertice'?{snap:JSON.parse(x.data)}:{json:x.data}); toast('Copia recuperada'); }catch(e){ toast(e.message,5000); } });
+    c.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{ const x=L.find(y=>y.id===b.dataset.d); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([x.app==='vertice'?JSON.stringify({app:'Vertice3D',version:1,...JSON.parse(x.data)}):x.data],{type:'application/json'}));
+      a.download=(x.app==='vertice'?'proyecto-vertice3d':'proyecto-ultimate3d')+'-'+new Date(x.at).toISOString().slice(0,16).replace(/[:T]/g,'-')+'.json'; a.click(); }); },
+  elegir(){ const c=chatCard(`<div class="ctit">🧊 Estudio 3D</div><small>Tus apps, dentro de Mor. Mor te pasa los modelos, te guía mirando la pantalla y guarda copias solo.</small>
+    <div class="row" style="margin-top:6px"><button class="tbtn on" data-a="vertice">🧊 Vértice 3D (modelar)</button><button class="tbtn on" data-a="ultimate">🎮 ULTIMATE3D (juegos)</button><button class="tbtn" data-a="copias">💾 Copias</button></div>`);
+    c.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>b.dataset.a==='copias'?this.copias():this.abrir(b.dataset.a)); }
+};
+window.addEventListener('message',e=>{ const d=e.data||{}; if(!d.__app||!Apps.L[d.__app]) return; const f=Apps.frames[d.__app]; if(!f||e.source!==f.contentWindow) return;
+  if(d.listo){ Apps.listo[d.__app]=true; return; }
+  if(d.copia){ Apps.guardarCopia(d.__app,d.copia,d.nombre); return; }
+  if(d.id&&Apps.pend[d.id]){ const r=Apps.pend[d.id]; delete Apps.pend[d.id]; r(d); } });
+$('appMin').onclick=()=>Apps.minimizar(); $('appX').onclick=()=>Apps.cerrar(); $('appChip').onclick=()=>Apps.abrir(Apps.cur);
+$('appExp').onclick=()=>Apps.aMor(); $('appJuego').onclick=()=>Apps.juego(); $('appGuiaBtn').onclick=()=>Apps.guia(); $('appSave').onclick=()=>{ Apps.minimizar(); Apps.copias(); };
+$('appGuiaX').onclick=()=>$('appGuia').style.display='none';
+$('appModelo').onclick=async()=>{ const L=(await DB.all('projects')).filter(p=>p.modelo&&p.files&&p.files.some(f=>f.bin));
+  if(!L.length) return toast('Aún no tienes modelos guardados en Mor (búscalos en Sketchfab o hazlos en el Taller 3D)',5000);
+  const box=$('appGuiaTxt'); $('appGuia').style.display=''; box.innerHTML='<b>¿Qué modelo traigo?</b><br>'+L.slice(-12).reverse().map(p=>`<button class="tbtn" data-m="${p.id}" style="margin:3px">${esc(p.nombre)}</button>`).join('');
+  box.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ const p=L.find(x=>x.id===b.dataset.m); Apps.enviar(Apps.cur,p.files.find(f=>f.bin).data,p.nombre); $('appGuia').style.display='none'; }); };
+$('appAsk').onkeydown=e=>{ if(e.key==='Enter'&&e.target.value.trim()){ Apps.guia(e.target.value.trim()); e.target.value=''; } };
+// los modelos guardados se pueden abrir en tus apps
+const _ver86=Taller3D.ver.bind(Taller3D);
+Taller3D.ver=function(P){ const r=_ver86(P); const g=P.files&&P.files.find(f=>f.bin&&/\.glb$/.test(f.ruta)); if(g){ const c=chatCard(`<div class="row"><button class="tbtn" data-a="v">🧊 Editar en Vértice</button><button class="tbtn" data-a="u">🎮 Llevar a ULTIMATE3D</button></div>`);
+  c.querySelector('[data-a=v]').onclick=()=>Apps.enviar('vertice',g.data,P.nombre); c.querySelector('[data-a=u]').onclick=()=>Apps.enviar('ultimate',g.data,P.nombre); } return r; };
+// en la tarjeta de Sketchfab: abrir directamente en tus apps
+const _tarj86=SkChat.tarjeta.bind(SkChat);
+SkChat.tarjeta=function(q,L){ const c=_tarj86(q,L); c.querySelectorAll('.skIt').forEach((it,i)=>{ const x=L[i]; if(!x||!x.dl) return; const b=document.createElement('button'); b.className='tbtn'; b.textContent='🧊 A Vértice';
+  b.onclick=async()=>{ b.disabled=true; b.textContent='Bajando…'; try{ const blob=await SkChat.bajarModelo(x); const fr=new FileReader(); fr.onload=()=>Apps.enviar('vertice',fr.result,x.name); fr.readAsDataURL(blob); b.textContent='✓ En Vértice'; }catch(e){ b.disabled=false; b.textContent='🧊 A Vértice'; toast(e.message,5000); } };
+  it.querySelector('.row').appendChild(b); }); return c; };
+// la última copia de cada app también viaja con la sincronización (si no es enorme)
+const _paq86=Sync.paquete.bind(Sync);
+Sync.paquete=async function(){ const p=await _paq86(); const L=(await DB.all('copias')).sort((a,b)=>b.at-a.at); p.copias=['vertice','ultimate'].map(k=>L.find(c=>c.app===k)).filter(c=>c&&c.data.length<3e6); return p; };
+const _unir86=Sync.unir.bind(Sync);
+Sync.unir=async function(R){ await _unir86(R); if(R&&R.copias) for(const c of R.copias){ try{ const ya=(await DB.all('copias')).some(x=>x.id===c.id); if(!ya) await DB.put('copias',c); }catch(e){} } };
+const _apply86=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply86(acts); for(const a of acts){ const s=String(a); let m;
+  if((m=s.match(/^\s*app\s*:\s*(.+)$/i))) setTimeout(()=>Apps.abrir(m[1]),300);
+  else if(/^\s*copias\s*$/i.test(s)) setTimeout(()=>Apps.copias(),300);
+  else if((m=s.match(/^\s*gu[ií]a_app\s*:?\s*(.*)$/i))) setTimeout(()=>Apps.guia(m[1].trim()),300); } return made; };
+const _sys86=systemPrompt; systemPrompt=function(extra){ return _sys86(extra)+`\n· Guille tiene dos apps suyas dentro de Mor: Vértice 3D (editor 3D estilo Blender, con curso de modelado) y ULTIMATE3D (motor de juegos 3D estilo Unreal). {{app: vertice}} o {{app: ultimate}} las abre; {{guia_app: pregunta}} mira su pantalla y le dice qué pulsar; {{copias}} enseña las copias de seguridad (Mor las hace solas mientras trabaja). Para modelar personajes o editar un modelo, propón Vértice; para montar escenas y juegos 3D, ULTIMATE3D.${Apps.cur?' Ahora tiene abierto '+Apps.L[Apps.cur].nombre+'.':''}`; };
+CMDS.splice(10,0,['/vertice','Abrir Vértice 3D (tu Blender)',()=>Apps.abrir('vertice')],['/ultimate','Abrir ULTIMATE3D (tu motor de juegos)',()=>Apps.abrir('ultimate')],['/copias','Copias de seguridad de tus apps',()=>Apps.copias()]);
+ATAJOS.splice(2,0,['🧊 Estudio 3D',()=>Apps.elegir()]); renderSide();
 
 /* =====================================================================
    15. DESPERTAR
