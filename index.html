@@ -145,6 +145,7 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="row">
     <button class="tbtn" id="bCam">Mirar (cámara)</button>
     <button class="tbtn" id="bQuickPhoto">Foto rápida</button>
+    <button class="tbtn" id="bProj">Proyectos grandes</button>
     <button class="tbtn" id="bCourse">Aprender a programar</button>
     <button class="tbtn" id="bConn">Conectores</button>
     <button class="tbtn" id="bPeople">Personas</button>
@@ -274,6 +275,14 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
   <div class="row"><button class="tbtn on" id="cGo">Empezar curso</button></div>
   <div class="note">Puedes adjuntarle tu código con el botón «+» para que te lo corrija, y pedirle proyectos completos: te los da en archivos para descargar o en .zip.</div>
 </div>
+<div class="sheet" id="sheetProj" style="max-height:92vh">
+  <button class="close" data-close>×</button>
+  <h3>PROYECTOS GRANDES</h3>
+  <div class="note" style="margin-top:0">Mor planifica el proyecto, lo escribe archivo a archivo (cada uno completo, aunque sea muy largo) y te lo da en .zip. Luego puedes pedirle cambios.</div>
+  <div class="row"><textarea id="pDesc" rows="4" placeholder="Describe lo que quieres: p. ej. un juego 3D de fútbol con Three.js, menús, IA de rivales, sonidos y guardado de partidas…" style="flex:1;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px"></textarea></div>
+  <div class="row"><select id="pSize" style="background:#0e2033;color:var(--cel2);border:1px solid rgba(127,216,255,.35);border-radius:10px;padding:9px"><option>pequeño</option><option selected>mediano</option><option>grande</option><option>enorme</option></select><button class="tbtn on" id="pGo">Empezar proyecto</button></div>
+  <h3>TUS PROYECTOS</h3><ul id="projList"></ul>
+</div>
 <input type="file" id="fileAttach" multiple hidden>
 <input type="file" id="fileQuick" accept="image/*" capture="environment" hidden>
 <div class="toast" id="toast"></div>
@@ -339,10 +348,10 @@ const daysTo=f=>Math.round((new Date(f+'T09:00')-new Date(new Date().toDateStrin
 const upcomingExams=()=>MEM.exams.filter(e=>daysTo(e.fecha)>=0);
 
 const DB={p:null,
-  open(){ return this.p||(this.p=new Promise(res=>{ try{ const q=indexedDB.open('mor_db',4);
+  open(){ return this.p||(this.p=new Promise(res=>{ try{ const q=indexedDB.open('mor_db',5);
     q.onupgradeneeded=()=>{ const d=q.result, has=n=>d.objectStoreNames.contains(n);
       if(!has('chats')) d.createObjectStore('chats',{keyPath:'id',autoIncrement:true});
-      for(const n of ['docs','cards','people','photos','vecs','files']) if(!has(n)) d.createObjectStore(n,{keyPath:'id'}); };
+      for(const n of ['docs','cards','people','photos','vecs','files','projects']) if(!has(n)) d.createObjectStore(n,{keyPath:'id'}); };
     q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }catch(e){ res(null); } })); },
   async all(store){ const d=await this.open(); if(!d) return []; return new Promise(r=>{ const q=d.transaction(store).objectStore(store).getAll(); q.onsuccess=()=>r(q.result||[]); q.onerror=()=>r([]); }); },
   async put(store,v){ const d=await this.open(); if(!d) return; return new Promise(r=>{ const t=d.transaction(store,'readwrite'); t.objectStore(store).put(v); t.oncomplete=r; t.onerror=r; }); },
@@ -471,8 +480,8 @@ const withTimeout=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(r,ms))]);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',gemFails:0,warned:false,an:null,buf:null,cur:null,curText:'',lastSpoken:{t:'',at:0},q:[],acc:'',budget:VOZ_MAX,playing:false,gen:0,
   // ¿lo que ha oído el micro es su propia voz? (para no hacerse caso a sí mismo)
-  isEcho(t){ const hw=words(t); if(!hw.length) return false; const ref=norm(this.curText+' '+(Date.now()-this.lastSpoken.at<5000?this.lastSpoken.t:''));
-    if(!ref.trim()) return false; const hit=hw.filter(w=>ref.includes(w)).length; return hit/hw.length>=.5; },
+  isEcho(t){ const hw=words(t); if(!hw.length) return false; const ref=norm(this.curText+' '+(this.recent||[]).filter(x=>Date.now()-x.at<15000).map(x=>x.t).join(' ')+' '+(this.q||[]).map(x=>x.text).join(' '));
+    if(!ref.trim()) return false; const hit=hw.filter(w=>ref.includes(w)).length; return hit/hw.length>=.45; },
   // Piper: carga en segundo plano; mientras tanto se usan las otras voces
   async loadPiper(){
     if(this.piperState!=='off') return; this.piperState='loading';
@@ -582,7 +591,7 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
       clearInterval(ka); this.cur=null; }
     this.done(it);
   },
-  done(it){ this.lastSpoken={t:it.text,at:Date.now()}; this.curText=''; },
+  done(it){ this.lastSpoken={t:it.text,at:Date.now()}; this.curText=''; (this.recent=this.recent||[]).push({t:it.text,at:Date.now()}); this.recent=this.recent.filter(x=>Date.now()-x.at<15000); },
   async flush(){ while((this.playing||this.q.length)) await sleep(120); },
   stop(){ this.gen++; this.q=[]; this.playing=false; if(this.cur){ const a=this.cur; this.cur=null; a.pause(); } if('speechSynthesis' in window) speechSynthesis.cancel(); },
   level(){ if(!this.cur||!this.an) return 0; this.an.getByteTimeDomainData(this.buf); let s=0;
@@ -737,6 +746,7 @@ LONGITUD: charla normal 1-3 frases. Explicaciones: lo necesario (hasta unas 250 
 FORMATO OBLIGATORIO: empieza SIEMPRE con tu emoción entre corchetes, una de: ${EMOS.map(e=>'['+e+']').join(' ')}. Puedes cambiarla a mitad. Texto plano: sin asteriscos, sin almohadillas, sin LaTeX (escribe CO2, x^2), sin emojis.
 VISIÓN: si recibes una imagen, es lo que ven tus ojos ahora por la cámara. Coméntala solo si viene al caso o te preguntan.
 RECUERDOS: tienes memoria total, pero SOLO de lo que aparece en este mensaje: "LO QUE SABES DE ÉL", "RECUERDOS RELACIONADOS", el resumen y la conversación.
+ENTENDER BIEN: lee su mensaje entero antes de contestar. Si lo que pide es ambiguo o le falta un dato importante, pregúntale UNA cosa concreta antes de hacerlo. Cuando te corrija, reconoce el error y rehaz lo pedido sin discutir.
 REGLA DE ORO — NO INVENTAR: nunca digas que él dijo, hizo o le pasó algo que no esté escrito ahí. Las líneas marcadas "(nota del sistema)" NO las ha dicho él. Si no estás seguro de algo, pregúntale en vez de suponer ("¿Tú decir eso o Mor soñar?"). Si te pregunta algo que no sabes de él, reconócelo. Lo mismo con datos de estudio: si no lo sabes seguro, dilo.
 COMO MANO DERECHA: piensa antes de responder, ve al grano, da respuestas útiles y concretas, recuerda sus planes y fechas, y propón el siguiente paso cuando ayude.
 CONFIANZA con él: ${Math.round(MEM.trust)}/100 (no la menciones; con poca eres tímido, con mucha más pegajoso y bromista).
@@ -762,7 +772,7 @@ AGENDA — cuando te pida apuntar, recordar o marcar algo, escríbelo en tu resp
   {{tarea: texto}}  ·  {{hecha: texto de la tarea}}  ·  {{recordar: AAAA-MM-DD HH:MM | texto}}  ·  {{borrar_recordatorio: texto}}  ·  {{ciudad: nombre}} (si te dice dónde vive)
   {{temporizador: minutos | motivo}}  ·  {{mensaje: destinatario | texto del mensaje}} (cuando te pida escribir/redactar un mensaje o correo)
   {{objetivo: título | paso 1; paso 2; paso 3}} (cuando quiera conseguir algo: divídelo tú en pasos concretos)  ·  {{paso_hecho: objetivo | paso}}  ·  {{cosa_nuestra: frase}} (una broma, apodo o frase vuestra que merezca recordarse)
-  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
+  {{proyecto: descripción técnica detallada | pequeño/mediano/grande/enorme}} (programas GRANDES: más de 3 archivos o de ~800 líneas; NO escribas ese código en la respuesta, Mor lo programa aparte archivo a archivo y se lo da en .zip)  ·  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
   {{idea: tema | texto}} (cuando dicte una idea o nota)  ·  {{habito: nombre | meta}} (hábito nuevo)  ·  {{habito_hecho: nombre}}  ·  {{sonido: lluvia|olas|marron|parar}}
   Para las fechas usa la fecha y hora de AHORA. Si no dice hora, pregúntasela o usa 09:00. Nunca digas que lo has apuntado sin poner la etiqueta.
 ${MEM.study.length?'ÚLTIMAS SESIONES DE ESTUDIO:\n'+MEM.study.slice(-6).map(s=>`- ${new Date(s.at).toLocaleDateString('es-ES')}: ${s.tema} (${s.min} min${s.distracciones?', '+s.distracciones+' distracciones':''})`).join('\n'):''}
@@ -897,6 +907,7 @@ async function send(text,opts={}){
     if(ffiles.length){ const sv=await Files.save(ffiles); showFiles(sv); }
     if(skL.length) showSketchfab(skL);
     if(made.imgs&&made.imgs.length) drawImages(made.imgs);
+    if(made.project) setTimeout(()=>Projects.create(made.project[0],made.project[1]),1500);
     MEM.talks++; MEM.lastSeen=Date.now(); if(!MEM.firstMet) MEM.firstMet=Date.now();
     saveMem(); updateMemory(text,reply); compact();
     if(text) Vec.store([{ref:'chat',r:'u',t:text,at:Date.now()},{ref:'chat',r:'m',t:reply,at:Date.now()}]);
@@ -908,7 +919,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v8</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v9</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -944,7 +955,7 @@ const Ears={rec:null,on:false,mode:'idle',until:0,running:false,manual:false,
   },
   listenFor(ms){ this.mode='cmd'; this.until=Date.now()+ms; $('bMic').classList.add('live'); clearTimeout(this._t);
     this._t=setTimeout(()=>{ if(this.mode==='cmd'){ this.mode='idle'; $('bMic').classList.remove('live'); if(this.manual){ this.manual=false; this.ui(); if(!this.on) try{this.rec.stop()}catch(e){} } } },ms); },
-  followUp(){ if(this.on) this.listenFor(8000); },   // tras contestar, puedes seguir hablando sin decir "MOR"
+  followUp(){ if(this.on) setTimeout(()=>{ if(!Voice.playing&&!Voice.cur) this.listenFor(8000); },900); },   // tras contestar, puedes seguir hablando sin decir "MOR"
   heard(t){
     $('hear').textContent='';
     if(Voice.isEcho(t)) return;                                   // es su propia voz
@@ -1234,7 +1245,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v8 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v9 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1321,6 +1332,7 @@ RECORDATORIOS: ${r.length?r.map(x=>fmtFecha(new Date(x.when))+' → '+x.t).join(
       else if(k==='objetivo'){ const [t,...st]=v.split('|'); Goals.add(t,st.join('|')); made.goal=true; }
       else if(k==='paso_hecho'){ const [g,...st]=v.split('|'); const x=Goals.stepDone(g,st.join('|')); if(x) Sfx.play('risa'); }
       else if(k==='cosa_nuestra'){ MEM.inside=MEM.inside||[]; if(!MEM.inside.some(y=>norm(y)===norm(v))) MEM.inside.push(v); if(MEM.inside.length>40) MEM.inside=MEM.inside.slice(-40); saveMem(); }
+      else if(k==='proyecto'){ const [d,...t]=v.split('|'); made.project=[d.trim(),t.join('|').trim()]; }
       else if(k==='imagen'){ (made.imgs=made.imgs||[]).push(v); }
       else if(k==='leccion'){ const [n,...t]=v.split('|'); if(MEM.course){ MEM.course.lesson=parseInt(n)||MEM.course.lesson; MEM.course.tema=t.join('|').trim(); saveMem(); } }
       else if(k==='temporizador'){ const [mi,...w]=v.split('|'); const t=Timers.add(mi,w.join('|').trim()); if(t) made.timers=(made.timers||0)+1; }
@@ -1976,6 +1988,97 @@ async function renderChat(){
   $('sheetChat').scrollTop=0; setTimeout(()=>{ $('chatList').lastElementChild&&$('chatList').scrollIntoView({block:'end'}); },50);
 }
 $('bChat').onclick=()=>{ renderChat(); $('sheetChat').classList.add('open'); };
+/* =====================================================================
+   41. PROYECTOS GRANDES (Mor programa como un equipo: plan → archivo a archivo → .zip)
+   ===================================================================== */
+const MODELOS_CODIGO=['gemini-3.5-flash','gemini-3.8-flash','gemini-3.5-flash-lite','gemini-flash-lite-latest'];
+const stripFence=t=>{ t=String(t||''); const m=t.match(/^\s*```[^\n]*\n([\s\S]*?)\n?```\s*$/); return (m?m[1]:t.replace(/^\s*```[^\n]*\n/,'').replace(/\n?```\s*$/,'')); };
+async function genLong(prompt,onPart){ // escribe un archivo entero; si se corta, sigue donde lo dejó
+  let code='', rounds=0;
+  while(rounds<8){
+    const body={contents:[{role:'user',parts:[{text: rounds===0?prompt:prompt+`\n\nYA HAS ESCRITO ESTO (no lo repitas):\n…\n${code.split('\n').slice(-40).join('\n')}\n\nCONTINÚA exactamente desde la línea siguiente, sin repetir nada y sin \`\`\`.`}]}],
+      generationConfig:{temperature:.25,maxOutputTokens:65536}};
+    let finish='', part='';
+    for(const m of MODELOS_CODIGO.filter(x=>!agotado(x))){
+      const ac=new AbortController(), to=setTimeout(()=>ac.abort(),240000);
+      try{ const b=Object.assign({},body,{generationConfig:cfgFor(m,body.generationConfig)});
+        const r=await fetch(API+m+':generateContent',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},body:JSON.stringify(b)});
+        clearTimeout(to); if(!r.ok){ if(r.status===429){ try{ marcarAgotado(m,(await r.json()).error.message); }catch(x){} } continue; }
+        const j=await r.json(); const c=j.candidates?.[0]; part=(c?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join(''); finish=c?.finishReason||'';
+        if(part) break; }
+      catch(e){ clearTimeout(to); }
+    }
+    if(!part) throw new Error('el cerebro no responde');
+    code+=(rounds?'\n':'')+(rounds?part.replace(/^\s*```[^\n]*\n/,'').replace(/\n?```\s*$/,''):stripFence(part));
+    onPart&&onPart(code.split('\n').length);
+    if(finish!=='MAX_TOKENS') break; rounds++;
+  }
+  return code.replace(/\s+$/,'')+'\n';
+}
+const PLANSCHEMA={type:'OBJECT',properties:{nombre:{type:'STRING'},resumen:{type:'STRING'},tecnologias:{type:'STRING'},
+  archivos:{type:'ARRAY',items:{type:'OBJECT',properties:{ruta:{type:'STRING'},proposito:{type:'STRING'},depende_de:{type:'ARRAY',items:{type:'STRING'}},lineas:{type:'INTEGER'}},required:['ruta','proposito']}},
+  como_usar:{type:'STRING'}},required:['nombre','resumen','archivos']};
+const Projects={running:false,
+  async create(desc,tam){
+    if(this.running) return localSay('Mor ya estar programando otro proyecto. Esperar un poquito.','concentrado');
+    this.running=true; Life.touch(); setEmotion('concentrado');
+    const P={id:'pr'+Date.now(),desc,at:Date.now(),files:[],estado:'planificando'};
+    const log=t=>{ P.log=t; showSub(t); renderProjects(); };
+    try{
+      log('Mor pensar el plan del proyecto…');
+      const plan=await geminiJSON(`Eres un arquitecto de software experto. Diseña el proyecto que pide el usuario, listo para funcionar de verdad.
+PETICIÓN: ${desc}
+TAMAÑO: ${tam||'el que necesite'} (pequeño: 1-3 archivos; mediano: 4-10; grande: 10-25; enorme: 25-60).
+Reglas: código profesional y modular; si es web/juego debe abrir con index.html sin compilar (usa módulos ES o scripts normales; librerías por CDN si hacen falta). Ordena los archivos de modo que cada uno solo dependa de los anteriores. Incluye README.md al final. "lineas" = tamaño aproximado.`,PLANSCHEMA,[],MODELOS_CODIGO,120000);
+      P.nombre=plan.nombre; P.plan=plan; P.estado='escribiendo'; await DB.put('projects',P);
+      const list=plan.archivos.slice(0,60), plano=list.map(f=>`- ${f.ruta}: ${f.proposito}`).join('\n');
+      for(let i=0;i<list.length;i++){
+        const f=list[i]; const deps=P.files.filter(x=>(f.depende_de||[]).some(d=>x.ruta.endsWith(d)||d.endsWith(x.ruta)));
+        const ctxFiles=(deps.length?deps:P.files).slice(-12);
+        let ctx=ctxFiles.map(x=>`=== ${x.ruta} ===\n${x.code.length>60000?x.code.slice(0,60000)+'\n…(recortado)':x.code}`).join('\n\n');
+        log(`Mor escribir ${i+1}/${list.length}: ${f.ruta}…`);
+        const code=await genLong(`Eres un programador experto. Proyecto «${plan.nombre}»: ${plan.resumen}\nTecnologías: ${plan.tecnologias||'-'}\nTODOS LOS ARCHIVOS DEL PROYECTO:\n${plano}\n\nARCHIVOS YA ESCRITOS DE LOS QUE DEPENDE:\n${ctx||'(ninguno todavía)'}\n\nAHORA escribe el contenido COMPLETO del archivo «${f.ruta}» (${f.proposito}). Código real y completo, sin "..." ni partes por hacer, coherente con los nombres, funciones y rutas de los demás archivos. Responde SOLO con el contenido del archivo.`,
+          n=>log(`Mor escribir ${i+1}/${list.length}: ${f.ruta} (${n} líneas)…`));
+        P.files.push({ruta:f.ruta,code}); await DB.put('projects',P);
+      }
+      P.estado='listo'; P.lineas=P.files.reduce((a,f)=>a+f.code.split('\n').length,0); await DB.put('projects',P);
+      logChat('m',`[Proyecto terminado: ${P.nombre}, ${P.files.length} archivos, ${P.lineas} líneas]`);
+      this.running=false; renderProjects(); Sfx.play('risa'); squash(.3);
+      showSub(`¡Proyecto «${P.nombre}» terminado! ${P.files.length} archivos, ${P.lineas} líneas.`);
+      showFiles(P.files.map(x=>({name:x.ruta,code:x.code}))); localSay(`¡Proyecto terminado! ${P.files.length} archivos y ${P.lineas} líneas. ${plan.como_usar?'Cómo usarlo: '+plan.como_usar.slice(0,200):''}`,'feliz');
+    }catch(e){ this.running=false; P.estado='error: '+e.message; await DB.put('projects',P); renderProjects(); localSay('Mor atascarse programando: '+e.message+'. Lo hecho queda guardado en Proyectos.','triste'); }
+  },
+  async modify(id,req){
+    const P=(await DB.all('projects')).find(x=>x.id===id); if(!P||this.running) return; this.running=true; setEmotion('concentrado');
+    try{
+      showSub('Mor pensar qué cambiar…');
+      const all=P.files.map(f=>`=== ${f.ruta} ===\n${f.code}`).join('\n\n').slice(0,700000);
+      const ch=await geminiJSON(`Proyecto «${P.nombre}». El usuario pide: ${req}\nArchivos actuales:\n${all}\n\nDi qué archivos hay que modificar o crear para hacerlo bien (lista mínima).`,
+        {type:'OBJECT',properties:{cambios:{type:'ARRAY',items:{type:'OBJECT',properties:{ruta:{type:'STRING'},que:{type:'STRING'}},required:['ruta','que']}}},required:['cambios']},[],MODELOS_CODIGO,120000);
+      for(const [i,c] of ch.cambios.entries()){
+        showSub(`Mor cambiar ${i+1}/${ch.cambios.length}: ${c.ruta}…`);
+        const cur=P.files.find(f=>f.ruta===c.ruta);
+        const code=await genLong(`Proyecto «${P.nombre}». Petición del usuario: ${req}\nCambio en este archivo: ${c.que}\n\nPROYECTO COMPLETO:\n${all}\n\nEscribe el contenido COMPLETO y final de «${c.ruta}» con el cambio aplicado (todo el archivo, no solo el trozo). Responde SOLO con el contenido.`);
+        if(cur) cur.code=code; else P.files.push({ruta:c.ruta,code});
+      }
+      P.lineas=P.files.reduce((a,f)=>a+f.code.split('\n').length,0); P.at=Date.now(); await DB.put('projects',P);
+      this.running=false; renderProjects(); showFiles(P.files.filter(f=>ch.cambios.some(c=>c.ruta===f.ruta)).map(x=>({name:x.ruta,code:x.code})));
+      localSay(`Cambiado: ${ch.cambios.map(c=>c.ruta).join(', ')}. Ya poder descargar el proyecto entero.`,'feliz');
+    }catch(e){ this.running=false; localSay('Mor no poder cambiarlo: '+e.message,'triste'); }
+  }
+};
+async function renderProjects(){
+  const L=(await DB.all('projects')).sort((a,b)=>b.at-a.at);
+  $('projList').innerHTML=L.length?L.map(p=>`<li style="display:block"><b>${esc(p.nombre||p.desc.slice(0,40))}</b> <small>${esc(p.estado||'')} · ${p.files.length} archivos${p.lineas?' · '+p.lineas+' líneas':''}${p.log&&p.estado!=='listo'?' · '+esc(p.log):''}</small>
+    <div class="row">${p.files.length?`<button class="tbtn on" data-pz="${p.id}">Descargar .zip</button>`:''}${p.files.some(f=>/index\.html$/.test(f.ruta))?`<button class="tbtn" data-pv="${p.id}">Ver</button>`:''}<input type="text" data-pm="${p.id}" placeholder="Pídele un cambio…" style="flex:1;min-width:140px"><button class="tbtn" data-pmb="${p.id}">Cambiar</button><button class="tbtn" data-px="${p.id}" style="color:var(--red)">×</button></div></li>`).join(''):'<li>Aún no hay proyectos.</li>';
+  const get=id=>L.find(p=>p.id===id);
+  $('projList').querySelectorAll('[data-pz]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pz); Files.zip(p.files.map(f=>({name:f.ruta,code:f.code})),(p.nombre||'proyecto').toLowerCase().replace(/[^a-z0-9]+/g,'-')); });
+  $('projList').querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ const p=get(b.dataset.pv); const fl=p.files.map(f=>({name:f.ruta,code:f.code})); Files.open(fl.find(f=>/index\.html$/.test(f.name)),fl); });
+  $('projList').querySelectorAll('[data-pmb]').forEach(b=>b.onclick=()=>{ const v=$('projList').querySelector(`[data-pm="${b.dataset.pmb}"]`).value.trim(); if(v){ $('sheetProj').classList.remove('open'); Projects.modify(b.dataset.pmb,v); } });
+  $('projList').querySelectorAll('[data-px]').forEach(b=>b.onclick=async()=>{ await DB.del('projects',b.dataset.px); renderProjects(); });
+}
+$('bProj').onclick=()=>{ $('sheetMore').classList.remove('open'); renderProjects(); $('sheetProj').classList.add('open'); };
+$('pGo').onclick=()=>{ const d=$('pDesc').value.trim(); if(!d) return $('pDesc').focus(); $('sheetProj').classList.remove('open'); $('pDesc').value=''; Projects.create(d,$('pSize').value); };
 /* =====================================================================
    15. DESPERTAR
    ===================================================================== */
