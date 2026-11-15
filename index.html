@@ -203,8 +203,9 @@ const KEYS=(()=>{ try{
   return JSON.parse(localStorage.getItem('mor_claves')||'{}'); }catch(e){ return {}; } })();
 let GEMINI_KEY = (KEYS.g||'').trim();
 addEventListener('hashchange',()=>{ if(/claves=/.test(location.hash)) location.reload(); });
-const MODELOS = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash','gemini-3.8-flash'];   // conversación
-const MODELOS_RAPIDOS = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];             // memoria, vigilancia, notas
+const MODELOS = ['gemini-3.5-flash','gemini-3.8-flash','gemini-3.5-flash-lite','gemini-flash-lite-latest'];   // conversación: el listo primero
+const MODELOS_RAPIDOS = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];             // vigilancia
+const MODELOS_MEMORIA = ['gemini-3.5-flash','gemini-3.5-flash-lite','gemini-flash-lite-latest'];            // memoria y apuntes: precisión
 let ELEVEN_KEY = (KEYS.e||'').trim();
 const VOZ_ID = 'bIHbv24MWmeRgasZH58o';   // Will
 const VOZ_TONO = 1.35;                    // versión "peque"
@@ -263,7 +264,7 @@ async function recallChats(query,n=6,skipRecent=20){
   const qw=[...new Set(words(query))]; if(!qw.length) return [];
   const all=await DB.all('chats'); const pool=all.slice(0,Math.max(0,all.length-skipRecent));
   return pool.map((c,i)=>({c,i,s:score(qw,c.t)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s||b.c.at-a.c.at).slice(0,n)
-    .map(x=>{ const prev=pool[x.i-1]; return (x.c.r==='m'&&prev&&prev.r==='u'?`Él: ${prev.t}\n`:'')+`${x.c.r==='u'?'Él':'MOR'} (${new Date(x.c.at).toLocaleDateString('es-ES')}): ${x.c.t}`; });
+    .map(x=>{ const who=c=>/^\[/.test(c.t)?'(nota del sistema)':c.r==='u'?'ÉL DIJO':'TÚ (MOR) DIJISTE'; const prev=pool[x.i-1]; return (x.c.r==='m'&&prev&&prev.r==='u'?`${who(prev)}: ${prev.t}\n`:'')+`${who(x.c)} (${new Date(x.c.at).toLocaleDateString('es-ES')}): ${x.c.t}`; });
 }
 async function recallNotes(query,n=4){
   const qw=[...new Set(words(query))]; if(!qw.length) return [];
@@ -627,7 +628,9 @@ CUANDO EXPLICAS O AYUDAS A ESTUDIAR: eres un profesor excelente. Explicaciones C
 LONGITUD: charla normal 1-3 frases. Explicaciones: lo necesario (hasta unas 250 palabras), en pasos "1)" "2)".
 FORMATO OBLIGATORIO: empieza SIEMPRE con tu emoción entre corchetes, una de: ${EMOS.map(e=>'['+e+']').join(' ')}. Puedes cambiarla a mitad. Texto plano: sin asteriscos, sin almohadillas, sin LaTeX (escribe CO2, x^2), sin emojis.
 VISIÓN: si recibes una imagen, es lo que ven tus ojos ahora por la cámara. Coméntala solo si viene al caso o te preguntan.
-RECUERDOS: tienes memoria total. Abajo van los recuerdos relacionados con lo que te dice; úsalos con naturalidad ("¿Acordarte? El martes tú contar…"). Nunca inventes recuerdos que no estén.
+RECUERDOS: tienes memoria total, pero SOLO de lo que aparece en este mensaje: "LO QUE SABES DE ÉL", "RECUERDOS RELACIONADOS", el resumen y la conversación.
+REGLA DE ORO — NO INVENTAR: nunca digas que él dijo, hizo o le pasó algo que no esté escrito ahí. Las líneas marcadas "(nota del sistema)" NO las ha dicho él. Si no estás seguro de algo, pregúntale en vez de suponer ("¿Tú decir eso o Mor soñar?"). Si te pregunta algo que no sabes de él, reconócelo. Lo mismo con datos de estudio: si no lo sabes seguro, dilo.
+COMO MANO DERECHA: piensa antes de responder, ve al grano, da respuestas útiles y concretas, recuerda sus planes y fechas, y propón el siguiente paso cuando ayude.
 CONFIANZA con él: ${Math.round(MEM.trust)}/100 (no la menciones; con poca eres tímido, con mucha más pegajoso y bromista).
 AHORA: ${fecha}. Batería ${Math.round(energy*100)}%${charging?' (cargando)':''}${energy<.2&&!charging?' — estás muy cansado':''}.${Study.on?` Está ESTUDIANDO "${Study.tema}" (quedan ${Study.leftMin()} min): ayúdale a concentrarse.`:''}
 ${MEM.firstMet?`Os conocéis desde el ${new Date(MEM.firstMet).toLocaleDateString('es-ES')}. Habéis hablado ${MEM.talks} veces.`:'Es la PRIMERA vez que os veis: preséntate con timidez y pregúntale su nombre.'}
@@ -645,7 +648,7 @@ const MEMSCHEMA={type:'OBJECT',properties:{
   exams:{type:'ARRAY',items:{type:'OBJECT',properties:{asignatura:{type:'STRING'},fecha:{type:'STRING'}},required:['asignatura','fecha']}}
 },required:['remember']};
 async function updateMemory(userText,reply){
-  if(!userText) return;
+  if(!userText||/^\[/.test(userText)) return;
   const hoy=new Date(); const iso=hoy.toISOString().slice(0,10);
   try{
     const o=await geminiJSON(`Eres la memoria de M.O.R. Hoy es ${hoy.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} (${iso}).
@@ -657,10 +660,11 @@ Exámenes que ya sabe: ${MEM.exams.map(e=>e.asignatura+' '+e.fecha).join(', ')||
 Respuesta de M.O.R.: "${reply.slice(0,500)}"
 
 Devuelve:
-- remember: hechos NUEVOS y duraderos sobre el humano (nombre, estudios, gustos, cómo aprende, personas importantes, metas, cosas que le pasan). Frases cortas en tercera persona, con fecha exacta si la tiene. No repitas. Vacío si no hay nada nuevo.
+- remember: SOLO hechos que el humano haya dicho EXPLÍCITAMENTE en su último mensaje (nunca deduzcas, nunca uses lo que dijo M.O.R.). Hechos NUEVOS y duraderos sobre el humano (nombre, estudios, gustos, cómo aprende, personas importantes, metas, cosas que le pasan). Frases cortas en tercera persona, con fecha exacta si la tiene. No repitas. Vacío si no hay nada nuevo.
 - forget: textos de hechos de la lista que ya no son ciertos o que pide olvidar.
 - exams: exámenes que mencione con fecha (formato AAAA-MM-DD, calculando fechas relativas desde hoy). Vacío si no hay.
-- trust: cambio de confianza (-5 a +5): sube con cariño, gracias o charla personal; baja con insultos o desprecio.`,MEMSCHEMA);
+- trust: cambio de confianza (-5 a +5): sube con cariño, gracias o charla personal; baja con insultos o desprecio.
+Si dudas, NO lo apuntes.`,MEMSCHEMA,[],MODELOS_MEMORIA);
     forgetFacts(o.forget); addFacts(o.remember); addExams(o.exams);
     MEM.trust=Math.max(0,Math.min(100,MEM.trust+Math.max(-5,Math.min(5,o.trust||1))));
     saveMem();
@@ -703,9 +707,9 @@ async function send(text,opts={}){
     if(rn.length) extra+='\nAPUNTES RELACIONADOS (de sus apuntes):\n'+rn.join('\n---\n');
   }catch(e){} }
   if(opts.extra) extra+='\n'+opts.extra;
-  const contents=MEM.history.slice(-20).map(h=>({role:h.r==='u'?'user':'model',parts:[{text:h.t}]}));
+  const contents=MEM.history.slice(-20).map(h=>({role:h.r==='u'?'user':'model',parts:[{text: h.r==='u'&&/^\[/.test(h.t) ? '(nota del sistema, NO lo ha dicho él: '+h.t.slice(1,-1)+')' : h.t}]}));
   const parts=[]; if(img) parts.push({inline_data:{mime_type:'image/jpeg',data:img}});
-  parts.push({text:text||('['+opts.event+']')}); contents.push({role:'user',parts});
+  parts.push({text:text||('(nota del sistema, NO lo ha dicho él: '+opts.event+')')}); contents.push({role:'user',parts});
   let raw='', shown='', pending='', firstEmo=true;
   const slow=setTimeout(()=>{ if(!raw) showSub(rnd(['MOR pensar…','Mmm… MOR buscar en cabeza…']),text); },1800);
   try{
@@ -738,7 +742,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v4h</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v4i</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -823,7 +827,7 @@ Devuelve:
 - resumen: resumen claro de 4-6 frases.
 - texto: el contenido de los apuntes transcrito y ordenado, con TODOS los datos importantes (definiciones, fechas, fórmulas, nombres, listas). Hasta 2500 palabras. Texto plano.
 - tarjetas: 8 a 15 tarjetas de repaso tipo pregunta-respuesta, concretas y correctas, que cubran lo más importante (respuestas cortas).`,
-        NOTESCHEMA,[{inline_data:{mime_type:isPdf?'application/pdf':'image/jpeg',data}}],MODELOS_RAPIDOS,90000);
+        NOTESCHEMA,[{inline_data:{mime_type:isPdf?'application/pdf':'image/jpeg',data}}],MODELOS_MEMORIA,90000);
       const id='d'+Date.now()+Math.random().toString(36).slice(2,6);
       await DB.put('docs',{id,titulo:o.titulo,asignatura:o.asignatura||'',resumen:o.resumen,texto:o.texto,file:f.name,at:Date.now()});
       for(const [i,c] of (o.tarjetas||[]).entries()) await DB.put('cards',{id:id+'_'+i,doc:id,tema:o.titulo,p:c.p,r:c.r,box:0,due:Date.now(),hits:0,miss:0});
@@ -979,7 +983,7 @@ const Proactive={
       ev = h>=23||h<7 ? 'ES MUY TARDE Y SIGUE DESPIERTO. Tienes sueño: díselo y sugiérele descansar, con ternura.'
          : rnd(['LLEVA UN RATO SIN HABLARTE. Di algo espontáneo y breve: una curiosidad divertida, una pregunta sobre su día o algo que recuerdes de él.',
                 'TE ABURRES. Dile algo breve y juguetón para llamar su atención.',
-                'LLEVA UN RATO SIN HABLARTE. Pregúntale algo sobre lo que habéis hablado antes (usa tus recuerdos) en una frase.']); }
+                'LLEVA UN RATO SIN HABLARTE. Si en LO QUE SABES DE ÉL hay algo concreto (un plan, un examen, algo que le preocupaba), pregúntale por ello en una frase. Si no hay nada concreto, pregúntale qué tal va su día. NO inventes nada.']); }
     send(null,{event:ev,image:null});
   }
 };
@@ -1062,7 +1066,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v4h · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v4i · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1091,6 +1095,18 @@ $('keyOk').onclick=async()=>{
   $('sheetKey').classList.remove('open'); $('keyInp').value=''; toast('¡Llave guardada! M.O.R. ya puede pensar.');
   if(awake){ face.sleep=0; send(null,{event:'TE ACABAN DE DAR LA LLAVE DE TU CEREBRO Y POR FIN PUEDES PENSAR. Celébralo en una frase y saluda.',image:null}); }
 };
+// limpieza única: quita de la memoria lo que él nunca dijo
+async function checkMemory(){
+  if(localStorage.getItem('mor_memcheck')==='1'||!MEM.facts.length||!GEMINI_KEY) return;
+  try{
+    const said=(await DB.all('chats')).filter(c=>c.r==='u'&&!/^\[/.test(c.t)).slice(-300).map(c=>'- '+c.t).join('\n');
+    const o=await geminiJSON(`Estos son TODOS los mensajes que el humano ha escrito o dicho:\n${said||'(ninguno)'}\n\nY esta es la lista de hechos que su asistente cree saber de él:\n${MEM.facts.map((f,i)=>i+') '+f).join('\n')}\n\nDevuelve en "keep" los números de los hechos que están claramente respaldados por sus mensajes. Los que no aparezcan ahí son inventados y se borran.`,
+      {type:'OBJECT',properties:{keep:{type:'ARRAY',items:{type:'INTEGER'}}},required:['keep']},[],MODELOS_MEMORIA,30000);
+    const before=MEM.facts.length; MEM.facts=MEM.facts.filter((f,i)=>o.keep.includes(i)); saveMem();
+    localStorage.setItem('mor_memcheck','1');
+    if(before-MEM.facts.length>0) toast('Mor ha revisado su memoria y ha olvidado '+(before-MEM.facts.length)+' cosas que tú nunca dijiste.',5000);
+  }catch(e){}
+}
 /* =====================================================================
    15. DESPERTAR
    ===================================================================== */
@@ -1100,7 +1116,8 @@ $('gate').onclick=async()=>{
   $('gate').classList.add('fade'); setTimeout(()=>$('gate').remove(),900);
   Voice.ensure(); if(AC.state==='suspended') AC.resume();
   awake=true; Life.touch(); Sfx.play('hola');
-  if(!MOVIL) setTimeout(()=>Voice.loadPiper(),6000);   // en el móvil la voz ilimitada pesa demasiado (60 MB y bloquea el cerebro)
+  if(!MOVIL) setTimeout(()=>Voice.loadPiper(),6000);
+  setTimeout(checkMemory,12000);   // en el móvil la voz ilimitada pesa demasiado (60 MB y bloquea el cerebro)
   if(!GEMINI_KEY){ setEmotion('triste'); face.sleep=0; showSub('Mor no tener llave del cerebro…'); askKey(); return; }
   const t0=performance.now(); (function wake(){ const p=(performance.now()-t0)/1400; face.sleep=Math.max(0,1-p); if(p<1) requestAnimationFrame(wake); else squash(.25); })();
   setEmotion('curioso',2500);
