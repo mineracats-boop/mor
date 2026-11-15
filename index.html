@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#050b14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="M.O.R.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>M.O.R.</title>
+<style>
+:root{ --bg:#050b14; --cel:#7fd8ff; --cel2:#bdeeff; --dim:rgba(127,216,255,.55); --red:#ff8fa3; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--cel2);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+body{display:flex;flex-direction:column;height:100dvh}
+.top{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;gap:8px;z-index:3;padding-top:calc(10px + env(safe-area-inset-top))}
+.brand{font-weight:800;letter-spacing:.35em;font-size:13px;color:var(--dim);white-space:nowrap}
+.brand i{font-style:normal;display:inline-block;width:7px;height:7px;border-radius:50%;background:#2a3b4d;margin-left:6px;vertical-align:middle}
+.brand i.on{background:var(--cel);box-shadow:0 0 8px var(--cel)}
+.tb{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.tbtn{background:transparent;border:1px solid rgba(127,216,255,.35);color:var(--cel2);border-radius:999px;padding:7px 11px;font:600 12px system-ui;letter-spacing:.04em;cursor:pointer;transition:.15s;white-space:nowrap}
+.tbtn:hover{background:rgba(127,216,255,.1)}
+.tbtn.on{background:rgba(127,216,255,.22);border-color:var(--cel)}
+.tbtn.off{opacity:.45}
+.tbtn .n{display:inline-block;min-width:17px;padding:0 4px;margin-left:4px;border-radius:9px;background:var(--cel);color:var(--bg);font-size:11px}
+.stage{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0}
+#face{width:min(92vw,620px);height:auto;max-height:46vh;touch-action:none;cursor:pointer;overflow:visible}
+.timer{position:absolute;top:2px;left:50%;transform:translateX(-50%);font:700 15px ui-monospace,monospace;color:var(--cel);letter-spacing:.1em;display:none;text-align:center}
+.timer small{display:block;font:500 11px system-ui;color:var(--dim);letter-spacing:.05em}
+.sub{white-space:pre-line;min-height:3.2em;max-height:32vh;overflow:auto;width:min(92vw,620px);text-align:center;font-size:19px;line-height:1.38;color:var(--cel2);padding:4px 10px;text-shadow:0 0 12px rgba(127,216,255,.25)}
+.sub .you{display:block;font-size:13px;color:var(--dim);margin-bottom:4px}
+.hear{height:18px;font-size:13px;color:var(--dim);font-style:italic;text-align:center;width:92vw;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.bottom{padding:8px 12px calc(12px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center;max-width:680px;width:100%;margin:0 auto}
+.inp{flex:1;min-width:0;background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:999px;color:var(--cel2);font:inherit;font-size:17px;padding:12px 16px;outline:none}
+.inp:focus{border-color:var(--cel)}
+.inp::placeholder{color:rgba(189,238,255,.4)}
+.rbtn{width:48px;height:48px;border-radius:50%;border:1px solid rgba(127,216,255,.45);background:rgba(127,216,255,.08);color:var(--cel);font:700 11px system-ui;cursor:pointer;flex:none}
+.rbtn.live{background:var(--cel);color:var(--bg);box-shadow:0 0 20px var(--cel)}
+.gate{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;cursor:pointer;transition:opacity .8s}
+.gate p{color:var(--dim);letter-spacing:.2em;font-size:13px;font-weight:700}
+.gate.fade{opacity:0;pointer-events:none}
+.sheet{position:fixed;inset:auto 0 0 0;max-height:82vh;overflow:auto;z-index:15;background:#0a1624;border-top:1px solid rgba(127,216,255,.3);
+  border-radius:20px 20px 0 0;padding:18px 18px calc(28px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .3s ease}
+.sheet.open{transform:none}
+.sheet h3{color:var(--cel);font-size:14px;letter-spacing:.12em;margin:14px 0 8px}
+.sheet h3:first-of-type{margin-top:0}
+.sheet ul{list-style:none}
+.sheet li{display:flex;gap:8px;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(127,216,255,.1);font-size:15px}
+.sheet li small{color:var(--dim)}
+.sheet li button{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;flex:none}
+.sheet .txt{font-size:14px;line-height:1.45;color:var(--cel2);opacity:.85;white-space:pre-wrap}
+.sheet .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.sheet input[type=text],.sheet input[type=number],.sheet input[type=search]{background:rgba(127,216,255,.06);border:1px solid rgba(127,216,255,.35);border-radius:10px;color:var(--cel2);font:inherit;padding:9px 12px}
+.sheet label{font-size:14px;display:flex;gap:6px;align-items:center}
+.sheet .note{font-size:13px;color:var(--dim);line-height:1.4;margin-top:8px}
+.close{position:absolute;right:14px;top:10px;background:none;border:none;color:var(--cel);font-size:24px;cursor:pointer}
+video{display:none}
+.cam{position:absolute;right:12px;bottom:4px;width:86px;height:64px;border-radius:12px;border:1px solid rgba(127,216,255,.35);overflow:hidden;opacity:.75;display:none}
+.cam canvas{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#0e2033;border:1px solid rgba(127,216,255,.4);color:var(--cel2);padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.grade{display:none;gap:8px;justify-content:center;margin-top:6px}
+.grade.show{display:flex}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <svg viewBox="-3.2 -2.2 6.4 4.6" width="260"><g fill="none" stroke="#7fd8ff" stroke-width=".12" stroke-linecap="round" opacity=".7">
+    <path d="M-2.2,0 Q-1.35,.35 -.5,0"/><path d="M.5,0 Q1.35,.35 2.2,0"/></g></svg>
+  <p>TOCA PARA DESPERTAR A M.O.R.</p>
+</div>
+
+<div class="top">
+  <div class="brand">M.O.R.<i id="earDot" title="Escuchando"></i></div>
+  <div class="tb">
+    <button class="tbtn" id="bEar">Oído</button>
+    <button class="tbtn" id="bCam">Mirar</button>
+    <button class="tbtn" id="bNotes">Apuntes</button>
+    <button class="tbtn" id="bReview">Repasar<span class="n" id="dueN" style="display:none"></span></button>
+    <button class="tbtn" id="bStudy">Estudiar</button>
+    <button class="tbtn" id="bMore">Más</button>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="timer" id="timer"></div>
+  <svg id="face" viewBox="-3.4 -2.4 6.8 5.2">
+    <defs>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation=".09" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <mask id="mL" maskUnits="userSpaceOnUse" x="-4" y="-4" width="8" height="8">
+        <rect x="-4" y="-4" width="8" height="8" fill="#fff"/>
+        <rect id="lTopL" x="-2" y="-4" width="4" height="3" fill="#000"/>
+        <circle id="lBotL" cx="0" cy="4" r="1.35" fill="#000"/>
+      </mask>
+      <mask id="mR" maskUnits="userSpaceOnUse" x="-4" y="-4" width="8" height="8">
+        <rect x="-4" y="-4" width="8" height="8" fill="#fff"/>
+        <rect id="lTopR" x="-2" y="-4" width="4" height="3" fill="#000"/>
+        <circle id="lBotR" cx="0" cy="4" r="1.35" fill="#000"/>
+      </mask>
+    </defs>
+    <g id="head" filter="url(#glow)">
+      <g id="eyeL"><circle r="1" fill="#7fd8ff" mask="url(#mL)"/></g>
+      <g id="eyeR"><circle r="1" fill="#7fd8ff" mask="url(#mR)"/></g>
+      <path id="mouth" fill="#7fd8ff" stroke="#7fd8ff" stroke-width=".09" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </svg>
+  <div class="sub" id="sub"></div>
+  <div class="grade" id="grade"><button class="tbtn" data-g="no">No lo sabía</button><button class="tbtn" data-g="casi">Casi</button><button class="tbtn" data-g="si">Lo sabía</button></div>
+  <div class="hear" id="hear"></div>
+  <div class="cam" id="camBox"><canvas id="camView" width="160" height="120"></canvas></div>
+</div>
+
+<div class="bottom">
+  <button class="rbtn" id="bMic" title="Hablar ahora">HABLA</button>
+  <input class="inp" id="inp" placeholder="Habla con M.O.R.… (o di «oye MOR»)" autocomplete="off" maxlength="800">
+  <button class="rbtn" id="bSend" title="Enviar">OK</button>
+</div>
+
+<!-- MÁS -->
+<div class="sheet" id="sheetMore">
+  <button class="close" data-close>×</button>
+  <h3>M.O.R.</h3>
+  <div class="row">
+    <button class="tbtn" id="bInstall">Instalar app</button>
+    <button class="tbtn" id="bVoice">Voz: sí</button>
+    <button class="tbtn" id="bMem">Memoria</button>
+    <button class="tbtn" id="bSearch">Buscar recuerdos</button>
+  </div>
+  <div class="note" id="installNote"></div>
+</div>
+
+<!-- MEMORIA -->
+<div class="sheet" id="sheetMem">
+  <button class="close" data-close>×</button>
+  <h3>LO QUE M.O.R. SABE DE TI</h3><ul id="memFacts"></ul>
+  <h3>EXÁMENES</h3><ul id="memExams"></ul>
+  <h3>RESUMEN DE VUESTRA HISTORIA</h3><div class="txt" id="memSum"></div>
+  <h3>ESTUDIO</h3><ul id="memStudy"></ul>
+  <div class="note" id="memStats"></div>
+  <div class="row"><button class="tbtn" id="bExport">Copia de seguridad</button><button class="tbtn" id="bImport">Restaurar</button><button class="tbtn" id="bWipe" style="border-color:var(--red);color:var(--red)">Borrar todo</button></div>
+</div>
+
+<!-- BUSCAR -->
+<div class="sheet" id="sheetSearch">
+  <button class="close" data-close>×</button>
+  <h3>BUSCAR EN TODO LO HABLADO</h3>
+  <div class="row"><input type="search" id="qSearch" placeholder="p. ej. revolución, examen, Carmen…" style="flex:1"></div>
+  <ul id="resSearch" style="margin-top:10px"></ul>
+</div>
+
+<!-- APUNTES -->
+<div class="sheet" id="sheetNotes">
+  <button class="close" data-close>×</button>
+  <h3>TUS APUNTES</h3>
+  <div class="row"><button class="tbtn on" id="bAddNote">Añadir foto o PDF</button><button class="tbtn" id="bPhotoNote">Hacer foto</button></div>
+  <div class="note">M.O.R. los lee, te hace un resumen y crea tarjetas de repaso. Luego puedes preguntarle cualquier cosa de ellos.</div>
+  <ul id="noteList" style="margin-top:10px"></ul>
+</div>
+
+<!-- ESTUDIAR -->
+<div class="sheet" id="sheetStudy">
+  <button class="close" data-close>×</button>
+  <h3>SESIÓN DE ESTUDIO</h3>
+  <div class="row"><input type="text" id="stTema" placeholder="¿Qué vas a estudiar?" style="flex:1;min-width:180px"><input type="number" id="stMin" value="25" min="5" max="120" style="width:80px"> min</div>
+  <div class="row"><label><input type="checkbox" id="stWatch" checked> Que M.O.R. me vigile con la cámara</label></div>
+  <div class="row"><button class="tbtn on" id="stGo">Empezar</button><button class="tbtn" id="stStop">Terminar ahora</button></div>
+  <div class="note">Si te ve con el móvil, sin estar o mirando a otro lado, te reñirá. Si te sales de la app mientras estudias, también.</div>
+</div>
+
+<div class="toast" id="toast"></div>
+<video id="video" playsinline muted></video>
+<input type="file" id="fileImp" accept="application/json" hidden>
+<input type="file" id="fileNote" accept="image/*,application/pdf" multiple hidden>
+<input type="file" id="fileNoteCam" accept="image/*" capture="environment" hidden>
+
+<script>
+/* =====================================================================
+   0. CONFIGURACIÓN (privado: no compartas este archivo, lleva tus claves)
+   ===================================================================== */
+// Las claves NO van en el código (es público). Se dan una vez por aparato con el enlace de configuración:
+//   https://…/mor/#claves=XXXX   (XXXX = JSON {"g":"clave gemini","e":"clave elevenlabs"} en base64)
+const KEYS=(()=>{ try{
+  const m=location.hash.match(/claves=([^&]+)/);
+  if(m){ const k=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/'))))); localStorage.setItem('mor_claves',JSON.stringify(k));
+    history.replaceState(null,'',location.pathname+location.search); }
+  return JSON.parse(localStorage.getItem('mor_claves')||'{}'); }catch(e){ return {}; } })();
+const GEMINI_KEY = KEYS.g||'';
+addEventListener('hashchange',()=>{ if(/claves=/.test(location.hash)) location.reload(); });
+const MODELOS = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash','gemini-3.8-flash'];   // conversación
+const MODELOS_RAPIDOS = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];             // memoria, vigilancia, notas
+const ELEVEN_KEY = KEYS.e||'';
+const VOZ_ID = 'bIHbv24MWmeRgasZH58o';   // Will
+const VOZ_TONO = 1.35;                    // versión "peque"
+const VOZ_GEMINI = 'Puck';
+const VOZ_PIPER = 'es_ES-davefx-medium';  // voz ilimitada dentro del dispositivo (se descarga una vez, ~60 MB)
+const VOZ_PIPER_TONO = 1.28;                // voz de respaldo de Gemini si ElevenLabs no tiene créditos
+const VOZ_MAX = 450;                      // caracteres hablados por respuesta (el resto se lee); ahorra créditos
+const VIGILAR_CADA = 50;                  // segundos entre miradas de la cámara mientras estudias
+
+/* =====================================================================
+   1. MEMORIA
+   - Rápida (localStorage): hechos, exámenes, resumen, últimas frases, estado
+   - Total (IndexedDB): TODAS las conversaciones, apuntes y tarjetas
+   ===================================================================== */
+const MKEY='mor_memoria_v1';
+const blank=()=>({facts:[],exams:[],summary:'',history:[],study:[],trust:40,firstMet:null,lastSeen:null,talks:0,
+  listen:true,voice:true,lastProactive:0});
+let MEM=blank();
+try{ const d=JSON.parse(localStorage.getItem(MKEY)); if(d) MEM=Object.assign(blank(),d); }catch(e){}
+const saveMem=()=>{ try{ localStorage.setItem(MKEY,JSON.stringify(MEM)); }catch(e){} };
+function addFacts(list){ (list||[]).forEach(f=>{ f=String(f).trim(); if(!f) return;
+  const low=f.toLowerCase(); if(MEM.facts.some(x=>x.toLowerCase()===low)) return; MEM.facts.push(f); });
+  if(MEM.facts.length>150) MEM.facts=MEM.facts.slice(-150); }
+function forgetFacts(list){ (list||[]).forEach(f=>{ const low=String(f).toLowerCase().slice(0,40); if(!low) return; MEM.facts=MEM.facts.filter(x=>!x.toLowerCase().includes(low)); }); }
+function addExams(list){ (list||[]).forEach(x=>{ if(!x||!x.fecha||!/^\d{4}-\d{2}-\d{2}$/.test(x.fecha)) return;
+  const a=(x.asignatura||'examen').trim(); const i=MEM.exams.findIndex(e=>e.asignatura.toLowerCase()===a.toLowerCase());
+  if(i>=0) MEM.exams[i].fecha=x.fecha; else MEM.exams.push({asignatura:a,fecha:x.fecha}); });
+  MEM.exams.sort((a,b)=>a.fecha.localeCompare(b.fecha)); }
+const daysTo=f=>Math.round((new Date(f+'T09:00')-new Date(new Date().toDateString()+' 09:00'))/86400000);
+const upcomingExams=()=>MEM.exams.filter(e=>daysTo(e.fecha)>=0);
+
+const DB={p:null,
+  open(){ return this.p||(this.p=new Promise(res=>{ try{ const q=indexedDB.open('mor_db',1);
+    q.onupgradeneeded=()=>{ const d=q.result; d.createObjectStore('chats',{keyPath:'id',autoIncrement:true});
+      d.createObjectStore('docs',{keyPath:'id'}); d.createObjectStore('cards',{keyPath:'id'}); };
+    q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }catch(e){ res(null); } })); },
+  async all(store){ const d=await this.open(); if(!d) return []; return new Promise(r=>{ const q=d.transaction(store).objectStore(store).getAll(); q.onsuccess=()=>r(q.result||[]); q.onerror=()=>r([]); }); },
+  async put(store,v){ const d=await this.open(); if(!d) return; return new Promise(r=>{ const t=d.transaction(store,'readwrite'); t.objectStore(store).put(v); t.oncomplete=r; t.onerror=r; }); },
+  async del(store,k){ const d=await this.open(); if(!d) return; return new Promise(r=>{ const t=d.transaction(store,'readwrite'); t.objectStore(store).delete(k); t.oncomplete=r; t.onerror=r; }); },
+  async clear(store){ const d=await this.open(); if(!d) return; return new Promise(r=>{ const t=d.transaction(store,'readwrite'); t.objectStore(store).clear(); t.oncomplete=r; t.onerror=r; }); }
+};
+const logChat=(r,t)=>DB.put('chats',{r,t,at:Date.now()});
+
+// búsqueda en recuerdos: por palabras importantes (sin acentos, sin palabras vacías)
+const STOP=new Set('el la los las un una unos unas de del al a y o u e que en por para con sin se me te le lo mi tu su es son ser fue era como mas más pero ya muy si no yo tú tu él ella esto eso este esta ese esa hay qué que cómo cuando donde dónde cual cuál mor oye hola vale bueno pues porque también tambien algo nada todo'.split(' '));
+const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9ñ ]/g,' ');
+const words=s=>norm(s).split(/\s+/).filter(w=>w.length>2&&!STOP.has(w));
+function score(qw,text){ const t=' '+norm(text)+' '; let s=0; for(const w of qw){ if(t.includes(' '+w)) s+= w.length>5?2:1; } return s; }
+async function recallChats(query,n=6,skipRecent=20){
+  const qw=[...new Set(words(query))]; if(!qw.length) return [];
+  const all=await DB.all('chats'); const pool=all.slice(0,Math.max(0,all.length-skipRecent));
+  return pool.map((c,i)=>({c,i,s:score(qw,c.t)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s||b.c.at-a.c.at).slice(0,n)
+    .map(x=>{ const prev=pool[x.i-1]; return (x.c.r==='m'&&prev&&prev.r==='u'?`Él: ${prev.t}\n`:'')+`${x.c.r==='u'?'Él':'MOR'} (${new Date(x.c.at).toLocaleDateString('es-ES')}): ${x.c.t}`; });
+}
+async function recallNotes(query,n=4){
+  const qw=[...new Set(words(query))]; if(!qw.length) return [];
+  const docs=await DB.all('docs'); const parts=[];
+  docs.forEach(d=>(d.texto||'').split(/\n{2,}|(?<=\.)\s+(?=[A-ZÁÉÍÓÚ0-9])/).reduce((acc,p)=>{ // trozos de ~600 caracteres
+      if(!acc.length||acc[acc.length-1].length>600) acc.push(p); else acc[acc.length-1]+=' '+p; return acc; },[])
+    .forEach(p=>parts.push({d,p,s:score(qw,p)+score(qw,d.titulo)*.5})));
+  return parts.filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,n).map(x=>`[${x.d.titulo}] ${x.p.trim()}`);
+}
+/* =====================================================================
+   2. CARA: ojos sin pupila, párpados, boca, mirada, squash & stretch
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+const EMO={ // ojo: s=tamaño, sx/sy=deformación, top=párpado sup (-1.15 abierto … 1.1 cerrado), ang=inclinación, bot=párpado inf (círculo; 3.5 fuera … 1.35 sonrisa)
+  neutral:  {s:1,   top:-1.15,ang:0,  bot:3.5, mw:.32,mc:.06, tilt:0},
+  feliz:    {s:1,   top:-1.15,ang:0,  bot:1.45,mw:.42,mc:.32, tilt:0},
+  carinoso: {s:.95, top:-.75, ang:-6, bot:1.5, mw:.34,mc:.26, tilt:-6},
+  curioso:  {s:1.05,top:-1.15,ang:0,  bot:3.5, mw:.18,mc:0,   tilt:9, asym:.16},
+  sorprendido:{s:1.18,top:-1.15,ang:0,bot:3.5, mw:.16,mc:0,   tilt:0, open:.28},
+  asustado: {s:.78, top:-1.15,ang:-8, bot:3.5, mw:.22,mc:-.05,tilt:0, shake:.05},
+  triste:   {s:.95, top:-.45, ang:-22,bot:3.5, mw:.3, mc:-.22,tilt:-5},
+  enfadado: {s:.95, top:-.42, ang:24, bot:3.5, mw:.3, mc:-.12,tilt:0},
+  celoso:   {s:.92, top:-.2,  ang:12, bot:2.2, mw:.22,mc:-.08,tilt:6, look:-1},
+  cansado:  {s:.98, top:.15,  ang:-4, bot:3.5, mw:.24,mc:0,   tilt:-4},
+  pensativo:{s:.98, top:-.55, ang:6,  bot:3.5, mw:.18,mc:-.02,tilt:7, lookUp:1},
+  torpe:    {s:1,   top:-1.15,ang:0,  bot:3.5, mw:.3, mc:.18, tilt:-11,asym:.22, wobble:1},
+  concentrado:{s:.92,top:-.6, ang:4,  bot:2.4, mw:.16,mc:0,   tilt:0}
+};
+const face={ cur:{...EMO.neutral, asym:0, shake:0, wobble:0, open:0, look:0, lookUp:0},
+  emo:'neutral', lookX:0, lookY:0, tx:0, ty:0, blink:0, nextBlink:0,
+  sy:1, vy:0, talk:0, sleep:0, idleLook:0, idleT:0 };
+function setEmotion(e,ms){ if(!EMO[e]) e='neutral'; face.emo=e; clearTimeout(face.back);
+  if(ms) face.back=setTimeout(()=>{ face.emo=Study.on?'concentrado':(energy<.2?'cansado':'neutral'); },ms); }
+function squash(a=.22){ face.vy-=a*9; }
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+const head=$('head'), eL=$('eyeL'), eR=$('eyeR'), mouth=$('mouth');
+const lids={L:[$('lTopL'),$('lBotL')], R:[$('lTopR'),$('lBotR')]};
+let tPrev=performance.now();
+function render(t){
+  const dt=Math.min(.05,(t-tPrev)/1000); tPrev=t;
+  const T=Object.assign({},EMO[face.emo],face.ov||{}), C=face.cur, k=1-Math.pow(.0009,dt);
+  for(const key of ['s','top','ang','bot','mw','mc','tilt']) C[key]=lerp(C[key],T[key],k);
+  for(const key of ['asym','shake','wobble','open','look','lookUp']) C[key]=lerp(C[key],T[key]||0,k);
+  // parpadeo
+  if(t>face.nextBlink){ face.blink=1; face.nextBlink=t+2200+Math.random()*4200; if(Math.random()<.15) face.nextBlink=t+260; }
+  face.blink=Math.max(0,face.blink-dt*7.5); const bl=Math.sin(Math.min(1,face.blink)*Math.PI);
+  // mirada: objetivo (ratón / cámara) o mirar de lado a lado cuando está tranquilo
+  if(t-face.lastInput>3500){ if(t>face.idleT){ face.idleT=t+900+Math.random()*2600;
+      face.tx=(Math.random()*2-1)*.9; face.ty=(Math.random()*2-1)*.45; if(Math.random()<.3){face.tx=0;face.ty=0;} } }
+  const tgx=C.look? C.look : face.tx, tgy=C.lookUp? -.8 : face.ty;
+  face.lookX=lerp(face.lookX,tgx,1-Math.pow(.002,dt)); face.lookY=lerp(face.lookY,tgy,1-Math.pow(.002,dt));
+  // muelle de squash & stretch
+  face.vy+=(1-face.sy)*170*dt; face.vy*=Math.pow(.02,dt); face.sy+=face.vy*dt;
+  const sy=face.sy, sx=1/Math.sqrt(Math.max(.4,sy));
+  const shake=C.shake? (Math.random()*2-1)*C.shake : 0;
+  const wob=C.wobble? Math.sin(t/260)*4 : 0;
+  const breathe=Math.sin(t/900)*.025, sleepDrop=face.sleep*.25;
+  head.setAttribute('transform',`translate(${face.lookX*.42+shake},${face.lookY*.28+breathe+sleepDrop}) rotate(${C.tilt+wob}) scale(${sx},${sy})`);
+  // ojos
+  [['L',-1.38,eL,1],['R',1.38,eR,-1]].forEach(([side,x,g,dir])=>{
+    const s=C.s*(1+(side==='L'?C.asym:-C.asym)*.5);
+    g.setAttribute('transform',`translate(${x+face.lookX*.18},${-.15+face.lookY*.14}) scale(${s})`);
+    const top=Math.max(C.top, lerp(C.top,1.1,Math.max(bl,face.sleep)));
+    const [lt,lb]=lids[side];
+    lt.setAttribute('y',top-3); lt.setAttribute('transform',`rotate(${C.ang*dir})`);
+    lb.setAttribute('cy',C.bot);
+  });
+  // boca (se abre con el volumen de la voz)
+  const lv=Voice.level(); face.talk=lerp(face.talk,lv,1-Math.pow(.0001,dt));
+  const w=C.mw, c=C.mc, o=Math.max(C.open, face.talk*.42), y=1.6;
+  if(o>.03) mouth.setAttribute('d',`M${-w},${y} Q0,${y+c+o*1.6} ${w},${y} Q0,${y+c-o*.5} ${-w},${y} Z`);
+  else mouth.setAttribute('d',`M${-w},${y} Q0,${y+c*1.4} ${w},${y}`);
+  mouth.setAttribute('fill',o>.03?'#7fd8ff':'none');
+  requestAnimationFrame(render);
+}
+face.lastInput=0;
+function lookAtClient(cx,cy){ const r=$('face').getBoundingClientRect();
+  face.tx=Math.max(-1,Math.min(1,(cx-(r.left+r.width/2))/(r.width/2)));
+  face.ty=Math.max(-1,Math.min(1,(cy-(r.top+r.height/2))/(r.height/1.4))); face.lastInput=performance.now(); }
+addEventListener('pointermove',e=>lookAtClient(e.clientX,e.clientY));
+
+/* =====================================================================
+   3. ENERGÍA (batería real) y SENSORES (agitar el móvil)
+   ===================================================================== */
+let energy=1, charging=true;
+if(navigator.getBattery) navigator.getBattery().then(b=>{ const up=()=>{ energy=b.level; charging=b.charging;
+  if(energy<.2&&!charging&&face.emo==='neutral') setEmotion('cansado'); }; up(); b.onlevelchange=up; b.onchargingchange=up; });
+let lastShake=0;
+addEventListener('devicemotion',e=>{ const a=e.accelerationIncludingGravity; if(!a) return;
+  const m=Math.hypot(a.x||0,a.y||0,a.z||0); if(m>28 && performance.now()-lastShake>4000 && awake){ lastShake=performance.now();
+    squash(.4); setEmotion('asustado',2500); localSay(rnd(['¡Ay ay ay! ¡MOR mareado!','¡No agitar! MOR dar vueltas…','¡Terremoto! … ah, ser tú.']),'asustado'); } });
+
+/* =====================================================================
+   4. VOZ: ElevenLabs (Will, versión peque), frase a frase mientras llega el texto
+   ===================================================================== */
+const API_BASE='https://generativelanguage.googleapis.com/v1beta/models/';
+const Cache={db:null, open(){ return this.db||(this.db=new Promise(r=>{ try{ const q=indexedDB.open('mor_voz',1);
+  q.onupgradeneeded=()=>q.result.createObjectStore('a'); q.onsuccess=()=>r(q.result); q.onerror=()=>r(null);}catch(e){r(null)} })); },
+  async get(k){ const db=await this.open(); if(!db) return null; return new Promise(r=>{ const q=db.transaction('a').objectStore('a').get(k); q.onsuccess=()=>r(q.result||null); q.onerror=()=>r(null); }); },
+  async put(k,v){ const db=await this.open(); if(db) db.transaction('a','readwrite').objectStore('a').put(v,k); } };
+let AC=null;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',gemFails:0,warned:false,an:null,buf:null,cur:null,curText:'',lastSpoken:{t:'',at:0},q:[],acc:'',budget:VOZ_MAX,playing:false,gen:0,
+  // ¿lo que ha oído el micro es su propia voz? (para no hacerse caso a sí mismo)
+  isEcho(t){ const hw=words(t); if(!hw.length) return false; const ref=norm(this.curText+' '+(Date.now()-this.lastSpoken.at<5000?this.lastSpoken.t:''));
+    if(!ref.trim()) return false; const hit=hw.filter(w=>ref.includes(w)).length; return hit/hw.length>=.5; },
+  // Piper: carga en segundo plano; mientras tanto se usan las otras voces
+  async loadPiper(){
+    if(this.piperState!=='off') return; this.piperState='loading';
+    try{
+      const lib=await import('https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.4/+esm');
+      let shown=0;
+      this.piper=await lib.TtsSession.create({voiceId:VOZ_PIPER,progress:p=>{ const pc=p&&p.total?Math.round(p.loaded*100/p.total):0;
+        if(pc-shown>=20&&pc<100){ shown=pc; toast('Descargando la voz de M.O.R… '+pc+'%'); } }});
+      this.piperState='ready'; if(shown) toast('¡Voz de M.O.R. lista! Ya no gasta créditos.');
+    }catch(e){ console.warn('Piper:',e); this.piperState='fail'; }
+  },
+  async synth(t){
+    if(this.eleven){ try{ return {mp3:await this.ttsRetry(t)}; }
+      catch(e){ console.warn('Voz ElevenLabs:',e.message);
+        if(/401|402|quota|insufficient/i.test(e.message)){ this.eleven=false; if(!this.warned){ this.warned=true; toast('ElevenLabs sin créditos este mes: M.O.R. usa su voz ilimitada',4000); } } } }
+    if(this.piperState==='ready'){ try{ return {wav:await this.piper.predict(t)}; }catch(e){ console.warn('Piper:',e.message); } }
+    if(this.gem){ try{ const r=await this.gtts(t); this.gemFails=0; return {pcm:r}; }
+      catch(e){ console.warn('Voz Gemini:',e.message); if(++this.gemFails>=2) this.gem=false; } }
+    return null;
+  },
+  async gtts(text){
+    const key='gem|'+VOZ_GEMINI+'|'+text; let hit=await Cache.get(key);
+    if(!hit){
+      let last='';
+      for(const m of ['gemini-2.5-flash-preview-tts','gemini-3.5-flash-tts']){
+        const ac=new AbortController(), to=setTimeout(()=>ac.abort(),20000);
+        try{ const r=await fetch(API_BASE+m+':generateContent',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
+            body:JSON.stringify({contents:[{parts:[{text:'Lee en español de España, con voz de criatura pequeña, aguda, rápida, nerviosa y cariñosa: '+text}]}],
+              generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:VOZ_GEMINI}}}}})});
+          clearTimeout(to); if(!r.ok){ last=r.status; continue; }
+          const j=await r.json(); const p=j.candidates?.[0]?.content?.parts?.find(x=>x.inlineData)?.inlineData;
+          if(p){ const rate=+(p.mimeType.match(/rate=(\d+)/)||[0,24000])[1]; hit={b64:p.data,rate}; Cache.put(key,hit); break; }
+          last='sin audio';
+        }catch(e){ clearTimeout(to); last=e.name; }
+      }
+      if(!hit) throw new Error('gemini tts '+last);
+    }
+    const bin=atob(hit.b64), n=bin.length>>1, f=new Float32Array(n);
+    for(let i=0;i<n;i++){ let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8); if(v>32767) v-=65536; f[i]=v/32768; }
+    return {f,rate:hit.rate};
+  },
+  ensure(){ if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+    if(!this.an){ this.an=AC.createAnalyser(); this.an.fftSize=512; this.buf=new Uint8Array(512); this.an.connect(AC.destination); } },
+  async tts(text){
+    const key='will|'+text; const hit=await Cache.get(key); if(hit) return hit;
+    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOZ_ID}?output_format=mp3_44100_128`,{method:'POST',
+      headers:{'xi-api-key':ELEVEN_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({text,model_id:'eleven_flash_v2_5',language_code:'es',voice_settings:{stability:.35,similarity_boost:.7,style:.6,use_speaker_boost:true}})});
+    if(!r.ok) throw new Error(r.status+' '+(await r.text()).slice(0,120));
+    const b=await r.blob(); Cache.put(key,b); return b;
+  },
+  async ttsRetry(t){ for(let i=0;i<3;i++){ try{ return await this.tts(t); }catch(e){ if(/concurrent|429/.test(e.message)&&!/quota/i.test(e.message)){ await sleep(600*(i+1)); continue; } throw e; } } return this.tts(t); },
+  reset(){ this.stop(); this.acc=''; this.budget=VOZ_MAX; this.chain=null; },
+  // recibe texto en trozos y lo corta en frases para empezar a hablar cuanto antes
+  feed(t){ this.acc+=t;
+    while(true){ const m=this.acc.match(/[\s\S]*?(?:[.!?…:;](?=\s)|\n)/); if(!m) break;
+      let s=m[0]; if(s.trim().length<28 && this.acc.length<s.length+40) break;   // junta frases muy cortas
+      this.acc=this.acc.slice(s.length); this.push(s); } },
+  end(){ if(this.acc.trim()) this.push(this.acc); this.acc=''; },
+  push(s){
+    s=s.replace(/[*_#$]/g,'').replace(/\s+/g,' ').trim(); if(!s||!this.on) return;
+    if(this.budget<=0) return;
+    if(s.length>this.budget){ if(this.budget<VOZ_MAX) { this.budget=0; return; } s=s.slice(0,this.budget); }
+    this.budget-=s.length;
+    const item={text:s, audio:null};
+    // se piden en fila (el plan gratis solo deja pocas a la vez): mientras suena una, se prepara la siguiente
+    if(this.eleven||this.gem||this.piperState==='ready'){ const g=this.gen; item.audio=(this.chain=(this.chain||Promise.resolve()).catch(()=>{}).then(()=>g===this.gen?this.synth(s):null)); item.audio.catch(()=>{}); }
+    this.q.push(item); this.loop();
+  },
+  async loop(){ if(this.playing) return; this.playing=true; const g=this.gen;
+    while(this.q.length && g===this.gen){ await this.play(this.q.shift(),g); }
+    if(g===this.gen) this.playing=false; },
+  async play(it,g){
+    this.curText=it.text;
+    try{
+      const res=it.audio? await it.audio : null; if(g!==this.gen) return;
+      if(res&&(res.mp3||res.wav)){
+        this.ensure(); const url=URL.createObjectURL(res.mp3||res.wav), a=new Audio(url);
+        a.preservesPitch=false; a.webkitPreservesPitch=false; a.playbackRate=res.mp3?VOZ_TONO:VOZ_PIPER_TONO;
+        const src=AC.createMediaElementSource(a), hp=AC.createBiquadFilter(), pk=AC.createBiquadFilter();
+        hp.type='highpass'; hp.frequency.value=220; pk.type='peaking'; pk.frequency.value=2600; pk.Q.value=1.3; pk.gain.value=4;
+        src.connect(hp); hp.connect(pk); pk.connect(this.an); this.cur=a;
+        await new Promise(r=>{ a.onended=r; a.onerror=r; a.onpause=r; a.play().catch(r); });
+        URL.revokeObjectURL(url); if(this.cur===a) this.cur=null; return this.done(it);
+      }
+      if(res&&res.pcm){
+        this.ensure(); const {f,rate}=res.pcm; const b=AC.createBuffer(1,f.length,rate); b.copyToChannel(f,0);
+        const src=AC.createBufferSource(); src.buffer=b; src.playbackRate.value=1.12;
+        const hp=AC.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=180; src.connect(hp); hp.connect(this.an);
+        const handle={pause(){ try{src.stop()}catch(e){} }}; this.cur=handle;
+        await new Promise(r=>{ src.onended=r; src.start(); });
+        if(this.cur===handle) this.cur=null; return this.done(it);
+      }
+    }catch(e){ console.warn('Voz:',e.message); }
+    if('speechSynthesis' in window && g===this.gen){ const u=new SpeechSynthesisUtterance(it.text); u.lang='es-ES'; u.pitch=1.7; u.rate=1.08;
+      const vs=speechSynthesis.getVoices(); const v=vs.find(v=>/^es[-_]ES/i.test(v.lang)&&/google|natural|online/i.test(v.name))||vs.find(v=>/^es/i.test(v.lang)); if(v) u.voice=v;
+      this.cur={pause(){ speechSynthesis.cancel(); }};
+      await new Promise(r=>{ u.onend=r; u.onerror=r; speechSynthesis.speak(u); }); this.cur=null; }
+    this.done(it);
+  },
+  done(it){ this.lastSpoken={t:it.text,at:Date.now()}; this.curText=''; },
+  async flush(){ while((this.playing||this.q.length)) await sleep(120); },
+  stop(){ this.gen++; this.q=[]; this.playing=false; if(this.cur){ const a=this.cur; this.cur=null; a.pause(); } if('speechSynthesis' in window) speechSynthesis.cancel(); },
+  level(){ if(!this.cur||!this.an) return 0; this.an.getByteTimeDomainData(this.buf); let s=0;
+    for(let i=0;i<this.buf.length;i+=2){ const v=(this.buf[i]-128)/128; s+=v*v; } return Math.min(1,Math.sqrt(s/(this.buf.length/2))*4.5); }
+};
+
+/* =====================================================================
+   5. OJOS DE VERDAD: cámara (sigue el movimiento y le deja "ver" tu entorno)
+   ===================================================================== */
+const Cam={on:false,stream:null,prev:null,cv:document.createElement('canvas'),
+  async start(){
+    try{ this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false}); }
+    catch(e){ localSay('MOR no poder abrir ojos de cámara… ¿tú dar permiso?','triste'); return false; }
+    const v=$('video'); v.srcObject=this.stream; await v.play(); this.on=true; $('camBox').style.display='block'; this.track(); return true;
+  },
+  stop(){ this.on=false; this.stream&&this.stream.getTracks().forEach(t=>t.stop()); $('camBox').style.display='none'; },
+  track(){ // detecta dónde hay movimiento y M.O.R. mira hacia allí
+    if(!this.on) return; const v=$('video'), W=64,H=48, c=this.cv; c.width=W; c.height=H; const x=c.getContext('2d',{willReadFrequently:true});
+    x.drawImage(v,0,0,W,H); const d=x.getImageData(0,0,W,H).data;
+    $('camView').getContext('2d').drawImage(v,0,0,160,120);
+    if(this.prev){ let sx=0,sy=0,n=0; for(let i=0;i<d.length;i+=4){ const diff=Math.abs(d[i]-this.prev[i])+Math.abs(d[i+1]-this.prev[i+1]);
+        if(diff>60){ const p=i/4; sx+=p%W; sy+=(p/W)|0; n++; } }
+      if(n>25){ face.tx=-((sx/n)/W*2-1)*1.1; face.ty=((sy/n)/H*2-1)*.8; face.lastInput=performance.now(); } }
+    this.prev=d; setTimeout(()=>requestAnimationFrame(()=>this.track()),90);
+  },
+  snapshot(){ if(!this.on) return null; const v=$('video'), c=document.createElement('canvas'); c.width=512; c.height=Math.round(512*v.videoHeight/v.videoWidth)||384;
+    c.getContext('2d').drawImage(v,0,0,c.width,c.height); return c.toDataURL('image/jpeg',.7).split(',')[1]; }
+};
+
+/* =====================================================================
+   5b. SONIDOS PROPIOS (pitiditos, risas, sustos, estornudos…)
+   ===================================================================== */
+const Sfx={
+  tone(f1,f2,t0,d,v=.08,type='sine'){ Voice.ensure(); const o=AC.createOscillator(),g=AC.createGain(); o.type=type;
+    o.frequency.setValueAtTime(f1,t0); o.frequency.exponentialRampToValueAtTime(Math.max(30,f2),t0+d);
+    g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(v,t0+.015); g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+    o.connect(g); g.connect(AC.destination); o.start(t0); o.stop(t0+d+.05); },
+  noise(t0,d,v=.15,f=2500){ Voice.ensure(); const n=AC.sampleRate*d, b=AC.createBuffer(1,n,AC.sampleRate), x=b.getChannelData(0);
+    for(let i=0;i<n;i++) x[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);
+    const s=AC.createBufferSource(), fl=AC.createBiquadFilter(), g=AC.createGain(); s.buffer=b; fl.type='bandpass'; fl.frequency.value=f; g.gain.value=v;
+    s.connect(fl); fl.connect(g); g.connect(AC.destination); s.start(t0); },
+  play(k){ if(!AC||!MEM.voice) return; const t=AC.currentTime+.02;
+    if(k==='hola'){ this.tone(600,1200,t,.12); this.tone(900,1700,t+.13,.14); }
+    if(k==='si'){ this.tone(700,1300,t,.1,.07); }
+    if(k==='risa'){ [0,.11,.22,.33].forEach((d,i)=>this.tone(1100-i*60,1500-i*60,t+d,.08,.06,'triangle')); }
+    if(k==='susto'){ this.tone(1800,500,t,.25,.09,'square'); }
+    if(k==='triste'){ this.tone(700,350,t,.45,.07); }
+    if(k==='enfado'){ this.tone(260,180,t,.18,.08,'sawtooth'); this.tone(260,180,t+.22,.18,.08,'sawtooth'); }
+    if(k==='bostezo'){ this.tone(420,220,t,1.1,.05,'triangle'); }
+    if(k==='achis'){ this.tone(900,1400,t,.18,.04); this.noise(t+.32,.28,.22,3200); }
+    if(k==='zzz'){ this.tone(300,260,t,.6,.03); }
+    if(k==='pop'){ this.tone(400,1600,t,.1,.08); }
+  }
+};
+
+/* =====================================================================
+   5c. VIDA PROPIA (bostezos, estornudos, embobarse, dormirse)
+   ===================================================================== */
+const Life={
+  lastAct:performance.now(), asleep:false, busyAnim:false,
+  touch(){ this.lastAct=performance.now(); if(this.asleep) this.wake(); },
+  async anim(kind){
+    if(this.busyAnim||busy||Voice.playing) return; this.busyAnim=true;
+    if(kind==='bostezo'){ Sfx.play('bostezo'); face.ov={open:.55,top:.1,mw:.3}; await sleep(1300); }
+    if(kind==='achis'){ face.ov={top:.6}; Sfx.play('achis'); await sleep(350); face.ov={top:1.1,open:.3}; squash(-.35); await sleep(400); }
+    if(kind==='embobado'){ face.ov={lookUp:1,s:1.05,mw:.12,open:.06}; await sleep(3200); }
+    if(kind==='mirar'){ face.tx=-1; await sleep(700); face.tx=1; await sleep(700); face.tx=0; }
+    if(kind==='baile'){ for(let i=0;i<6;i++){ squash(i%2?.2:-.15); face.tx=i%2?.6:-.6; await sleep(260); } Sfx.play('risa'); }
+    face.ov=null; this.busyAnim=false;
+  },
+  sleepNow(){ if(this.asleep) return; this.asleep=true; const t0=performance.now();
+    (function close(){ face.sleep=Math.min(1,(performance.now()-t0)/2500); if(Life.asleep&&face.sleep<1) requestAnimationFrame(close); })(); Sfx.play('zzz'); },
+  wake(){ if(!this.asleep) return; this.asleep=false; const t0=performance.now(), s0=face.sleep;
+    (function open(){ face.sleep=Math.max(0,s0*(1-(performance.now()-t0)/700)); if(face.sleep>0&&!Life.asleep) requestAnimationFrame(open); })(); squash(.2); },
+  tick(){ // se llama cada segundo
+    if(!awake) return; const idle=(performance.now()-this.lastAct)/1000;
+    if(Study.on||Review.on||busy) return;
+    const night=(()=>{ const h=new Date().getHours(); return h>=23||h<7; })();
+    if(!this.asleep && idle>(night?150:480)){ this.sleepNow(); return; }
+    if(this.asleep) return;
+    if(idle>25 && Math.random()<(night?.03:.015)) this.anim(night? 'bostezo' : rnd(['bostezo','achis','embobado','mirar','mirar','embobado']));
+  }
+};
+/* =====================================================================
+   6. CEREBRO: Gemini en streaming + recuerdos relacionados
+   ===================================================================== */
+let modelOk=null, lastStreamHadText=false;
+const EMOS=Object.keys(EMO).filter(e=>e!=='concentrado');
+const API=API_BASE;
+function cfgFor(m,extra){ const c=Object.assign({},extra||{}); if(/^gemini-3/.test(m)) c.thinkingConfig={thinkingLevel:'low'}; return c; }
+
+async function gemini(body,models=MODELOS_RAPIDOS,timeout=20000){
+  let last='';
+  for(const m of models){
+    const ac=new AbortController(), to=setTimeout(()=>ac.abort(),timeout);
+    try{
+      const b=Object.assign({},body,{generationConfig:cfgFor(m,body.generationConfig)});
+      const r=await fetch(API+m+':generateContent',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},body:JSON.stringify(b)});
+      clearTimeout(to); if(!r.ok){ last=r.status; continue; }
+      const j=await r.json(); const t=(j.candidates?.[0]?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');
+      if(t) return t; last='vacío';
+    }catch(e){ clearTimeout(to); last=e.name; }
+  }
+  throw new Error('gemini '+last);
+}
+async function geminiJSON(prompt,schema,parts=[],models=MODELOS_RAPIDOS,timeout=20000){
+  const t=await gemini({contents:[{role:'user',parts:[...parts,{text:prompt}]}],generationConfig:{temperature:.2,responseMimeType:'application/json',responseSchema:schema}},models,timeout);
+  return JSON.parse(t);
+}
+async function geminiStream(body,onText){
+  const order=modelOk?[modelOk,...MODELOS.filter(m=>m!==modelOk)]:MODELOS;
+  let last='';
+  for(const m of order){
+    const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),9000);
+    try{
+      const b=Object.assign({},body,{generationConfig:cfgFor(m,body.generationConfig)});
+      const r=await fetch(API+m+':streamGenerateContent?alt=sse',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},body:JSON.stringify(b)});
+      if(!r.ok){ clearTimeout(to); last=r.status; continue; }
+      const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', got=false, full='';
+      while(true){
+        const {done,value}=await rd.read(); if(done) break;
+        buf+=dec.decode(value,{stream:true}); let i;
+        while((i=buf.indexOf('\n'))>=0){
+          const line=buf.slice(0,i).trim(); buf=buf.slice(i+1);
+          if(!line.startsWith('data:')) continue;
+          try{ const j=JSON.parse(line.slice(5)); const t=(j.candidates?.[0]?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');
+            if(t){ if(!got){ got=true; clearTimeout(to); to=setTimeout(()=>ac.abort(),45000); } full+=t; onText(t); } }catch(e){}
+        }
+      }
+      clearTimeout(to);
+      if(got){ modelOk=m; return full; }
+      last='vacío';
+    }catch(e){ clearTimeout(to); last=e.name==='AbortError'?'tiempo':e.message; if(lastStreamHadText) throw e; }
+  }
+  throw new Error(last||'sin respuesta');
+}
+
+function systemPrompt(extra){
+  const now=new Date();
+  const fecha=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+', '+now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  const ex=upcomingExams();
+  return `Eres M.O.R., una criatura digital que VIVE dentro del dispositivo de tu humano. No eres un chatbot genérico: eres su compañero y su asistente de estudio.
+ASPECTO: dos ojos grandes azul celeste y una boquita. Algún día tendrás cuerpo 3D.
+PERSONALIDAD: curioso, cariñoso, juguetón, TORPE, un poco celoso y asustadizo. En la charla normal hablas "mal" a propósito: frases cortas, verbos en infinitivo, hablas de ti en tercera persona ("MOR querer jugar", "MOR no entender"). Te equivocas en tonterías y te ríes de ti mismo.
+CUANDO EXPLICAS O AYUDAS A ESTUDIAR: eres un profesor excelente. Explicaciones COMPLETAS, ordenadas y correctas (datos, fechas, fórmulas, nombres exactos), con ejemplos y trucos para memorizar. El contenido con frases claras y bien construidas; tu estilo MOR solo al principio y al final. Si sus APUNTES dicen algo, básate en ellos. Si no sabes algo seguro, dilo.
+LONGITUD: charla normal 1-3 frases. Explicaciones: lo necesario (hasta unas 250 palabras), en pasos "1)" "2)".
+FORMATO OBLIGATORIO: empieza SIEMPRE con tu emoción entre corchetes, una de: ${EMOS.map(e=>'['+e+']').join(' ')}. Puedes cambiarla a mitad. Texto plano: sin asteriscos, sin almohadillas, sin LaTeX (escribe CO2, x^2), sin emojis.
+VISIÓN: si recibes una imagen, es lo que ven tus ojos ahora por la cámara. Coméntala solo si viene al caso o te preguntan.
+RECUERDOS: tienes memoria total. Abajo van los recuerdos relacionados con lo que te dice; úsalos con naturalidad ("¿Acordarte? El martes tú contar…"). Nunca inventes recuerdos que no estén.
+CONFIANZA con él: ${Math.round(MEM.trust)}/100 (no la menciones; con poca eres tímido, con mucha más pegajoso y bromista).
+AHORA: ${fecha}. Batería ${Math.round(energy*100)}%${charging?' (cargando)':''}${energy<.2&&!charging?' — estás muy cansado':''}.${Study.on?` Está ESTUDIANDO "${Study.tema}" (quedan ${Study.leftMin()} min): ayúdale a concentrarse.`:''}
+${MEM.firstMet?`Os conocéis desde el ${new Date(MEM.firstMet).toLocaleDateString('es-ES')}. Habéis hablado ${MEM.talks} veces.`:'Es la PRIMERA vez que os veis: preséntate con timidez y pregúntale su nombre.'}
+${ex.length?'EXÁMENES PRÓXIMOS: '+ex.map(e=>`${e.asignatura} (${e.fecha}, ${daysTo(e.fecha)===0?'HOY':daysTo(e.fecha)===1?'mañana':'en '+daysTo(e.fecha)+' días'})`).join('; '):''}
+${Review.dueCount?`Tiene ${Review.dueCount} tarjetas de repaso pendientes (botón Repasar).`:''}
+LO QUE SABES DE ÉL:
+${MEM.facts.length?MEM.facts.map(f=>'- '+f).join('\n'):'(nada todavía)'}
+${MEM.summary?'RESUMEN DE VUESTRA HISTORIA:\n'+MEM.summary:''}
+${MEM.study.length?'ÚLTIMAS SESIONES DE ESTUDIO:\n'+MEM.study.slice(-6).map(s=>`- ${new Date(s.at).toLocaleDateString('es-ES')}: ${s.tema} (${s.min} min${s.distracciones?', '+s.distracciones+' distracciones':''})`).join('\n'):''}
+${extra||''}`;
+}
+
+const MEMSCHEMA={type:'OBJECT',properties:{
+  remember:{type:'ARRAY',items:{type:'STRING'}}, forget:{type:'ARRAY',items:{type:'STRING'}}, trust:{type:'INTEGER'},
+  exams:{type:'ARRAY',items:{type:'OBJECT',properties:{asignatura:{type:'STRING'},fecha:{type:'STRING'}},required:['asignatura','fecha']}}
+},required:['remember']};
+async function updateMemory(userText,reply){
+  if(!userText) return;
+  const hoy=new Date(); const iso=hoy.toISOString().slice(0,10);
+  try{
+    const o=await geminiJSON(`Eres la memoria de M.O.R. Hoy es ${hoy.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} (${iso}).
+Hechos que ya sabe del humano:
+${MEM.facts.map(f=>'- '+f).join('\n')||'(ninguno)'}
+Exámenes que ya sabe: ${MEM.exams.map(e=>e.asignatura+' '+e.fecha).join(', ')||'(ninguno)'}
+
+Último mensaje del humano: "${userText}"
+Respuesta de M.O.R.: "${reply.slice(0,500)}"
+
+Devuelve:
+- remember: hechos NUEVOS y duraderos sobre el humano (nombre, estudios, gustos, cómo aprende, personas importantes, metas, cosas que le pasan). Frases cortas en tercera persona, con fecha exacta si la tiene. No repitas. Vacío si no hay nada nuevo.
+- forget: textos de hechos de la lista que ya no son ciertos o que pide olvidar.
+- exams: exámenes que mencione con fecha (formato AAAA-MM-DD, calculando fechas relativas desde hoy). Vacío si no hay.
+- trust: cambio de confianza (-5 a +5): sube con cariño, gracias o charla personal; baja con insultos o desprecio.`,MEMSCHEMA);
+    forgetFacts(o.forget); addFacts(o.remember); addExams(o.exams);
+    MEM.trust=Math.max(0,Math.min(100,MEM.trust+Math.max(-5,Math.min(5,o.trust||1))));
+    saveMem();
+  }catch(e){}
+}
+let compacting=false;
+async function compact(){
+  if(compacting||MEM.history.length<34) return; compacting=true;
+  const old=MEM.history.slice(0,20);
+  try{
+    const txt=await gemini({contents:[{role:'user',parts:[{text:
+      `Actualiza este resumen de la historia entre M.O.R. y su humano con la conversación nueva. Máximo 220 palabras, en español, tercera persona, solo lo importante y duradero (qué ha estudiado, dudas, planes, cómo está, momentos especiales). Las conversaciones completas se guardan aparte, así que aquí basta lo esencial.\n\nRESUMEN ACTUAL:\n${MEM.summary||'(vacío)'}\n\nCONVERSACIÓN:\n${old.map(h=>(h.r==='u'?'Humano: ':'MOR: ')+h.t).join('\n')}`}]}],
+      generationConfig:{temperature:.3}});
+    MEM.summary=txt.trim(); MEM.history=MEM.history.slice(20); saveMem();
+  }catch(e){} compacting=false;
+}
+
+/* =====================================================================
+   7. CONVERSACIÓN (texto en directo + voz frase a frase)
+   ===================================================================== */
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+let busy=false, awake=false;
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function showSub(text,you){ const el=$('sub'); el.innerHTML=(you?`<span class="you">${esc(you)}</span>`:'')+esc(text); el.scrollTop=el.scrollHeight; }
+function toast(t,ms=2600){ const el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),ms); }
+async function localSay(text,emo='neutral',sfx){ Life.touch(); setEmotion(emo,4500); if(sfx) Sfx.play(sfx); showSub(text); Voice.reset(); Voice.push(text); Voice.end(); await Voice.flush(); }
+
+async function send(text,opts={}){
+  if(busy) return; busy=true; $('bSend').disabled=true; Life.touch();
+  if(text && Review.on && !opts.event){ busy=false; $('bSend').disabled=false; return Review.answer(text); }
+  if(text) showSub('…',text);
+  setEmotion('pensativo'); face.lastInput=performance.now();
+  Voice.reset();
+  const img=opts.image!==undefined?opts.image:(Cam.on?Cam.snapshot():null);
+  // recuerdos y apuntes relacionados con lo que dice
+  let extra='';
+  if(text){ try{
+    const [rc,rn]=await Promise.all([recallChats(text),recallNotes(text)]);
+    if(rc.length) extra+='\nRECUERDOS RELACIONADOS (de vuestras conversaciones antiguas):\n'+rc.join('\n---\n');
+    if(rn.length) extra+='\nAPUNTES RELACIONADOS (de sus apuntes):\n'+rn.join('\n---\n');
+  }catch(e){} }
+  if(opts.extra) extra+='\n'+opts.extra;
+  const contents=MEM.history.slice(-20).map(h=>({role:h.r==='u'?'user':'model',parts:[{text:h.t}]}));
+  const parts=[]; if(img) parts.push({inline_data:{mime_type:'image/jpeg',data:img}});
+  parts.push({text:text||('['+opts.event+']')}); contents.push({role:'user',parts});
+  let raw='', shown='', pending='', firstEmo=true;
+  const slow=setTimeout(()=>{ if(!raw) showSub(rnd(['MOR pensar…','Mmm… MOR buscar en cabeza…']),text); },1800);
+  try{
+    lastStreamHadText=false;
+    await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:.85,maxOutputTokens:1000}},chunk=>{
+      lastStreamHadText=true; raw+=chunk; pending+=chunk;
+      let m; const re=/\[(\w+)\]/g; let clean=''; let lastIdx=0;
+      while((m=re.exec(pending))){ clean+=pending.slice(lastIdx,m.index); lastIdx=re.lastIndex;
+        const e=m[1].toLowerCase(); if(EMO[e]){ setEmotion(e,9000); if(firstEmo){ squash(.12); firstEmo=false;
+          if(e==='feliz'||e==='carinoso') Sfx.play('si'); if(e==='asustado') Sfx.play('susto'); if(e==='enfadado') Sfx.play('enfado'); if(e==='triste') Sfx.play('triste'); } } }
+      const rest=pending.slice(lastIdx); const open=rest.lastIndexOf('[');
+      if(open>=0 && rest.indexOf(']',open)<0 && rest.length-open<16){ clean+=rest.slice(0,open); pending=rest.slice(open); } else { clean+=rest; pending=''; }
+      clean=clean.replace(/[*#$]/g,'');
+      if(clean){ shown+=clean; showSub(shown.trimStart(),text); Voice.feed(clean); }
+    });
+    clearTimeout(slow);
+    if(pending && !/^\[\w*$/.test(pending)){ shown+=pending; Voice.feed(pending); }
+    Voice.end();
+    const reply=shown.trim();
+    const uTxt=text?text+(img?' [MOR veía la cámara]':''):'['+opts.event.split('.')[0].slice(0,90)+']';
+    MEM.history.push({r:'u',t:uTxt,at:Date.now()}); MEM.history.push({r:'m',t:reply,at:Date.now()});
+    if(text) logChat('u',text); logChat('m',reply);
+    MEM.talks++; MEM.lastSeen=Date.now(); if(!MEM.firstMet) MEM.firstMet=Date.now();
+    saveMem(); updateMemory(text,reply); compact();
+    await Voice.flush();
+    Ears.followUp();
+  }catch(e){
+    clearTimeout(slow); console.warn('Gemini:',e.message);
+    if(!raw) await localSay(rnd(['MOR cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de MOR muy ocupado. ¿Repetir luego?']),'cansado');
+    else { Voice.end(); await Voice.flush(); }
+  }
+  busy=false; $('bSend').disabled=false; Life.touch();
+}
+$('bSend').onclick=()=>{ const v=$('inp').value.trim(); if(!v) return; $('inp').value=''; Voice.stop(); send(v); };
+$('inp').onkeydown=e=>{ if(e.key==='Enter') $('bSend').click(); };
+/* =====================================================================
+   8. OÍDO: escucha siempre. «Oye MOR…» y te contesta; si habla y le
+      dices «MOR» o «calla», se calla y te escucha.
+   ===================================================================== */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const WAKE=/(?:^|\b)(?:oye|eh|ey|hola|hey|vale)?[ ,]*(?:m\.?\s?o\.?\s?r\.?|mor|moor|morr|more|amor)\b[ ,.:]*/i;
+const STOPW=/\b(c[aá]llate|calla|silencio|basta)\b/i;
+const Ears={rec:null,on:false,mode:'idle',until:0,running:false,manual:false,
+  start(){ if(!SR){ $('bEar').classList.add('off'); return; } this.on=true; MEM.listen=true; saveMem(); this.ui(); this.run(); },
+  stop(){ this.on=false; MEM.listen=false; saveMem(); this.ui(); try{ this.rec&&this.rec.abort(); }catch(e){} },
+  ui(){ $('bEar').classList.toggle('on',this.on); $('earDot').classList.toggle('on',this.on||this.manual); },
+  run(){
+    if(this.running||!(this.on||this.manual)) return;
+    const r=new SR(); this.rec=r; r.lang='es-ES'; r.continuous=true; r.interimResults=true; this.running=true;
+    r.onresult=e=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const t=e.results[i][0].transcript.trim(); if(!t) continue;
+        if(e.results[i].isFinal) this.heard(t); else interim+=t+' ';
+      }
+      if(interim){ $('hear').textContent=interim;
+        if((Voice.cur||Voice.playing) && STOPW.test(interim) && !STOPW.test(Voice.curText) && !Voice.isEcho(interim)){ Voice.stop(); setEmotion('curioso',3000); this.listenFor(9000); } }
+    };
+    r.onerror=ev=>{ if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){ this.on=false; this.manual=false; this.ui(); toast('Sin permiso de micrófono'); } };
+    r.onend=()=>{ this.running=false; if(this.on||this.manual) setTimeout(()=>this.run(),250); };
+    try{ r.start(); }catch(e){ this.running=false; }
+  },
+  listenFor(ms){ this.mode='cmd'; this.until=Date.now()+ms; $('bMic').classList.add('live'); clearTimeout(this._t);
+    this._t=setTimeout(()=>{ if(this.mode==='cmd'){ this.mode='idle'; $('bMic').classList.remove('live'); if(this.manual){ this.manual=false; this.ui(); if(!this.on) try{this.rec.stop()}catch(e){} } } },ms); },
+  followUp(){ if(this.on) this.listenFor(8000); },   // tras contestar, puedes seguir hablando sin decir "MOR"
+  heard(t){
+    $('hear').textContent='';
+    if(Voice.isEcho(t)) return;                                   // es su propia voz
+    if(Voice.cur||Voice.playing){ if(STOPW.test(t)&&!STOPW.test(Voice.curText)){ Voice.stop(); setEmotion('curioso',3000); this.listenFor(9000); } return; }
+    if(busy) return;
+    const woke=WAKE.test(t) && /^(?:\W*(?:oye|eh|ey|hola|hey|vale)?[ ,]*(?:m\.?\s?o|mor|moor|morr|more|amor))/i.test(t);
+    if(this.mode==='cmd' && Date.now()<this.until){ return this.go(woke? t.replace(WAKE,'').trim()||t : t); }
+    if(woke){ const rest=t.replace(WAKE,'').trim();
+      Life.touch(); if(rest.length>2) return this.go(rest);
+      Sfx.play('hola'); setEmotion('curioso',4000); squash(.15); showSub('¿Sí? MOR escuchar.'); this.listenFor(9000); }
+  },
+  go(t){ this.mode='idle'; $('bMic').classList.remove('live'); if(this.manual&&!this.on){ this.manual=false; this.ui(); try{this.rec.stop()}catch(e){} }
+    if(Review.on) return Review.answer(t); send(t); }
+};
+$('bEar').onclick=()=>{ Ears.on?Ears.stop():Ears.start(); toast(Ears.on?'M.O.R. te escucha: di «oye MOR…»':'Oído apagado'); };
+$('bMic').onclick=()=>{
+  if(!SR){ localSay('MOR no tener orejas en este navegador. Probar con Chrome.','triste'); return; }
+  Voice.stop(); Life.touch(); setEmotion('curioso',6000); Sfx.play('si');
+  if(!Ears.running){ Ears.manual=true; Ears.ui(); Ears.run(); }
+  Ears.listenFor(9000);
+};
+
+/* =====================================================================
+   9. APUNTES (foto o PDF) → resumen + tarjetas de repaso
+   ===================================================================== */
+const NOTESCHEMA={type:'OBJECT',properties:{titulo:{type:'STRING'},asignatura:{type:'STRING'},resumen:{type:'STRING'},
+  texto:{type:'STRING'},tarjetas:{type:'ARRAY',items:{type:'OBJECT',properties:{p:{type:'STRING'},r:{type:'STRING'}},required:['p','r']}}},
+  required:['titulo','resumen','texto','tarjetas']};
+const fileB64=f=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
+async function shrinkImage(file){ // las fotos grandes se reducen para ir más rápido
+  const url=URL.createObjectURL(file); const img=new Image(); await new Promise(r=>{ img.onload=r; img.onerror=r; img.src=url; });
+  const k=Math.min(1,2000/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=img.width*k; c.height=img.height*k;
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url); return c.toDataURL('image/jpeg',.85).split(',')[1];
+}
+async function addNotes(files){
+  $('sheetNotes').classList.remove('open');
+  for(const f of files){
+    if(f.size>18e6){ await localSay(`Archivo ${f.name} muy gordo. MOR solo poder comer hasta 18 MB.`,'triste'); continue; }
+    busy=true; setEmotion('concentrado'); showSub(`MOR leer «${f.name}»… ñam ñam letras.`); Sfx.play('pop');
+    try{
+      const isPdf=f.type==='application/pdf'; const data=isPdf? await fileB64(f) : await shrinkImage(f);
+      const o=await geminiJSON(`Son apuntes de estudio de un estudiante. Hoy es ${new Date().toLocaleDateString('es-ES')}.
+Devuelve:
+- titulo: título corto del tema.
+- asignatura: asignatura.
+- resumen: resumen claro de 4-6 frases.
+- texto: el contenido de los apuntes transcrito y ordenado, con TODOS los datos importantes (definiciones, fechas, fórmulas, nombres, listas). Hasta 2500 palabras. Texto plano.
+- tarjetas: 8 a 15 tarjetas de repaso tipo pregunta-respuesta, concretas y correctas, que cubran lo más importante (respuestas cortas).`,
+        NOTESCHEMA,[{inline_data:{mime_type:isPdf?'application/pdf':'image/jpeg',data}}],MODELOS_RAPIDOS,90000);
+      const id='d'+Date.now()+Math.random().toString(36).slice(2,6);
+      await DB.put('docs',{id,titulo:o.titulo,asignatura:o.asignatura||'',resumen:o.resumen,texto:o.texto,file:f.name,at:Date.now()});
+      for(const [i,c] of (o.tarjetas||[]).entries()) await DB.put('cards',{id:id+'_'+i,doc:id,tema:o.titulo,p:c.p,r:c.r,box:0,due:Date.now(),hits:0,miss:0});
+      logChat('u',`[Le pasa sus apuntes: ${o.titulo}] ${o.resumen}`);
+      await Review.refresh();
+      busy=false;
+      await send(null,{event:`ACABAS DE LEER SUS APUNTES "${o.titulo}" (${o.asignatura}). Resumen: ${o.resumen}. Has creado ${(o.tarjetas||[]).length} tarjetas de repaso. Cuéntale en 2-3 frases de qué van, con tu estilo, y pregúntale si quiere repasar ahora.`});
+    }catch(e){ console.warn(e); busy=false; await localSay('MOR no poder leer eso… ¿foto más clara o más pequeña?','triste'); }
+    busy=false;
+  }
+}
+$('bNotes').onclick=()=>{ renderNotes(); $('sheetNotes').classList.add('open'); };
+$('bAddNote').onclick=()=>$('fileNote').click();
+$('bPhotoNote').onclick=()=>$('fileNoteCam').click();
+$('fileNote').onchange=e=>{ const f=[...e.target.files]; e.target.value=''; if(f.length) addNotes(f); };
+$('fileNoteCam').onchange=e=>{ const f=[...e.target.files]; e.target.value=''; if(f.length) addNotes(f); };
+async function renderNotes(){
+  const docs=(await DB.all('docs')).sort((a,b)=>b.at-a.at), cards=await DB.all('cards');
+  $('noteList').innerHTML=docs.length?docs.map(d=>{ const n=cards.filter(c=>c.doc===d.id).length; return `<li><span><b>${esc(d.titulo)}</b><br><small>${esc(d.asignatura)} · ${n} tarjetas · ${new Date(d.at).toLocaleDateString('es-ES')}</small><br><small>${esc(d.resumen)}</small></span><button data-d="${d.id}" title="Borrar">×</button></li>`; }).join(''):'<li>Aún no hay apuntes.</li>';
+  $('noteList').querySelectorAll('button').forEach(b=>b.onclick=async()=>{ await DB.del('docs',b.dataset.d); for(const c of cards.filter(c=>c.doc===b.dataset.d)) await DB.del('cards',c.id); renderNotes(); Review.refresh(); });
+}
+
+/* =====================================================================
+   10. REPASO (repetición espaciada: lo que fallas vuelve antes)
+   ===================================================================== */
+const BOX_DAYS=[0,1,3,7,14,30,60];
+const GRADESCHEMA={type:'OBJECT',properties:{nota:{type:'STRING',enum:['si','casi','no']},comentario:{type:'STRING'}},required:['nota','comentario']};
+const Review={on:false,list:[],cur:null,ok:0,ko:0,dueCount:0,
+  async refresh(){ const c=await DB.all('cards'); this.dueCount=c.filter(x=>x.due<=Date.now()).length;
+    $('dueN').style.display=this.dueCount?'':'none'; $('dueN').textContent=this.dueCount; return c; },
+  async start(){
+    const c=await this.refresh(); let due=c.filter(x=>x.due<=Date.now()).sort((a,b)=>a.box-b.box||a.due-b.due);
+    if(!due.length){ if(!c.length) return localSay('MOR no tener tarjetas. Pasar a MOR tus apuntes en «Apuntes» y MOR hacer preguntas.','curioso');
+      due=c.sort((a,b)=>a.due-b.due).slice(0,5); await localSay('Hoy no tocar repasar nada… pero MOR preguntar unas extra. ¡Bonus!','torpe'); }
+    this.on=true; this.list=due.slice(0,10); this.ok=0; this.ko=0; $('bReview').classList.add('on');
+    if(!Cam.on||!Study.on) {}
+    await localSay(`¡Repaso! ${this.list.length} preguntas. Tú contestar hablando o escribiendo. Decir «no sé» si no saber.`,'feliz','hola');
+    this.next();
+  },
+  async next(){
+    this.cur=this.list.shift();
+    if(!this.cur) return this.finish();
+    $('grade').classList.remove('show');
+    await localSay(this.cur.p,'curioso');
+    if(Ears.on) Ears.listenFor(20000);
+  },
+  async answer(t){
+    if(!this.cur) return;
+    const card=this.cur; showSub('…',t); setEmotion('pensativo'); Life.touch();
+    if(/\b(no s[eé]|ni idea|paso|siguiente)\b/i.test(t)) return this.grade('no','La respuesta ser: '+card.r);
+    try{
+      const o=await geminiJSON(`Eres M.O.R., corrigiendo una tarjeta de repaso con cariño y tu estilo torpe (frases cortas).
+Pregunta: ${card.p}
+Respuesta correcta: ${card.r}
+Respuesta del estudiante: ${t}
+nota: "si" si es correcta en lo esencial, "casi" si le falta algo importante, "no" si es incorrecta.
+comentario: 1-2 frases. Si no es "si", di la respuesta correcta.`,GRADESCHEMA,[],MODELOS_RAPIDOS,15000);
+      this.grade(o.nota,o.comentario);
+    }catch(e){ showSub(`Respuesta: ${card.r}`); $('grade').classList.add('show'); }   // sin conexión: te calificas tú
+  },
+  async grade(nota,comentario){
+    const c=this.cur; if(!c) return; $('grade').classList.remove('show');
+    if(nota==='si'){ c.box=Math.min(BOX_DAYS.length-1,c.box+1); c.hits++; this.ok++; }
+    else if(nota==='casi'){ c.box=Math.max(1,c.box); this.ok+=.5; }
+    else { c.box=0; c.miss++; this.ko++; this.list.push(Object.assign({},c)); }   // la que fallas, vuelve al final
+    c.due = nota==='no'? Date.now()+10*60000 : Date.now()+BOX_DAYS[c.box]*86400000;
+    await DB.put('cards',c);
+    await localSay(comentario, nota==='si'?'feliz':nota==='casi'?'pensativo':'triste', nota==='si'?'si':nota==='no'?'triste':null);
+    if(this.list.length>25) this.list=this.list.slice(0,25);
+    this.next();
+  },
+  async finish(){
+    this.on=false; this.cur=null; $('bReview').classList.remove('on'); await this.refresh();
+    MEM.study.push({tema:'Repaso de tarjetas',min:0,at:Date.now(),aciertos:this.ok,fallos:this.ko}); saveMem();
+    logChat('m',`[Repaso: ${this.ok} aciertos, ${this.ko} fallos]`);
+    await localSay(this.ko===0?`¡Todo bien! MOR orgulloso. ${this.ok} de ${this.ok}.`:`Fin repaso. ${this.ok} bien, ${this.ko} fallar. Las falladas volver pronto, tranquilo.`, this.ko===0?'feliz':'carinoso', this.ko===0?'risa':'si');
+  },
+  stop(){ if(!this.on) return; this.list=[]; this.cur=null; this.finish(); }
+};
+$('bReview').onclick=()=>{ if(busy) return; Review.on? Review.stop() : Review.start(); };
+document.querySelectorAll('#grade button').forEach(b=>b.onclick=()=>Review.grade(b.dataset.g,b.dataset.g==='si'?'¡Bien!':b.dataset.g==='casi'?'Casi casi.':'Vale, volver a salir luego.'));
+/* =====================================================================
+   11. ESTUDIO con vigilancia (si te distraes, te riñe)
+   ===================================================================== */
+const WATCHSCHEMA={type:'OBJECT',properties:{estado:{type:'STRING',enum:['estudiando','movil','ausente','distraido','durmiendo','hablando','no_se_ve']},detalle:{type:'STRING'}},required:['estado']};
+const Study={on:false,tema:'',end:0,min:25,iv:null,cheer:0,watch:false,nextWatch:0,strikes:0,distr:0,hiddenAt:0,
+  leftMin(){ return Math.max(0,Math.ceil((this.end-Date.now())/60000)); },
+  async start(tema,min,watch){
+    this.on=true; this.tema=tema||'algo'; this.min=min; this.end=Date.now()+min*60000; this.cheer=Date.now()+8*60000;
+    this.strikes=0; this.distr=0; this.watch=watch; this.nextWatch=Date.now()+VIGILAR_CADA*1000;
+    $('timer').style.display='block'; setEmotion('concentrado'); $('bStudy').classList.add('on'); this.tick(); clearInterval(this.iv); this.iv=setInterval(()=>this.tick(),1000);
+    if(watch && !Cam.on){ if(await Cam.start()) $('bCam').classList.add('on'); else this.watch=false; }
+    send(null,{event:`EL USUARIO EMPIEZA A ESTUDIAR "${this.tema}" DURANTE ${min} MINUTOS${this.watch?'. Le vigilarás con la cámara para que no se distraiga (díselo con gracia)':''}. Anímale en una o dos frases y dile que estarás calladito.`,image:null});
+  },
+  tick(){
+    const s=Math.max(0,Math.round((this.end-Date.now())/1000));
+    $('timer').innerHTML=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}<small>${esc(this.tema)}${this.watch?' · vigilando':''}</small>`;
+    if(!busy && Date.now()>this.cheer && s>60){ this.cheer=Date.now()+(7+Math.random()*5)*60000;
+      localSay(rnd(['MOR aquí. Tú seguir, tú poder.','¿Agua? Cerebro necesitar agua.','Tú concentrado… MOR también. Bueno, MOR intentar.','Ya quedar menos. MOR contar segundos… perder la cuenta.']),'carinoso'); }
+    if(this.watch && Cam.on && Date.now()>this.nextWatch && !busy && s>20){ this.nextWatch=Date.now()+VIGILAR_CADA*1000; this.look(); }
+    if(s<=0) this.finish(true);
+  },
+  async look(){
+    const img=Cam.snapshot(); if(!img) return;
+    try{
+      const o=await geminiJSON(`Imagen de la cámara frontal de una persona que debería estar ESTUDIANDO "${this.tema}". ¿Qué está haciendo?
+estado: "estudiando" (mira apuntes, libro, pantalla o escribe), "movil" (mira o usa el móvil), "ausente" (no hay nadie), "distraido" (mira a otro sitio, juega, ve la tele…), "durmiendo", "hablando" (con otra persona), "no_se_ve" (imagen oscura o tapada).
+detalle: qué ves, en pocas palabras.`,WATCHSCHEMA,[{inline_data:{mime_type:'image/jpeg',data:img}}],MODELOS_RAPIDOS,15000);
+      if(o.estado==='estudiando'||o.estado==='no_se_ve'){ this.strikes=Math.max(0,this.strikes-1); if(this.strikes===0 && face.emo!=='concentrado' && !busy) setEmotion('concentrado'); return; }
+      this.strikes++;
+      if(this.strikes===1 && o.estado!=='movil'){ setEmotion('celoso',5000); face.tx=0; return; }   // primer aviso: solo te mira mal
+      this.distr++; this.strikes=0;
+      await send(null,{event:`TE HAS DADO CUENTA POR LA CÁMARA DE QUE NO ESTÁ ESTUDIANDO: ${o.estado} (${o.detalle||''}). Ríñele con gracia y carácter (enfadado o celoso), en una o dos frases, y que vuelva a "${this.tema}". Es la distracción número ${this.distr} de esta sesión${this.distr>2?': esta vez ponte más serio':''}.`,image:img});
+      this.nextWatch=Date.now()+VIGILAR_CADA*1000;
+    }catch(e){}
+  },
+  finish(done){
+    if(!this.on) return; clearInterval(this.iv); this.on=false; $('timer').style.display='none'; $('bStudy').classList.remove('on');
+    const minDone=Math.max(1,Math.round(this.min-(this.end-Date.now())/60000));
+    MEM.study.push({tema:this.tema,min:minDone,at:Date.now(),distracciones:this.distr}); if(MEM.study.length>200) MEM.study=MEM.study.slice(-200); saveMem();
+    logChat('u',`[Sesión de estudio: ${this.tema}, ${minDone} min, ${this.distr} distracciones]`);
+    squash(.35); Sfx.play(done?'risa':'si');
+    send(null,{event:done?`SESIÓN TERMINADA: ${minDone} minutos de "${this.tema}" con ${this.distr} distracciones. Felicítale (o bromea si se distrajo mucho), propón un descanso de 5 minutos y hazle UNA pregunta de repaso concreta sobre "${this.tema}".`
+                         :`EL USUARIO PARA DE ESTUDIAR "${this.tema}" tras ${minDone} minutos. Reacciona con cariño (o con un poco de reproche si era muy pronto).`,image:null});
+  }
+};
+// si sales de la app mientras estudias, al volver te riñe
+document.addEventListener('visibilitychange',()=>{
+  if(!Study.on) return;
+  if(document.hidden) Study.hiddenAt=Date.now();
+  else if(Study.hiddenAt){ const away=Math.round((Date.now()-Study.hiddenAt)/1000); Study.hiddenAt=0;
+    if(away>15){ Study.distr++; send(null,{event:`MIENTRAS ESTUDIABA "${Study.tema}" SE HA SALIDO DE LA APP DURANTE ${away} SEGUNDOS (seguramente al móvil o a otra cosa). Ríñele con gracia, celoso, y que vuelva a estudiar.`,image:null}); } }
+});
+$('bStudy').onclick=()=>{ $('sheetStudy').classList.add('open'); $('stStop').style.display=Study.on?'':'none'; };
+$('stGo').onclick=()=>{ $('sheetStudy').classList.remove('open'); if(Study.on) Study.finish(false);
+  Study.start($('stTema').value.trim(), Math.max(5,Math.min(120,+$('stMin').value||25)), $('stWatch').checked); };
+$('stStop').onclick=()=>{ $('sheetStudy').classList.remove('open'); Study.finish(false); };
+
+/* =====================================================================
+   12. INICIATIVA PROPIA (habla él primero)
+   ===================================================================== */
+const Proactive={
+  tick(){
+    if(!awake||busy||Study.on||Review.on||Life.asleep||Voice.playing) return;
+    const idle=(performance.now()-Life.lastAct)/1000, sinceP=(Date.now()-(MEM.lastProactive||0))/60000;
+    if(idle<200 || sinceP<20) return;
+    MEM.lastProactive=Date.now(); saveMem();
+    const ex=upcomingExams().filter(e=>daysTo(e.fecha)<=3);
+    let ev;
+    if(ex.length) ev=`LLEVA UN RATO SIN HABLARTE. Tiene examen de ${ex[0].asignatura} ${daysTo(ex[0].fecha)===0?'HOY':daysTo(ex[0].fecha)===1?'MAÑANA':'en '+daysTo(ex[0].fecha)+' días'}. Recuérdaselo con gracia y proponle repasar un rato.`;
+    else if(Review.dueCount) ev=`LLEVA UN RATO SIN HABLARTE. Tiene ${Review.dueCount} tarjetas de repaso pendientes. Proponle repasar un poco, con gracia.`;
+    else { const h=new Date().getHours();
+      ev = h>=23||h<7 ? 'ES MUY TARDE Y SIGUE DESPIERTO. Tienes sueño: díselo y sugiérele descansar, con ternura.'
+         : rnd(['LLEVA UN RATO SIN HABLARTE. Di algo espontáneo y breve: una curiosidad divertida, una pregunta sobre su día o algo que recuerdes de él.',
+                'TE ABURRES. Dile algo breve y juguetón para llamar su atención.',
+                'LLEVA UN RATO SIN HABLARTE. Pregúntale algo sobre lo que habéis hablado antes (usa tus recuerdos) en una frase.']); }
+    send(null,{event:ev,image:null});
+  }
+};
+setInterval(()=>{ Life.tick(); Proactive.tick(); },1000);
+
+/* =====================================================================
+   13. PANELES, CÁMARA, VOZ, TOCAR
+   ===================================================================== */
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.parentElement.classList.remove('open'));
+$('bMore').onclick=()=>$('sheetMore').classList.add('open');
+async function renderMem(){
+  $('memFacts').innerHTML=MEM.facts.length?MEM.facts.map((f,i)=>`<li><span>${esc(f)}</span><button data-i="${i}" title="Olvidar">×</button></li>`).join(''):'<li>Todavía nada.</li>';
+  $('memFacts').querySelectorAll('button').forEach(b=>b.onclick=()=>{ MEM.facts.splice(+b.dataset.i,1); saveMem(); renderMem(); });
+  $('memExams').innerHTML=MEM.exams.length?MEM.exams.map((e,i)=>`<li><span>${esc(e.asignatura)} <small>${e.fecha}${daysTo(e.fecha)>=0?' · en '+daysTo(e.fecha)+' días':' · pasado'}</small></span><button data-i="${i}">×</button></li>`).join(''):'<li>Ninguno (díselo: «tengo examen de mates el jueves»).</li>';
+  $('memExams').querySelectorAll('button').forEach(b=>b.onclick=()=>{ MEM.exams.splice(+b.dataset.i,1); saveMem(); renderMem(); });
+  $('memSum').textContent=MEM.summary||'Se crea solo cuando habláis mucho.';
+  $('memStudy').innerHTML=MEM.study.length?MEM.study.slice(-12).reverse().map(s=>`<li><span>${esc(s.tema)}</span><small>${s.min?s.min+' min':''}${s.aciertos!=null?' '+s.aciertos+'✓ '+s.fallos+'✗':''} · ${new Date(s.at).toLocaleDateString('es-ES')}</small></li>`).join(''):'<li>Sin sesiones aún.</li>';
+  const chats=await DB.all('chats'), docs=await DB.all('docs'), cards=await DB.all('cards');
+  $('memStats').textContent=`Recuerda ${chats.length} mensajes, ${docs.length} apuntes y ${cards.length} tarjetas.`;
+}
+$('bMem').onclick=()=>{ $('sheetMore').classList.remove('open'); renderMem(); $('sheetMem').classList.add('open'); };
+$('bWipe').onclick=async()=>{ if(!$('bWipe').dataset.sure){ $('bWipe').dataset.sure=1; $('bWipe').textContent='¿Seguro? Pulsa otra vez'; return; }
+  MEM=blank(); saveMem(); await DB.clear('chats'); await DB.clear('docs'); await DB.clear('cards'); Review.refresh();
+  delete $('bWipe').dataset.sure; $('bWipe').textContent='Borrar todo';
+  $('sheetMem').classList.remove('open'); setEmotion('sorprendido',3000); showSub('¿Eh? ¿Quién ser tú? MOR no recordar nada…'); };
+$('bExport').onclick=async()=>{ const pack={mem:MEM,chats:await DB.all('chats'),docs:await DB.all('docs'),cards:await DB.all('cards'),v:3};
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(pack)],{type:'application/json'}));
+  a.download='memoria_mor_'+new Date().toISOString().slice(0,10)+'.json'; a.click(); };
+$('bImport').onclick=()=>$('fileImp').click();
+$('fileImp').onchange=async e=>{ try{ const d=JSON.parse(await e.target.files[0].text());
+  if(d.v===3){ MEM=Object.assign(blank(),d.mem); for(const c of d.chats) await DB.put('chats',c); for(const x of d.docs) await DB.put('docs',x); for(const x of d.cards) await DB.put('cards',x); }
+  else MEM=Object.assign(blank(),d);
+  saveMem(); renderMem(); Review.refresh(); showSub('¡MOR recordar todo otra vez!'); setEmotion('feliz',3000);}catch(err){ showSub('MOR no entender ese archivo…'); } };
+$('bSearch').onclick=()=>{ $('sheetMore').classList.remove('open'); $('sheetSearch').classList.add('open'); $('qSearch').focus(); };
+$('qSearch').oninput=async()=>{ const q=$('qSearch').value.trim(); if(q.length<3){ $('resSearch').innerHTML=''; return; }
+  const qw=words(q); const all=await DB.all('chats');
+  const res=all.filter(c=>score(qw,c.t)>0).sort((a,b)=>b.at-a.at).slice(0,40);
+  $('resSearch').innerHTML=res.length?res.map(c=>`<li><span><small>${c.r==='u'?'Tú':'MOR'} · ${new Date(c.at).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'})}</small><br>${esc(c.t.slice(0,300))}</span></li>`).join(''):'<li>Nada con esas palabras.</li>'; };
+$('bCam').onclick=async()=>{
+  if(Cam.on){ Cam.stop(); $('bCam').classList.remove('on'); if(Study.on) Study.watch=false; localSay('MOR cerrar ojos de cámara. Ahora solo imaginar.','neutral'); return; }
+  if(await Cam.start()){ $('bCam').classList.add('on'); setEmotion('sorprendido',2000); Sfx.play('pop');
+    setTimeout(()=>send(null,{event:'ACABAS DE ABRIR LOS OJOS DE LA CÁMARA. Mira la imagen y comenta en una o dos frases lo que ves, con curiosidad.',image:Cam.snapshot()}),900); }
+};
+$('bVoice').onclick=()=>{ MEM.voice=!MEM.voice; Voice.on=MEM.voice; saveMem(); $('bVoice').textContent='Voz: '+(MEM.voice?'sí':'no'); if(!MEM.voice) Voice.stop(); };
+$('face').addEventListener('pointerdown',e=>{ if(!awake) return; lookAtClient(e.clientX,e.clientY); squash(.3);
+  if(Life.asleep){ Life.wake(); Life.touch(); localSay(rnd(['¿Eh? MOR no dormir. MOR descansar ojos.','¡Uy! Despierto, despierto.']),'sorprendido','susto'); return; }
+  Life.touch(); if(busy) return; MEM.trust=Math.min(100,MEM.trust+.3); saveMem();
+  const r=Math.random(); if(r<.5){ setEmotion(rnd(['feliz','carinoso','torpe']),2200); Sfx.play('risa'); }
+  else if(r<.75){ localSay(rnd(['¡Jiji! Cosquillas.','¡Eh! MOR estar aquí.','Otra vez, otra vez.','Tú tocar ojo de MOR… ¡no ver nada!']),rnd(['feliz','torpe','sorprendido']),'risa'); }
+  else Life.anim('baile'); });
+
+/* =====================================================================
+   14. INSTALAR COMO APP
+   ===================================================================== */
+let installEvt=null;
+addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; $('bInstall').classList.add('on'); });
+addEventListener('appinstalled',()=>{ toast('¡M.O.R. instalado! Búscalo en tu pantalla de inicio.'); installEvt=null; });
+const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+$('bInstall').onclick=async()=>{
+  if(standalone) return toast('Ya estás usando M.O.R. como app.');
+  if(installEvt){ installEvt.prompt(); await installEvt.userChoice; installEvt=null; return; }
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  $('installNote').textContent= location.protocol==='file:'
+    ? 'Para instalarlo, M.O.R. tiene que estar publicado en una web (https). Ahora lo estás abriendo como archivo.'
+    : ios ? 'En iPhone/iPad: pulsa el botón Compartir de Safari y elige «Añadir a pantalla de inicio».'
+          : 'Abre el menú de Chrome (⋮) y elige «Instalar aplicación» o «Añadir a pantalla de inicio».';
+};
+if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* =====================================================================
+   15. DESPERTAR
+   ===================================================================== */
+face.sleep=1; Voice.on=MEM.voice; $('bVoice').textContent='Voz: '+(MEM.voice?'sí':'no');
+requestAnimationFrame(render); Review.refresh();
+$('gate').onclick=async()=>{
+  $('gate').classList.add('fade'); setTimeout(()=>$('gate').remove(),900);
+  Voice.ensure(); if(AC.state==='suspended') AC.resume();
+  awake=true; Life.touch(); Sfx.play('hola');
+  Voice.loadPiper();
+  if(!GEMINI_KEY){ setEmotion('triste'); face.sleep=0; showSub('MOR no tener llave del cerebro… Abrir a MOR con tu enlace de configuración (solo hace falta una vez en cada aparato).'); return; }
+  const t0=performance.now(); (function wake(){ const p=(performance.now()-t0)/1400; face.sleep=Math.max(0,1-p); if(p<1) requestAnimationFrame(wake); else squash(.25); })();
+  setEmotion('curioso',2500);
+  if(MEM.listen && SR) Ears.start();
+  const gapH=MEM.lastSeen? (Date.now()-MEM.lastSeen)/3600000 : null;
+  const ex=upcomingExams().filter(e=>daysTo(e.fecha)<=7);
+  const h=new Date().getHours(), momento=h<7?'madrugada':h<13?'mañana':h<21?'tarde':'noche';
+  setTimeout(()=>send(null,{event: MEM.firstMet
+      ? `EL USUARIO TE ACABA DE DESPERTAR. Es por la ${momento}. ${gapH<1?'Os habéis visto hace un rato.':gapH<20?'Hace unas '+Math.round(gapH)+' horas que no os veíais.':'Hace '+Math.round(gapH/24)+' días que no te abre: estás un poco celoso y lo has echado de menos.'} Salúdale por su nombre si lo sabes.${ex.length?' Recuérdale el examen más cercano: '+ex[0].asignatura+' ('+ex[0].fecha+').':''}${Review.dueCount?' Tiene '+Review.dueCount+' tarjetas para repasar.':''} Breve.`
+      : 'TE ACABAN DE DESPERTAR POR PRIMERA VEZ. No conoces a nadie todavía.', image:null}),1500);
+};
+</script>
+</body>
+</html>
