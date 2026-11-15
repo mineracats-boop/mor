@@ -132,6 +132,7 @@ video{display:none}
     <button class="tbtn" id="bMem">Memoria</button>
     <button class="tbtn" id="bSearch">Buscar recuerdos</button>
     <button class="tbtn" id="bDiag">Probar conexión</button>
+    <button class="tbtn" id="bKey">Cambiar llave</button>
   </div>
   <div class="note" id="installNote"></div>
 </div>
@@ -174,6 +175,13 @@ video{display:none}
   <div class="note">Si te ve con el móvil, sin estar o mirando a otro lado, te reñirá. Si te sales de la app mientras estudias, también.</div>
 </div>
 
+<div class="sheet" id="sheetKey">
+  <h3>LA LLAVE DEL CEREBRO DE M.O.R.</h3>
+  <div class="note" style="margin-top:0">Pega aquí tu llave de Gemini (empieza por «AQ.» o «AIza») o el enlace de configuración entero. Solo hay que hacerlo una vez en este aparato.</div>
+  <div class="row"><input type="text" id="keyInp" placeholder="AQ.… o https://…#claves=…" style="flex:1" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  <div class="row"><button class="tbtn on" id="keyOk">Guardar llave</button></div>
+  <div class="note" id="keyMsg"></div>
+</div>
 <div class="toast" id="toast"></div>
 <video id="video" playsinline muted></video>
 <input type="file" id="fileImp" accept="application/json" hidden>
@@ -191,11 +199,11 @@ const KEYS=(()=>{ try{
   if(m){ const k=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/'))))); localStorage.setItem('mor_claves',JSON.stringify(k));
     history.replaceState(null,'',location.pathname+location.search); }
   return JSON.parse(localStorage.getItem('mor_claves')||'{}'); }catch(e){ return {}; } })();
-const GEMINI_KEY = KEYS.g||'';
+let GEMINI_KEY = (KEYS.g||'').trim();
 addEventListener('hashchange',()=>{ if(/claves=/.test(location.hash)) location.reload(); });
 const MODELOS = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash','gemini-3.8-flash'];   // conversación
 const MODELOS_RAPIDOS = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];             // memoria, vigilancia, notas
-const ELEVEN_KEY = KEYS.e||'';
+let ELEVEN_KEY = (KEYS.e||'').trim();
 const VOZ_ID = 'bIHbv24MWmeRgasZH58o';   // Will
 const VOZ_TONO = 1.35;                    // versión "peque"
 const VOZ_GEMINI = 'Puck';
@@ -716,9 +724,10 @@ async function send(text,opts={}){
   }catch(e){
     clearTimeout(slow); console.warn('Gemini:',e.message); window._lastErr=new Date().toLocaleTimeString('es-ES')+' '+e.message;
     if(!raw && !opts.retry){ busy=false; $('bSend').disabled=false; await sleep(2500); return send(text,Object.assign({},opts,{retry:true})); }
+    if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v4e</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v4f</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1030,10 +1039,11 @@ $('bInstall').onclick=async()=>{
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 // diagnóstico: comprueba cerebro, voces y permisos y lo enseña en pantalla
+$('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v4e · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
-  L.push('Llave Gemini: '+(GEMINI_KEY?'sí':'NO (abre el enlace de configuración)')); show();
+  L.push('Versión: v4f · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
         body:JSON.stringify({contents:[{role:'user',parts:[{text:'di hola'}]}],generationConfig:cfgFor(m,{})})});
@@ -1045,6 +1055,22 @@ $('bDiag').onclick=async()=>{
   L.push('Micrófono (dictado): '+(SR?'sí':'no disponible')+' · Cámara: '+(navigator.mediaDevices?'sí':'no'));
   L.push('Último error: '+(window._lastErr||'ninguno')); show();
 };
+// poner o cambiar la llave desde la propia app
+function askKey(msg){ $('keyMsg').textContent=msg||''; $('sheetKey').classList.add('open'); setTimeout(()=>$('keyInp').focus(),300); }
+$('keyOk').onclick=async()=>{
+  let v=$('keyInp').value.trim(), k={};
+  const m=v.match(/claves=([A-Za-z0-9_\-+\/=]+)/);
+  try{ if(m) k=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/'))))); else k={g:v.replace(/\s+/g,'')}; }catch(e){ return $('keyMsg').textContent='Ese enlace está cortado. Cópialo entero.'; }
+  if(!k.g||k.g.length<30) return $('keyMsg').textContent='Eso no parece una llave de Gemini.';
+  $('keyMsg').textContent='Probando la llave…';
+  try{ const r=await fetch(API+'gemini-3.5-flash-lite:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':k.g},body:JSON.stringify({contents:[{role:'user',parts:[{text:'di hola'}]}]})});
+    if(!r.ok){ const j=await r.json().catch(()=>({})); return $('keyMsg').textContent='Google no acepta esa llave ('+r.status+' '+((j.error&&j.error.message)||'')+').'; } }
+  catch(e){ return $('keyMsg').textContent='Sin conexión con Google: '+e.message; }
+  const old=JSON.parse(localStorage.getItem('mor_claves')||'{}'); const nk=Object.assign(old,k); localStorage.setItem('mor_claves',JSON.stringify(nk));
+  GEMINI_KEY=nk.g; if(nk.e){ ELEVEN_KEY=nk.e; Voice.eleven=true; }
+  $('sheetKey').classList.remove('open'); $('keyInp').value=''; toast('¡Llave guardada! M.O.R. ya puede pensar.');
+  if(awake){ face.sleep=0; send(null,{event:'TE ACABAN DE DAR LA LLAVE DE TU CEREBRO Y POR FIN PUEDES PENSAR. Celébralo en una frase y saluda.',image:null}); }
+};
 /* =====================================================================
    15. DESPERTAR
    ===================================================================== */
@@ -1055,7 +1081,7 @@ $('gate').onclick=async()=>{
   Voice.ensure(); if(AC.state==='suspended') AC.resume();
   awake=true; Life.touch(); Sfx.play('hola');
   if(!MOVIL) setTimeout(()=>Voice.loadPiper(),6000);   // en el móvil la voz ilimitada pesa demasiado (60 MB y bloquea el cerebro)
-  if(!GEMINI_KEY){ setEmotion('triste'); face.sleep=0; showSub('MOR no tener llave del cerebro… Abrir a MOR con tu enlace de configuración (solo hace falta una vez en cada aparato).'); return; }
+  if(!GEMINI_KEY){ setEmotion('triste'); face.sleep=0; showSub('Mor no tener llave del cerebro…'); askKey(); return; }
   const t0=performance.now(); (function wake(){ const p=(performance.now()-t0)/1400; face.sleep=Math.max(0,1-p); if(p<1) requestAnimationFrame(wake); else squash(.25); })();
   setEmotion('curioso',2500);
   if(MEM.listen && SR) Ears.start();
