@@ -942,7 +942,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v11</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v11b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1268,7 +1268,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v11 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v11b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2365,12 +2365,13 @@ function frame3d(code,parent){
 const extraeFn=t=>{ const m=String(t).match(/function\s+construir\s*\(/); return m?String(t).slice(m.index).replace(/```\s*$/,'').trim():String(t); };
 const Taller3D={running:false,
   async probar(code){ const v=frame3d(code); try{ const r=await v.wait('listo',20000); let shots=[]; if(!r.errs.length){ v.cmd('shots'); shots=(await v.wait('shots',15000)).shots; } return Object.assign(r,{shots,v}); }catch(e){ v.f.remove(); return {errs:[e.message],shots:[]}; } },
-  async revisar(code,desc,log,rondas){
+  async revisar(code,desc,log,rondas,minPiezas=0){
     let res=null;
     for(let i=1;i<=rondas;i++){
       log(`Mor mirar el modelo (revisión ${i})…`); if(res&&res.v) res.v.f.remove();
       res=await this.probar(code); let probs=[...res.errs];
       if(!probs.length&&res.shots.length){ try{ const rv=await geminiJSON(`Son 4 vistas (frente, 3/4, lado, detrás) de un modelo 3D hecho con código que debería ser: «${desc}». Tiene ${res.piezas} piezas y mide ${res.size.join(' × ')} m. Evalúa como un artista 3D exigente: ¿se reconoce y se parece? (parecido 0-10). Lista problemas CONCRETOS y arreglables: piezas flotando o separadas, atravesadas, proporciones raras, partes que faltan, poco detalle, colores. "bien" = true solo si parecido ≥ 7 y no hay fallos graves.`,REV3D,res.shots.map(s=>({inline_data:{mime_type:'image/jpeg',data:s.split(',')[1]}})),MODELOS_RAPIDOS,40000); res.parecido=rv.parecido; if(!rv.bien) probs=probs.concat(rv.problemas||[]); }catch(e){} }
+      if(!res.errs.length&&minPiezas&&res.piezas<minPiezas*.6) probs.push(`Solo tiene ${res.piezas} piezas: necesita al menos ${minPiezas}. Añade detalle real (piezas secundarias y pequeñas bien colocadas), no piezas sueltas sin sentido.`);
       res.probs=probs; if(!probs.length||i===rondas) break;
       log(`Mor mejorar el modelo (${probs.length} cosas)…`);
       code=extraeFn(await genLong(`Eres un artista 3D técnico experto en Three.js. Este modelo de «${desc}» tiene estos problemas:\n${probs.map(p=>'- '+p).join('\n')}\n\n${GUIA_3D}\n\nCÓDIGO ACTUAL:\n${code}\n\nArréglalos TODOS manteniendo lo que está bien, y añade detalle si falta. Devuelve la función construir COMPLETA. Responde SOLO con el código.`,n=>log(`Mor mejorar el modelo… (${n} líneas)`)));
@@ -2396,7 +2397,7 @@ const Taller3D={running:false,
       const spec=`MODELO: «${desc}» (${plan.estilo||'estilo cuidado'}), altura ≈ ${plan.altura_metros||1} m, ${piezas} piezas.\nPARTES:\n${plan.partes.map(p=>`- ${p.nombre}: ${p.forma}${p.detalle?' · '+p.detalle:''}`).join('\n')}\nPALETA: ${(plan.paleta||[]).map(c=>c.uso+' '+c.hex).join(', ')}`;
       log('Mor modelar con código…');
       let code=extraeFn(await genLong(`Eres un artista 3D técnico experto en Three.js.\n${spec}\n\n${GUIA_3D}\n\nEscribe la función construir COMPLETA con todas las partes y detalles. Responde SOLO con el código.`,n=>log(`Mor modelar con código… (${n} líneas)`)));
-      const r=await this.revisar(code,desc,log,3); code=r.code;
+      const r=await this.revisar(code,desc,log,3,{normal:40,alto:120,maximo:200}[nivel]||120); code=r.code;
       log('Mor exportar a GLB…'); const glb=await this.guardar(P,code,r.res);
       ban.style.display='none'; this.running=false; try{ renderProjects(); }catch(e){} Sfx.play('risa'); squash(.3);
       logChat('m',`[Modelo 3D creado: ${P.nombre}, ${r.res.piezas||'?'} piezas]`);
