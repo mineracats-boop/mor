@@ -199,7 +199,7 @@ const VOZ_ID = 'bIHbv24MWmeRgasZH58o';   // Will
 const VOZ_TONO = 1.35;                    // versión "peque"
 const VOZ_GEMINI = 'Puck';
 const VOZ_PIPER = 'es_ES-davefx-medium';  // voz ilimitada dentro del dispositivo (se descarga una vez, ~60 MB)
-const VOZ_PIPER_TONO = 1.28;                // voz de respaldo de Gemini si ElevenLabs no tiene créditos
+const VOZ_PIPER_TONO = 1.08;           // >1 más aguda pero también más rápida                // voz de respaldo de Gemini si ElevenLabs no tiene créditos
 const VOZ_MAX = 450;                      // caracteres hablados por respuesta (el resto se lee); ahorra créditos
 const VIGILAR_CADA = 50;                  // segundos entre miradas de la cámara mientras estudias
 
@@ -414,7 +414,7 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
       this.acc=this.acc.slice(s.length); this.push(s); } },
   end(){ if(this.acc.trim()) this.push(this.acc); this.acc=''; },
   push(s){
-    s=s.replace(/[*_#$]/g,'').replace(/\s+/g,' ').trim(); if(!s||!this.on) return;
+    s=s.replace(/[*_#$]/g,'').replace(/\bM\.O\.R\.?|\bMOR\b/g,'Mor').replace(/\s+/g,' ').trim(); if(!s||!this.on) return;
     if(this.budget<=0) return;
     if(s.length>this.budget){ if(this.budget<VOZ_MAX) { this.budget=0; return; } s=s.slice(0,this.budget); }
     this.budget-=s.length;
@@ -543,6 +543,9 @@ const Life={
    ===================================================================== */
 let modelOk=null, lastStreamHadText=false;
 const EMOS=Object.keys(EMO).filter(e=>e!=='concentrado');
+const EMO_ALIAS={alegre:'feliz',contento:'feliz',emocionado:'feliz',orgulloso:'feliz',timido:'asustado',nervioso:'asustado',miedo:'asustado',
+  preocupado:'triste',confundido:'curioso',sorpresa:'sorprendido',enojado:'enfadado',dormido:'cansado',aburrido:'cansado',carino:'carinoso',amoroso:'carinoso',concentrado:'pensativo'};
+function emoAlias(x){ const k=norm(x).trim(); return EMO[k]?k:(EMO_ALIAS[k]||'neutral'); }
 const API=API_BASE;
 function cfgFor(m,extra){ const c=Object.assign({},extra||{}); if(/^gemini-3/.test(m)) c.thinkingConfig={thinkingLevel:'low'}; return c; }
 
@@ -568,7 +571,7 @@ async function geminiStream(body,onText){
   const order=modelOk?[modelOk,...MODELOS.filter(m=>m!==modelOk)]:MODELOS;
   let last='';
   for(const m of order){
-    const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),9000);
+    const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),15000);
     try{
       const b=Object.assign({},body,{generationConfig:cfgFor(m,body.generationConfig)});
       const r=await fetch(API+m+':streamGenerateContent?alt=sse',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},body:JSON.stringify(b)});
@@ -688,9 +691,9 @@ async function send(text,opts={}){
     lastStreamHadText=false;
     await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:.85,maxOutputTokens:1000}},chunk=>{
       lastStreamHadText=true; raw+=chunk; pending+=chunk;
-      let m; const re=/\[(\w+)\]/g; let clean=''; let lastIdx=0;
+      let m; const re=/\[([\wáéíóúñÁÉÍÓÚÑ]+)\]/g; let clean=''; let lastIdx=0;
       while((m=re.exec(pending))){ clean+=pending.slice(lastIdx,m.index); lastIdx=re.lastIndex;
-        const e=m[1].toLowerCase(); if(EMO[e]){ setEmotion(e,9000); if(firstEmo){ squash(.12); firstEmo=false;
+        const e=emoAlias(m[1]); if(EMO[e]){ setEmotion(e,9000); if(firstEmo){ squash(.12); firstEmo=false;
           if(e==='feliz'||e==='carinoso') Sfx.play('si'); if(e==='asustado') Sfx.play('susto'); if(e==='enfadado') Sfx.play('enfado'); if(e==='triste') Sfx.play('triste'); } } }
       const rest=pending.slice(lastIdx); const open=rest.lastIndexOf('[');
       if(open>=0 && rest.indexOf(']',open)<0 && rest.length-open<16){ clean+=rest.slice(0,open); pending=rest.slice(open); } else { clean+=rest; pending=''; }
@@ -710,7 +713,9 @@ async function send(text,opts={}){
     Ears.followUp();
   }catch(e){
     clearTimeout(slow); console.warn('Gemini:',e.message);
-    if(!raw) await localSay(rnd(['MOR cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de MOR muy ocupado. ¿Repetir luego?']),'cansado');
+    if(!raw && !opts.retry){ busy=false; $('bSend').disabled=false; await sleep(2500); return send(text,Object.assign({},opts,{retry:true})); }
+    if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
+      await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1030,7 +1035,7 @@ $('gate').onclick=async()=>{
   $('gate').classList.add('fade'); setTimeout(()=>$('gate').remove(),900);
   Voice.ensure(); if(AC.state==='suspended') AC.resume();
   awake=true; Life.touch(); Sfx.play('hola');
-  Voice.loadPiper();
+  setTimeout(()=>Voice.loadPiper(),6000);
   if(!GEMINI_KEY){ setEmotion('triste'); face.sleep=0; showSub('MOR no tener llave del cerebro… Abrir a MOR con tu enlace de configuración (solo hace falta una vez en cada aparato).'); return; }
   const t0=performance.now(); (function wake(){ const p=(performance.now()-t0)/1400; face.sleep=Math.max(0,1-p); if(p<1) requestAnimationFrame(wake); else squash(.25); })();
   setEmotion('curioso',2500);
