@@ -916,7 +916,7 @@ AGENDA — cuando te pida apuntar, recordar o marcar algo, escríbelo en tu resp
   {{tarea: texto}}  ·  {{hecha: texto de la tarea}}  ·  {{recordar: AAAA-MM-DD HH:MM | texto}}  ·  {{borrar_recordatorio: texto}}  ·  {{ciudad: nombre}} (si te dice dónde vive)
   {{temporizador: minutos | motivo}}  ·  {{mensaje: destinatario | texto del mensaje}} (cuando te pida escribir/redactar un mensaje o correo)
   {{objetivo: título | paso 1; paso 2; paso 3}} (cuando quiera conseguir algo: divídelo tú en pasos concretos)  ·  {{paso_hecho: objetivo | paso}}  ·  {{cosa_nuestra: frase}} (una broma, apodo o frase vuestra que merezca recordarse)
-  {{github: usuario/repo | qué cambiar, detallado}} (si te pasa una captura de un fallo de su juego, descríbelo bien en la petición) (cuando te pida programar, arreglar o cambiar algo de uno de SUS repos de GitHub: Mor lo hace aparte, lo prueba y le pide permiso antes de subir)  ·  {{modelo3d: descripción detallada del modelo | normal/alto/maximo}} (cuando te pida HACER o MODELAR un modelo/objeto/personaje 3D: Mor lo modela aparte y lo exporta a GLB)  ·  {{juego: descripción detallada del juego | 2D o 3D}} (cuando te pida CREAR o HACER un juego: Mor lo diseña, dibuja, programa, prueba y corrige aparte; NO escribas el código en la respuesta)  ·  {{proyecto: descripción técnica detallada | pequeño/mediano/grande/enorme}} (programas GRANDES: más de 3 archivos o de ~800 líneas; NO escribas ese código en la respuesta, Mor lo programa aparte archivo a archivo y se lo da en .zip)  ·  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
+  {{buscar: lo que hay que buscar}} (TIENES INTERNET: si te falta un dato actual o que no sabes seguro —resultados, noticias, precios, horarios, datos de una web—, escribe esta etiqueta y Mor lo busca y te lo trae; NUNCA digas que no tienes internet)  ·  {{github: usuario/repo | qué cambiar, detallado}} (si te pasa una captura de un fallo de su juego, descríbelo bien en la petición) (cuando te pida programar, arreglar o cambiar algo de uno de SUS repos de GitHub: Mor lo hace aparte, lo prueba y le pide permiso antes de subir)  ·  {{modelo3d: descripción detallada del modelo | normal/alto/maximo}} (cuando te pida HACER o MODELAR un modelo/objeto/personaje 3D: Mor lo modela aparte y lo exporta a GLB)  ·  {{juego: descripción detallada del juego | 2D o 3D}} (cuando te pida CREAR o HACER un juego: Mor lo diseña, dibuja, programa, prueba y corrige aparte; NO escribas el código en la respuesta)  ·  {{proyecto: descripción técnica detallada | pequeño/mediano/grande/enorme}} (programas GRANDES: más de 3 archivos o de ~800 líneas; NO escribas ese código en la respuesta, Mor lo programa aparte archivo a archivo y se lo da en .zip)  ·  {{imagen: descripción detallada EN INGLÉS}} (cuando te pida dibujar, crear o generar una imagen; puedes poner varias)  ·  {{leccion: número | tema}} (curso)
   {{idea: tema | texto}} (cuando dicte una idea o nota)  ·  {{habito: nombre | meta}} (hábito nuevo)  ·  {{habito_hecho: nombre}}  ·  {{sonido: lluvia|olas|marron|parar}}
   Para las fechas usa la fecha y hora de AHORA. Si no dice hora, pregúntasela o usa 09:00. Nunca digas que lo has apuntado sin poner la etiqueta.
 ${MEM.study.length?'ÚLTIMAS SESIONES DE ESTUDIO:\n'+MEM.study.slice(-6).map(s=>`- ${new Date(s.at).toLocaleDateString('es-ES')}: ${s.tema} (${s.min} min${s.distracciones?', '+s.distracciones+' distracciones':''})`).join('\n'):''}
@@ -1051,6 +1051,8 @@ async function send(text,opts={}){
     if(ffiles.length){ const sv=await Files.save(ffiles); showFiles(sv); }
     if(skL.length) showSketchfab(skL);
     if(made.imgs&&made.imgs.length) drawImages(made.imgs);
+    if(made.search) setTimeout(async()=>{ showSub('Mor buscar en internet: '+made.search+'…'); setEmotion('concentrado'); let info=null; try{ info=await withTimeout(webAsk(made.search),40000); }catch(e){}
+      send(null,{event:info?`ACABAS DE BUSCAR EN INTERNET «${made.search}». RESULTADO REAL:\n${String(info).slice(0,2500)}\nCuéntaselo con tu estilo y di de qué web sale.`:`HAS INTENTADO BUSCAR «${made.search}» EN INTERNET PERO LA BÚSQUEDA HA FALLADO AHORA MISMO. Díselo con sinceridad (sí tienes internet, pero esta búsqueda no ha salido) y propón intentarlo de nuevo o reformularlo.`}); },900);
     if(made.dev) setTimeout(async()=>{ await devOpen(); const [r,q]=made.dev; const o=[...$('devRepo').options].find(x=>x.value.toLowerCase()===r.toLowerCase()||x.value.toLowerCase().endsWith('/'+r.toLowerCase())); if(o){ $('devRepo').value=o.value; $('devBranch').value=o.dataset.b||'main'; } $('devReq').value=q; if(o&&q) Dev.run(o.value,$('devBranch').value,q); },1200);
     if(made.m3d) setTimeout(()=>Taller3D.create(made.m3d[0],made.m3d[1]),1500);
     if(made.game) setTimeout(()=>GameStudio.create(made.game[0],made.game[1],true),1500);
@@ -1066,7 +1068,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v15b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1392,7 +1394,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v15 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v15b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1479,6 +1481,7 @@ RECORDATORIOS: ${r.length?r.map(x=>fmtFecha(new Date(x.when))+' → '+x.t).join(
       else if(k==='objetivo'){ const [t,...st]=v.split('|'); Goals.add(t,st.join('|')); made.goal=true; }
       else if(k==='paso_hecho'){ const [g,...st]=v.split('|'); const x=Goals.stepDone(g,st.join('|')); if(x) Sfx.play('risa'); }
       else if(k==='cosa_nuestra'){ MEM.inside=MEM.inside||[]; if(!MEM.inside.some(y=>norm(y)===norm(v))) MEM.inside.push(v); if(MEM.inside.length>40) MEM.inside=MEM.inside.slice(-40); saveMem(); }
+      else if(k==='buscar'){ made.search=v.trim(); }
       else if(k==='github'){ const [r,...t]=v.split('|'); made.dev=[r.trim(),t.join('|').trim()]; }
       else if(k==='modelo3d'){ const [d,...t]=v.split('|'); made.m3d=[d.trim(),(t.join('|').trim()||'alto').toLowerCase().replace('á','a')]; }
       else if(k==='juego'){ const [d,...t]=v.split('|'); made.game=[d.trim(),t.join('|').trim()]; }
@@ -1980,8 +1983,21 @@ const insideForPrompt=()=>{ const L=(MEM.inside||[]).slice(-12); return L.length
    34. INTERNET (buscar y leer páginas, gratis con Gemini)
    ===================================================================== */
 const ddg=q=>'https://html.duckduckgo.com/html/?q='+encodeURIComponent(String(q).replace(/[¿?¡!]/g,'').trim()).replace(/%20/g,'+');
+// lee páginas con el lector gratuito r.jina.ai (Google quitó la lectura de webs en la versión gratis)
+async function leerWeb(u,max=12000,ms=15000){ const r=await withTimeout(fetch('https://r.jina.ai/'+u,{headers:{'X-Return-Format':'markdown'}}),ms); if(!r||!r.ok) throw new Error('lector '+(r&&r.status));
+  return (await r.text()).replace(/!\[[^\]]*\]\([^)]*\)/g,'').replace(/\n{3,}/g,'\n\n').slice(0,max); }
 async function webAsk(pregunta,url){
   const M=['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];
+  const responder=(txt,q)=>gemini({contents:[{role:'user',parts:[{text:`Con este contenido sacado de internet ahora mismo, responde en español, breve y con datos concretos y actuales: ${q}\nDi de qué web sale cada dato. Si no está la respuesta, dilo y di lo más parecido que hayas encontrado. No inventes.\n\n${txt}`}]}],generationConfig:{temperature:.2}},M,30000);
+  try{
+    if(url) return await responder(`PÁGINA ${url}:\n`+await leerWeb(url,30000),pregunta);
+    const q=String(pregunta).replace(/[¿?¡!]/g,'').trim();
+    const res=await leerWeb('https://html.duckduckgo.com/html/?q='+encodeURIComponent(q),9000);
+    // abre las 2 primeras webs de verdad para tener datos completos
+    const links=[...new Set([...res.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)].map(m=>m[1]).map(u=>{ try{ const x=new URL(u); return x.hostname.includes('duckduckgo')?decodeURIComponent(x.searchParams.get('uddg')||''):u; }catch(e){ return ''; } }).filter(u=>/^https?:/.test(u)&&!/duckduckgo|bing\.com\/aclick|youtube\.com\/watch/.test(u)))].slice(0,2);
+    const pags=await Promise.all(links.map(u=>leerWeb(u,7000,12000).then(t=>`\n\nPÁGINA ${u}:\n${t}`).catch(()=>'')));
+    const r=await responder(`RESULTADOS DE BÚSQUEDA «${q}»:\n${res.replace(/\]\([^)]*\)/g,']')}${pags.join('')}`,q); if(r) return r;
+  }catch(e){}
   if(url) return await gemini({contents:[{role:'user',parts:[{text:`Lee ${url} y responde en español, breve y con datos concretos: ${pregunta}`}]}],tools:[{url_context:{}}]},M,30000);
   const q=String(pregunta).replace(/[¿?¡!]/g,'').trim(), enc=encodeURIComponent(q).replace(/%20/g,'+');
   for(const u of ['https://lite.duckduckgo.com/lite/?q='+enc,'https://html.duckduckgo.com/html/?q='+enc]){
