@@ -213,9 +213,12 @@ const KEYS=(()=>{ try{
   return JSON.parse(localStorage.getItem('mor_claves')||'{}'); }catch(e){ return {}; } })();
 let GEMINI_KEY = (KEYS.g||'').trim();
 addEventListener('hashchange',()=>{ if(/claves=/.test(location.hash)) location.reload(); });
-const MODELOS = ['gemini-3.5-flash','gemini-3.8-flash','gemini-3.5-flash-lite','gemini-flash-lite-latest'];   // conversación: el listo primero
+const MODELOS = ['gemini-3.5-flash','gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.8-flash'];   // conversación: el listo primero
 const MODELOS_RAPIDOS = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];             // vigilancia
-const MODELOS_MEMORIA = ['gemini-3.5-flash','gemini-3.5-flash-lite','gemini-flash-lite-latest'];            // memoria y apuntes: precisión
+const MODELOS_MEMORIA = ['gemini-3.5-flash-lite','gemini-flash-lite-latest','gemini-3.5-flash'];            // memoria y apuntes
+// el plan gratis da pocas respuestas al día del modelo listo: si se agota, se salta hasta mañana
+const agotado=m=>localStorage.getItem('mor_agotado_'+m)===new Date().toDateString();
+const marcarAgotado=(m,msg)=>{ if(/quota|exhaust/i.test(msg||'')) localStorage.setItem('mor_agotado_'+m,new Date().toDateString()); };
 let ELEVEN_KEY = (KEYS.e||'').trim();
 const VOZ_ID = 'bIHbv24MWmeRgasZH58o';   // Will
 const VOZ_TONO = 1.35;                    // versión "peque"
@@ -583,12 +586,12 @@ function cfgFor(m,extra){ const c=Object.assign({},extra||{}); if(/^gemini-3/.te
 
 async function gemini(body,models=MODELOS_RAPIDOS,timeout=20000){
   let last='';
-  for(const m of models){
+  for(const m of models.filter(x=>!agotado(x))){
     const ac=new AbortController(), to=setTimeout(()=>ac.abort(),timeout);
     try{
       const b=Object.assign({},body,{generationConfig:cfgFor(m,body.generationConfig)});
       const r=await fetch(API+m+':generateContent',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},body:JSON.stringify(b)});
-      clearTimeout(to); if(!r.ok){ last=r.status; continue; }
+      clearTimeout(to); if(!r.ok){ last=r.status; if(r.status===429){ try{ marcarAgotado(m,(await r.json()).error.message); }catch(x){} } continue; }
       const j=await r.json(); const t=(j.candidates?.[0]?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');
       if(t) return t; last='vacío';
     }catch(e){ clearTimeout(to); last=e.name; }
@@ -600,14 +603,14 @@ async function geminiJSON(prompt,schema,parts=[],models=MODELOS_RAPIDOS,timeout=
   return JSON.parse(t);
 }
 async function geminiStream(body,onText){
-  const order=modelOk?[modelOk,...MODELOS.filter(m=>m!==modelOk)]:MODELOS;
+  const order=MODELOS.filter(m=>!agotado(m));
   let last='';
   for(const m of order){
-    const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),15000);
+    const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),m==='gemini-3.8-flash'?20000:9000);
     try{
       const b=Object.assign({},body,{generationConfig:cfgFor(m,body.generationConfig)});
       const r=await fetch(API+m+':streamGenerateContent?alt=sse',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},body:JSON.stringify(b)});
-      if(!r.ok){ clearTimeout(to); let msg=''; try{ msg=(await r.json()).error.message.slice(0,80); }catch(x){} last=(last?last+' | ':'')+m.replace('gemini-','')+' '+r.status+' '+msg; continue; }
+      if(!r.ok){ clearTimeout(to); let msg=''; try{ msg=(await r.json()).error.message.slice(0,80); }catch(x){} if(r.status===429) marcarAgotado(m,msg); last=(last?last+' | ':'')+m.replace('gemini-','')+' '+r.status+' '+msg; continue; }
       const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', got=false, full='';
       while(true){
         const {done,value}=await rd.read(); if(done) break;
@@ -743,6 +746,7 @@ async function send(text,opts={}){
       if(oc>=0 && rest.indexOf('}}',oc)<0 && rest.length-oc<260) hold=hold<0?oc:Math.min(hold,oc);
       if(hold>=0){ clean+=rest.slice(0,hold); pending=rest.slice(hold); } else { clean+=rest; pending=''; }
       clean=clean.replace(/[*#$]/g,'');
+      if(/\n\s*\n\s*\n/.test(shown+clean)){ clean=(shown+clean).replace(/\n\s*\n(\s*\n)+/g,'\n\n').slice(shown.length); }
       if(clean){ shown+=clean; showSub(shown.trimStart(),text); Voice.feed(clean); }
     });
     clearTimeout(slow);
@@ -764,7 +768,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v5</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v5b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1088,7 +1092,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v5 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v5b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
