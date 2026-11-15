@@ -132,6 +132,8 @@ pre.code{background:#020710;border:1px solid rgba(127,216,255,.2);border-radius:
 .stBars{display:flex;align-items:flex-end;gap:4px;height:110px;margin:6px 0 12px}.stBars div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}.stBars span{width:100%;background:linear-gradient(var(--cel),#3b82f6);border-radius:4px 4px 0 0;min-height:2px}.stBars small{font-size:10px;color:var(--dim)}
 .stRow{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px}.stRow span{width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stRow i{height:8px;border-radius:4px;background:var(--cel);min-width:2px}.stRow small{color:var(--dim)}
 .stAviso{margin-top:8px;padding:8px;border-radius:10px;background:rgba(255,207,107,.12);color:#ffdf9e;font-size:13px}
+.skGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:8px 0}.skIt{background:rgba(127,216,255,.05);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:3px;font-size:13px}.skIt small{color:var(--dim);font-size:11px}.skIt .row{margin-top:4px;gap:4px}.skIt .tbtn{padding:4px 8px;font-size:12px}
+.skImg{aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:#0b1a2a;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer}.skImg img{width:100%;height:100%;object-fit:cover}
 .pzBox{height:100%;display:flex;flex-direction:column;padding:8px;box-sizing:border-box}.pzBox svg{flex:1;min-height:0;width:100%;height:auto;border-radius:12px;background:#0f2a22}.pzN{flex:1;text-align:center;color:var(--dim);font-size:13px}
 #bSend.stop{background:#ff6b81;color:#fff;font-size:16px}
 .fm.step{color:var(--cel2);font-size:12.5px;display:flex;align-items:center;gap:8px;margin:4px 0;padding:4px 8px}
@@ -1130,7 +1132,7 @@ async function send(text,opts={}){
   }catch(e){} }
   if(text && WEATHER_RE.test(text)){ const w=await weatherFor(text); if(w) extra+='\n'+w+'\n(Usa estos datos reales para hablar del tiempo.)'; }
   let useWeb=false;
-  if(text && (/https?:\/\/\S+/.test(text) || /\b(busca|buscar|b[uú]scame|busques|internet|google|noticias?|precio|cu[aá]nto cuesta|resultado del|cotizaci[oó]n|cartelera)\b/i.test(text))){
+  if(text && (/https?:\/\/\S+/.test(text) || /\b(busca|buscar|b[uú]scame|busques|internet|google|noticias?|precio|cu[aá]nto cuesta|resultado del|cotizaci[oó]n|cartelera)\b/i.test(text)) && !/sketchfab|\b3d\b|modelos? 3|github|repo/i.test(text)){
     showSub('Mor buscar en internet…',text); setEmotion('concentrado');
     try{ const url=(text.match(/https?:\/\/\S+/)||[])[0]; const q=text.replace(/https?:\/\/\S+/g,'').replace(/[¿?¡!]/g,'').trim();
       const info=await withTimeout(webAsk(q||'¿De qué trata esta página?',url),20000);
@@ -1139,7 +1141,7 @@ async function send(text,opts={}){
   let skL=[];
   if(text){
     if(/github|repositorio|\brepos?\b/i.test(text)){ try{ extra+='\n'+await withTimeout(Conn.github(text),12000)+'\n(Datos reales de GitHub.)'; }catch(e){ extra+='\n(GitHub no respondió: '+e.message+')'; } }
-    if(/sketchfab|modelos? (en )?3d|modelo tridimensional/i.test(text)){ try{ const q=text.replace(/sketchfab|busca(me)?|b[uú]scame|modelos?|en 3d|3d|de|un|una|en|para|quiero|dame|mor|oye|por favor/gi,' ').replace(/[¿?¡!.,]/g,' ').trim()||'model'; const sk=await withTimeout(Conn.sketchfab(q),12000); if(sk){ skL=sk.L; extra+='\n'+sk.txt+'\n(Se le muestran en pantalla para verlos en 3D; recomiéndale los mejores.)'; } }catch(e){} }
+    if(false&&/sketchfab|modelos? (en )?3d|modelo tridimensional/i.test(text)){ try{ const q=text.replace(/sketchfab|busca(me)?|b[uú]scame|modelos?|en 3d|3d|de|un|una|en|para|quiero|dame|mor|oye|por favor/gi,' ').replace(/[¿?¡!.,]/g,' ').trim()||'model'; const sk=await withTimeout(Conn.sketchfab(q),12000); if(sk){ skL=sk.L; extra+='\n'+sk.txt+'\n(Se le muestran en pantalla para verlos en 3D; recomiéndale los mejores.)'; } }catch(e){} }
     if(/wikipedia/i.test(text)){ try{ const w=await withTimeout(Conn.wiki(text.replace(/wikipedia|seg[uú]n|busca|en|mira|qu[eé] dice/gi,' ').trim()),10000); if(w) extra+='\n'+w; }catch(e){} }
   }
   const coding=/c[oó]digo|program|html|\bweb\b|p[aá]gina web|juego|script|funci[oó]n|archivo|\bzip\b|css|javascript|python|\bapp\b|three\.?js|luau|ejercicio/i.test((text||'')+' '+(opts.event||''))||!!MEM.course&&/c[oó]digo|ejercicio|lecci/i.test(text||'');
@@ -1211,7 +1213,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v20</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v20b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1537,7 +1539,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v20 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v20b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3485,7 +3487,7 @@ showSub=function(text,you){ const t=String(text||'');
   else if(/^Mor buscar en internet|^Buscando en internet/i.test(t)) Paso.set('web','🔎 '+t.replace(/^Mor buscar/,'Buscando'));
   else if(Paso.els.web&&!/internet/i.test(t)&&t.length>40) Paso.fin('web','🔎 Búsqueda hecha');
   return _showSub63(text,you); };
-setInterval(()=>{ if(Paso.els.juego&&!GameStudio.running) Paso.fin('juego','🎮 Juego terminado'); if(Paso.els.m3d&&!Taller3D.running) Paso.fin('m3d','🧊 Modelo terminado'); if(Paso.els.dev&&!Dev.running) Paso.fin('dev','🐙 Listo'); },1000);
+setInterval(()=>{ if(Paso.els.web&&!busy) Paso.fin('web','🔎 Búsqueda hecha'); if(Paso.els.juego&&!GameStudio.running) Paso.fin('juego','🎮 Juego terminado'); if(Paso.els.m3d&&!Taller3D.running) Paso.fin('m3d','🧊 Modelo terminado'); if(Paso.els.dev&&!Dev.running) Paso.fin('dev','🐙 Listo'); },1000);
 
 /* =====================================================================
    64. OJOS: pequeños con el panel abierto y MODO VOZ a pantalla completa
@@ -3871,6 +3873,49 @@ $('avCopy').onclick=async()=>{ try{ const t=await (await fetch('avisos-worker.js
 setInterval(()=>{ if(localStorage.getItem('mor_push')&&Avisos.url()&&JSON.stringify(Avisos.lista())!==Avisos.firma) Avisos.subir(); },60000);
 setTimeout(()=>{ if(localStorage.getItem('mor_push')) Avisos.subir(); },8000);
 SIDE[0][1].push(['🔔 Avisos con Mor cerrado',()=>Avisos.open()]);
+
+/* =====================================================================
+   85. SKETCHFAB DESDE EL CHAT: busca, enseña, descarga y guarda modelos 3D
+   ===================================================================== */
+const SkChat={
+  async buscar(q,todos){ const u=`https://api.sketchfab.com/v3/search?type=models&count=12&sort_by=-likeCount${todos?'':'&downloadable=true'}&q=${encodeURIComponent(q)}`;
+    const j=await (await fetch(u)).json();
+    return (j.results||[]).map(x=>({uid:x.uid,name:x.name,user:x.user&&(x.user.displayName||x.user.username),lic:x.license&&x.license.label,dl:x.isDownloadable,caras:x.faceCount,anim:x.animationCount,
+      peso:x.archives&&x.archives.glb&&x.archives.glb.size,url:x.viewerUrl||`https://sketchfab.com/3d-models/${x.uid}`,thumb:(x.thumbnails&&x.thumbnails.images||[]).sort((a,b)=>a.width-b.width).find(i=>i.width>=200)?.url})); },
+  async bajarModelo(x){ const t=Conn.get().skToken; if(!t) throw new Error('falta tu token de Sketchfab (Herramientas › Conectores)');
+    const r=await fetch(`https://api.sketchfab.com/v3/models/${x.uid}/download`,{headers:{Authorization:'Token '+t}}); if(r.status===401) throw new Error('token de Sketchfab no válido');
+    if(r.status===403||r.status===404) throw new Error('el autor no deja descargar este modelo'); if(!r.ok) throw new Error('Sketchfab '+r.status);
+    const j=await r.json(); if(!j.glb) throw new Error('este modelo no tiene versión GLB'); if(j.glb.size>60e6) throw new Error('pesa demasiado ('+Math.round(j.glb.size/1e6)+' MB)');
+    const g=await fetch(j.glb.url); if(!g.ok) throw new Error('descarga '+g.status); return await g.blob(); },
+  nombre:x=>String(x.name||'modelo').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'modelo',
+  tarjeta(q,L){ if(!L.length) return chatCard(`<div class="ctit">🧊 Sketchfab: «${esc(q)}»</div><small>No he encontrado modelos descargables. Prueba con otras palabras (mejor en inglés).</small>`);
+    const sinTok=!Conn.get().skToken;
+    const c=chatCard(`<div class="ctit">🧊 Sketchfab: «${esc(q)}»</div>${sinTok?'<small style="color:#ffdf9e">Para descargar, pon tu token de Sketchfab en Herramientas › Conectores.</small>':''}
+      <div class="skGrid">${L.map((x,i)=>`<div class="skIt"><div class="skImg" data-v="${i}">${x.thumb?`<img src="${x.thumb}" loading="lazy">`:'🧊'}</div><b>${esc(x.name)}</b><small>${esc(x.user||'')} · ${esc(x.lic||'?')}${x.caras?` · ${Math.round(x.caras/1000)}k caras`:''}${x.anim?' · animado':''}${x.peso?` · ${(x.peso/1e6).toFixed(1)} MB`:''}</small>
+        <div class="row"><button class="tbtn" data-v="${i}">Ver 3D</button>${x.dl?`<button class="tbtn on" data-d="${i}">⬇ Descargar</button><button class="tbtn" data-g="${i}">💾 Guardar</button>`:'<small>no descargable</small>'}</div></div>`).join('')}</div>
+      <small>Respeta la licencia: si pone «CC Attribution», pon el nombre del autor en los créditos de tu juego.</small>`);
+    c.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ const x=L[+b.dataset.v]; const f=document.createElement('iframe'); f.style.cssText='width:100%;height:100%;border:0'; f.allow='autoplay; fullscreen; xr-spatial-tracking'; f.src=`https://sketchfab.com/models/${x.uid}/embed?autostart=1&ui_infos=0&ui_watermark=0`; Art.open('🧊 '+x.name,{el:f}); });
+    c.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{ const x=L[+b.dataset.d]; b.disabled=true; b.textContent='Descargando…';
+      try{ const blob=await this.bajarModelo(x); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=this.nombre(x)+'.glb'; a.click(); b.textContent='✓ Descargado'; }
+      catch(e){ b.disabled=false; b.textContent='⬇ Descargar'; toast(e.message,5000); } });
+    c.querySelectorAll('[data-g]').forEach(b=>b.onclick=async()=>{ const x=L[+b.dataset.g]; b.disabled=true; b.textContent='Guardando…';
+      try{ await this.guardar(x,await this.bajarModelo(x)); b.textContent='✓ En tus modelos'; }catch(e){ b.disabled=false; b.textContent='💾 Guardar'; toast(e.message,5000); } }); return c; },
+  // lo guarda en Mor: aparece en Proyectos y en «Del Taller 3D» de los huecos de tus juegos
+  async guardar(x,blob){ const data=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r('data:model/gltf-binary;base64,'+String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
+    const P={id:'pr'+Date.now(),nombre:x.name,desc:'Modelo de Sketchfab de '+(x.user||'?'),at:Date.now(),modelo:true,sketchfab:true,estado:'listo',
+      files:[{ruta:'modelo.glb',data,bin:true},{ruta:'CREDITOS.md',code:creditosMd([{nombre:x.name,autor:x.user,licencia:x.lic,url:x.url}])}],creditos:[{nombre:x.name,autor:x.user,licencia:x.lic,url:x.url}]};
+    await DB.put('projects',P); try{ renderProjects(); }catch(e){} toast('Guardado en tus modelos: '+x.name,3000); return P; },
+  async chat(q,todos){ Paso.set('skc','🧊 Buscando «'+q+'» en Sketchfab…'); try{ const L=await this.buscar(q,todos); Paso.fin('skc',`🧊 ${L.length} modelos encontrados`); this.tarjeta(q,L); }catch(e){ Paso.fin('skc','🧊 Sketchfab no responde: '+e.message); } }
+};
+// el chat ya no saca las fichas antiguas: usa la tarjeta nueva
+showSketchfab=function(L){};
+// los modelos guardados de Sketchfab se ven con el visor de Sketchfab (no tienen código)
+const _ver85=Taller3D.ver.bind(Taller3D);
+Taller3D.ver=function(P){ if(P.sketchfab){ const g=P.files.find(f=>f.bin); const c=chatCard(`<div class="ctit">🧊 ${esc(P.nombre)}</div><small>${esc(P.desc)}</small><div class="row"><button class="tbtn on" data-a="d">Descargar GLB</button></div>`); c.querySelector('[data-a=d]').onclick=()=>{ const a=document.createElement('a'); a.href=g.data; a.download=(P.nombre||'modelo').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.glb'; a.click(); }; return; } return _ver85(P); };
+const _apply85=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply85(acts); for(const a of acts){ const m=String(a).match(/^\s*sketchfab\s*:\s*([\s\S]*)$/i); if(m&&m[1].trim()) setTimeout(()=>SkChat.chat(m[1].trim()),300); } return made; };
+const _sys85=systemPrompt; systemPrompt=function(extra){ return _sys85(extra)+`\n· {{sketchfab: búsqueda en inglés}} cuando quiera buscar, ver o descargar modelos 3D (Mor los busca en Sketchfab y le enseña tarjetas con Ver 3D, Descargar y Guardar). Úsala tú directamente; no le digas que vaya él a la web.`; };
+CMDS.splice(9,0,['/sketchfab','Buscar y descargar modelos 3D',r=>r?SkChat.chat(r):toast('Escribe qué buscar: /sketchfab dragon')]);
 
 /* =====================================================================
    15. DESPERTAR
