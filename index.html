@@ -930,7 +930,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v10</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v10b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1256,7 +1256,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v10 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v10b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2049,7 +2049,7 @@ Reglas: código profesional y modular; si es web/juego debe abrir con index.html
         const ctxFiles=(deps.length?deps:P.files).slice(-12);
         let ctx=ctxFiles.map(x=>`=== ${x.ruta} ===\n${x.code.length>60000?x.code.slice(0,60000)+'\n…(recortado)':x.code}`).join('\n\n');
         log(`Mor escribir ${i+1}/${list.length}: ${f.ruta}…`);
-        const code=await genLong(`Eres un programador experto. Proyecto «${plan.nombre}»: ${plan.resumen}\nTecnologías: ${plan.tecnologias||'-'}\nTODOS LOS ARCHIVOS DEL PROYECTO:\n${plano}\n\nARCHIVOS YA ESCRITOS DE LOS QUE DEPENDE:\n${ctx||'(ninguno todavía)'}\n\nAHORA escribe el contenido COMPLETO del archivo «${f.ruta}» (${f.proposito}). Código real y completo, sin "..." ni partes por hacer, coherente con los nombres, funciones y rutas de los demás archivos. Responde SOLO con el contenido del archivo.`,
+        const code=await genLong(`Eres un programador experto. Proyecto «${plan.nombre}»: ${plan.resumen}\nTecnologías: ${plan.tecnologias||'-'}\nTODOS LOS ARCHIVOS DEL PROYECTO:\n${plano}\n\nARCHIVOS YA ESCRITOS DE LOS QUE DEPENDE:\n${ctx||'(ninguno todavía)'}\n\n${PROG_GUIA}\n\nAHORA escribe el contenido COMPLETO del archivo «${f.ruta}» (${f.proposito}). Código real y completo, sin "..." ni partes por hacer, coherente con los nombres, funciones y rutas de los demás archivos. Responde SOLO con el contenido del archivo.`,
           n=>log(`Mor escribir ${i+1}/${list.length}: ${f.ruta} (${n} líneas)…`));
         P.files.push({ruta:f.ruta,code}); await DB.put('projects',P);
       }
@@ -2108,12 +2108,84 @@ async function spriteFromImage(dataUrl){
     if(xx>0) st.push(i-1); if(xx<W-1) st.push(i+1); if(yy>0) st.push(i-W); if(yy<H-1) st.push(i+W); }
   x.putImageData(d,0,0); return c.toDataURL('image/png');
 }
+/* Guía experta de videojuegos (corta) y motor base probado: Mor programa ENCIMA de esto, no desde cero */
+const PROG_GUIA=`CÓMO PROGRAMA UN EXPERTO (aplícalo sin complicar de más):
+- Lo más simple que funcione bien: nada de capas, clases o patrones que no hagan falta.
+- Funciones cortas con un solo trabajo y nombres claros; datos separados de la interfaz.
+- Valida entradas y maneja errores donde pueden ocurrir (red, archivos, JSON) con mensajes útiles; nunca silencies errores importantes.
+- Sin variables globales sueltas: un objeto de estado o módulos ES con export/import coherentes entre archivos.
+- Nada inventado: usa solo APIs y librerías que existen, con versiones fijas por CDN.
+- Rendimiento: no recalcules en bucles lo que puede guardarse; no toques el DOM en cada frame si no hace falta.
+- Comentarios breves en español explicando el porqué, no el qué.`;
+const GAMEDEV_GUIA=`CÓMO PROGRAMA UN EXPERTO EN JUEGOS (aplícalo):
+- Arquitectura: estado único (const S={...}) + máquina de estados (menu, jugando, pausa, fin). update(dt) solo cambia datos; draw() solo pinta. Nada de lógica en los eventos: los eventos solo marcan teclas.
+- Tiempo: paso fijo (1/60 s) con acumulador; limita dt a 0.1 s para que no "teletransporte" al volver a la pestaña.
+- Entidades: arrays de objetos {x,y,w,h,vx,vy,...}; bórralas con filter al final del frame, nunca dentro de un forEach.
+- Física: gravedad y velocidad en píxeles/segundo multiplicadas por dt. Suelo: si y+h>suelo → y=suelo-h, vy=0, enSuelo=true. Colisiones AABB (función choca(a,b)) con cajas un poco más pequeñas que el dibujo (más justo).
+- Dificultad: sube poco a poco con el tiempo o la puntuación (velocidad, frecuencia de aparición), nunca de golpe.
+- Sensación ("game feel"): pequeña sacudida de cámara al chocar, partículas simples, parpadeo de invencibilidad 1 s, sonido en cada acción importante.
+- Pantalla: coordenadas lógicas fijas (p. ej. 400×700 vertical o 960×540 horizontal) escaladas al tamaño real; así se ve igual en móvil y ordenador.
+- Robustez: si una imagen no carga, dibuja una forma de color en su lugar; try/catch alrededor del audio; nada de variables sin declarar.
+- 3D (Three.js): import map con "three" desde https://unpkg.com/three@0.160.0/build/three.module.js; renderer.setPixelRatio(Math.min(devicePixelRatio,2)); luz ambiente + direccional; cámara que sigue al jugador con lerp; colisiones con Box3 o distancias; el HUD en HTML encima del canvas.`;
+const GAME_BASE=`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>JUEGO</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;font-family:system-ui,sans-serif}canvas{display:block;margin:auto}
+#ui{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;gap:12px;background:rgba(0,0,0,.55)}
+#ui.oculto{display:none}button{font:inherit;font-size:20px;padding:12px 28px;border-radius:14px;border:0;background:#ffcc33;color:#222;cursor:pointer}
+.tb{position:fixed;bottom:18px;width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:28px;display:flex;align-items:center;justify-content:center;user-select:none}
+#pausa{position:fixed;top:10px;right:10px;background:rgba(255,255,255,.2);color:#fff;font-size:18px;padding:6px 12px}</style></head><body>
+<canvas id="c"></canvas><div id="ui"><h1 id="titulo">JUEGO</h1><p id="texto"></p><button id="bJugar">Jugar</button></div><button id="pausa">II</button>
+<!-- botones táctiles: crea los que necesite el juego con la clase .tb y data-k="NombreDeTecla" -->
+<script>
+// ---------- PANTALLA (coordenadas lógicas W×H escaladas) ----------
+const W=400,H=700, cv=document.getElementById('c'), ctx=cv.getContext('2d');
+function ajustar(){ const k=Math.min(innerWidth/W,innerHeight/H), d=Math.min(devicePixelRatio||1,2); cv.style.width=W*k+'px'; cv.style.height=H*k+'px'; cv.width=W*k*d; cv.height=H*k*d; ctx.setTransform(k*d,0,0,k*d,0,0); }
+addEventListener('resize',ajustar); ajustar();
+// ---------- IMÁGENES (si fallan, se dibuja un rectángulo) ----------
+const IMG={}; function cargar(n,src){ const i=new Image(); i.onload=()=>IMG[n]=i; i.src=src; }
+function pintar(n,x,y,w,h,color){ if(IMG[n]) ctx.drawImage(IMG[n],x,y,w,h); else { ctx.fillStyle=color||'#f0f'; ctx.fillRect(x,y,w,h); } }
+// ---------- ENTRADA (teclado + táctil + ratón) ----------
+const K={}; addEventListener('keydown',e=>{K[e.code]=true; if(['Space','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault();}); addEventListener('keyup',e=>K[e.code]=false);
+document.querySelectorAll('.tb').forEach(b=>{ const k=b.dataset.k; b.addEventListener('pointerdown',e=>{e.preventDefault();K[k]=true;}); ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,()=>K[k]=false)); });
+const PUNT={x:0,y:0,abajo:false}; function aLogico(e){ const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width*W, y:(e.clientY-r.top)/r.height*H}; }
+cv.addEventListener('pointerdown',e=>{Object.assign(PUNT,aLogico(e),{abajo:true});}); cv.addEventListener('pointermove',e=>Object.assign(PUNT,aLogico(e))); addEventListener('pointerup',()=>PUNT.abajo=false);
+// ---------- SONIDO (WebAudio, sin archivos) ----------
+let AC=null; function sonido(f=440,dur=.1,tipo='square',vol=.15){ try{ AC=AC||new AudioContext(); const o=AC.createOscillator(), g=AC.createGain(); o.type=tipo; o.frequency.value=f; g.gain.setValueAtTime(vol,AC.currentTime); g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur); o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime+dur); }catch(e){} }
+// ---------- UTILIDADES ----------
+const choca=(a,b,m=0)=>a.x+m<b.x+b.w-m&&a.x+a.w-m>b.x+m&&a.y+m<b.y+b.h-m&&a.y+a.h-m>b.y+m;
+const azar=(a,b)=>a+Math.random()*(b-a);
+let RECORD=+(localStorage.getItem('record_JUEGO')||0), sacudida=0;
+// ---------- ESTADO Y MÁQUINA DE ESTADOS ----------
+let S, estado='menu';
+function nuevaPartida(){ S={t:0,puntos:0 /* + jugador, enemigos, etc. */}; }
+function empezar(){ nuevaPartida(); estado='jugando'; document.getElementById('ui').classList.add('oculto'); sonido(660,.15); }
+function finPartida(){ estado='fin'; if(S.puntos>RECORD){RECORD=S.puntos; localStorage.setItem('record_JUEGO',RECORD);} sacudida=12; sonido(120,.4,'sawtooth');
+  mostrarUI('¡Fin!','Puntos: '+Math.floor(S.puntos)+' · Récord: '+Math.floor(RECORD),'Otra vez'); }
+function mostrarUI(t,txt,b){ document.getElementById('titulo').textContent=t; document.getElementById('texto').textContent=txt; document.getElementById('bJugar').textContent=b; document.getElementById('ui').classList.remove('oculto'); }
+document.getElementById('bJugar').onclick=empezar;
+document.getElementById('pausa').onclick=()=>{ if(estado==='jugando'){estado='pausa'; mostrarUI('Pausa','','Seguir'); document.getElementById('bJugar').onclick=()=>{estado='jugando';document.getElementById('ui').classList.add('oculto');document.getElementById('bJugar').onclick=empezar;};} };
+// ---------- LÓGICA (solo datos) ----------
+function update(dt){ S.t+=dt; /* mover jugador, generar enemigos, colisiones, puntos, dificultad */ }
+// ---------- DIBUJO (solo pintar) ----------
+function draw(){ ctx.save(); if(sacudida>0){ ctx.translate(azar(-sacudida,sacudida),azar(-sacudida,sacudida)); sacudida*=.85; if(sacudida<.5) sacudida=0; }
+  ctx.fillStyle='#123'; ctx.fillRect(0,0,W,H); /* fondo, entidades, partículas */ ctx.restore();
+  ctx.fillStyle='#fff'; ctx.font='bold 20px system-ui'; ctx.fillText('Puntos: '+Math.floor(S?S.puntos:0),12,30); ctx.fillText('Récord: '+Math.floor(RECORD),W-150,30); }
+// ---------- BUCLE (paso fijo) ----------
+let ultimo=performance.now(), acum=0; const PASO=1/60;
+function bucle(ahora){ let dt=Math.min(.1,(ahora-ultimo)/1000); ultimo=ahora; if(estado==='jugando'){ acum+=dt; while(acum>=PASO){ update(PASO); acum-=PASO; if(estado!=='jugando') break; } } draw(); requestAnimationFrame(bucle); }
+nuevaPartida(); mostrarUI('JUEGO','Cómo se juega…','Jugar'); requestAnimationFrame(bucle);
+<\/script></body></html>`;
+
+let _lastImg=0;
+// quita la franja de abajo donde Pollinations pone su marca de agua
+async function cropMark(blob){ try{ const im=await createImageBitmap(blob); const c=document.createElement('canvas'); c.width=im.width; c.height=Math.round(im.height*.93); c.getContext('2d').drawImage(im,0,0); return await new Promise(r=>c.toBlob(r,'image/jpeg',.9)); }catch(e){ return blob; } }
 async function genAsset(a){
   const w=Math.min(1024,a.ancho||(a.tipo==='fondo'?1024:512)), h=Math.min(1024,a.alto||(a.tipo==='fondo'?576:512));
   const extra=a.tipo==='sprite'||a.tipo==='icono'?', single object centered, full body, plain pure white background, no shadow, game sprite, clean edges':a.tipo==='textura'?', seamless tileable texture, top-down':', game background, no characters, no text';
   const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(a.descripcion_en_ingles+extra)+`?width=${w}&height=${h}&nologo=true&seed=${Math.floor(Math.random()*1e6)}`;
-  const r=await withTimeout(fetch(url),60000); if(!r||!r.ok) throw new Error('imagen');
-  const b=await r.blob(); let data=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b); });
+  let r=null; for(let i=0;i<4;i++){ const w8=_lastImg+6000-Date.now(); if(w8>0) await sleep(w8); _lastImg=Date.now();
+    r=await withTimeout(fetch(url+'&i='+i),70000).catch(()=>null); if(r&&r.ok) break; await sleep(5000*(i+1)); }
+  if(!r||!r.ok) throw new Error('imagen');
+  const b0=await r.blob(); const b=await cropMark(b0); let data=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b); });
   if(a.tipo==='sprite'||a.tipo==='icono') data=await spriteFromImage(data);
   return data;
 }
@@ -2147,7 +2219,8 @@ const GameStudio={running:false,
     if(this.running||Projects.running) return localSay('Mor ya estar haciendo otro juego. Paciencia.','concentrado');
     this.running=true; Life.touch(); setEmotion('concentrado');
     const P={id:'pr'+Date.now(),desc,at:Date.now(),files:[],assets:[],estado:'diseñando',juego:true};
-    const log=t=>{ P.log=t; showSub(t); try{ renderProjects(); }catch(e){} };
+    let ban=$('gameProg'); if(!ban){ ban=document.createElement('div'); ban.id='gameProg'; ban.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:50;background:rgba(14,32,51,.95);border:1px solid rgba(127,216,255,.5);color:#bfefff;border-radius:14px;padding:8px 14px;font-size:14px;max-width:92vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.4)'; document.body.appendChild(ban); }
+    const t0=Date.now(); const log=t=>{ P.log=t; showSub(t); ban.style.display='block'; ban.textContent='Creando juego · '+t+' · '+Math.round((Date.now()-t0)/1000)+' s'; try{ renderProjects(); }catch(e){} };
     try{
       log('Mor diseñar el juego (mecánicas, controles, niveles…)');
       const g=await geminiJSON(`Eres un diseñador de videojuegos experto. Diseña este juego para navegador, divertido y completo:
@@ -2169,7 +2242,8 @@ SONIDOS: ${g.sonidos||'efectos sencillos con WebAudio'}
 MOTOR: ${g.motor||motor||'Canvas 2D'}
 IMÁGENES DISPONIBLES (cárgalas con esas rutas exactas; si alguna falla, el juego debe seguir funcionando):
 ${lista}`;
-      const rules=`REGLAS DE CALIDAD (como un estudio profesional):
+      const usaBase=!/three|3d/i.test((g.motor||'')+' '+(motor||''));
+      const rules=GAMEDEV_GUIA+(usaBase?`\n\nMOTOR BASE PROBADO (OBLIGATORIO en 2D: copia esta base y complétala; conserva su estructura, el bucle, la entrada, el escalado y la interfaz; cambia W×H a horizontal 960×540 si el juego lo pide; añade los botones táctiles .tb que hagan falta; sustituye JUEGO por el título):\n${GAME_BASE}`:'')+`\n\nREGLAS DE CALIDAD (como un estudio profesional):
 - Un único index.html completo, que funcione al abrirlo, sin compilar. Librerías solo por CDN (p. ej. Three.js desde unpkg/jsdelivr con import map).
 - Pantalla de inicio, juego, pausa, fin de partida con puntuación, botón de reiniciar y récord guardado en localStorage.
 - Controles táctiles visibles en móvil y teclado en ordenador. Se adapta a cualquier tamaño de pantalla (resize).
@@ -2191,11 +2265,11 @@ ${lista}`;
       }
       P.files=[{ruta:'index.html',code:html},{ruta:'README.md',code:`# ${g.titulo}\n\n${g.resumen}\n\n## Controles\n${g.controles}\n\n## Mecánicas\n${(g.mecanicas||[]).map(m=>'- '+m).join('\n')}\n\nHecho por M.O.R.\n`}].concat(assets.map(a=>({ruta:a.ruta,data:a.data,bin:true})));
       P.lineas=html.split('\n').length; P.estado='listo'; await DB.put('projects',P);
-      const ult=(P.pruebas||[]).slice(-1)[0]; this.running=false; renderProjects(); Sfx.play('risa'); squash(.35);
+      ban.style.display='none'; const ult=(P.pruebas||[]).slice(-1)[0]; this.running=false; renderProjects(); Sfx.play('risa'); squash(.35);
       logChat('m',`[Juego creado: ${g.titulo}, ${P.lineas} líneas, ${assets.length} imágenes]`);
       showSub(`¡Juego «${g.titulo}» terminado! ${P.lineas} líneas y ${assets.length} imágenes.`); showGame(P);
       localSay(`¡Juego terminado! ${g.titulo}. ${ult&&ult.probs.length?'Quedan '+ult.probs.length+' detalles que no pude arreglar solo; pídeme cambios.':'Pasar todas las pruebas.'} Pulsa Jugar.`,'feliz');
-    }catch(e){ this.running=false; P.estado='error: '+e.message; await DB.put('projects',P); localSay('Mor atascarse haciendo el juego: '+e.message,'triste'); }
+    }catch(e){ ban.style.display='none'; this.running=false; P.estado='error: '+e.message; await DB.put('projects',P); localSay('Mor atascarse haciendo el juego: '+e.message,'triste'); }
   }
 };
 function projToFiles(P){ return P.files.map(f=>f.bin?{name:f.ruta,b64:f.data.split(',')[1],data:f.data}:{name:f.ruta,code:f.code}); }
