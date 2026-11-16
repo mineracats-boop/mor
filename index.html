@@ -180,6 +180,11 @@ body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area
 .agL{padding:1px 0;color:var(--dim)}.agL.piensa{color:var(--cel2);font-family:Inter,system-ui;font-size:13px;margin-top:4px}.agL.mal{color:#ff8f8f}.agL.ok{color:#7ee2a8}.agL.preg{color:var(--amber);font-family:Inter,system-ui;font-size:13px}
 .agRes{margin-top:10px;font-size:14px;line-height:1.5}.agDiff{margin-top:8px;font:12px ui-monospace,Menlo,monospace;background:rgba(0,0,0,.25);border-radius:8px;padding:6px 10px}.agDiff .mas{color:#7ee2a8}.agDiff .menos{color:#ff8f8f}
 .agTarea,.agResp{background:var(--panel2);color:var(--cel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:14px Inter,system-ui}
+.lcPasos{margin:10px 0 0 18px;padding:0;line-height:1.5;font-size:14px}.lcPasos li{margin-bottom:12px}.lcPasos a{color:var(--amber)}
+.lcCmd{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0}.lcCmd span{width:100%;font-size:12px;color:var(--dim)}.lcCmd code{flex:1;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font:12px ui-monospace,Menlo,monospace;color:#fff;overflow-x:auto;white-space:nowrap}
+.lcPasos li{display:block!important;padding:0!important;border:0!important;background:none!important}.lcPasos .lcCmd .tbtn{color:var(--cel2)!important;background:transparent!important;border:1px solid rgba(255,255,255,.18)!important;flex:none}.lcPasos .row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.lcPasos select,.lcPasos input{background:var(--panel2);color:var(--cel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.lcPasos li button.tbtn{color:var(--cel2)!important;border:1px solid rgba(255,255,255,.18)!important;font-size:13px}.lcPasos li button.tbtn.on{color:#fff!important;background:var(--acc)!important;border-color:var(--acc)!important}
+.note.ok{color:#7ee2a8}.note.mal{color:#ff8f8f}
 /* ===== Marca Rocket Jam ===== */
 body{background:radial-gradient(1200px 600px at 80% -10%,rgba(255,90,31,.08),transparent 60%),var(--bg)}
 h1,h2,h3,.ctit,.brand,.shead,.sbrand span{font-family:Fredoka,Inter,system-ui,sans-serif}
@@ -495,6 +500,28 @@ h1,h2,h3,.ctit,.brand,.shead,.sbrand span{font-family:Fredoka,Inter,system-ui,sa
   <div class="note" style="margin-top:0">Esto es lo que Mor sabe del estudio y de sus juegos. Cámbialo cuando haya novedades: Mor lo tiene en cuenta en todas las conversaciones. También lo aprende solo cuando le contáis algo nuevo del estudio.</div>
   <textarea id="rjTxt" rows="16" style="width:100%;margin:8px 0;background:var(--panel2);color:var(--cel2);border:1px solid var(--line);border-radius:10px;padding:10px;font:13px/1.5 Inter,system-ui"></textarea>
   <div class="row"><button class="tbtn on" id="rjSave">Guardar</button><button class="tbtn" id="rjReset">Volver al texto original</button></div>
+</div>
+<div class="sheet" id="sheetLocal"><button class="close" data-close>×</button>
+  <h3 style="margin-top:0">CEREBRO LOCAL (OLLAMA)</h3>
+  <div class="note" style="margin-top:0">Una IA que funciona en vuestro propio ordenador: <b>sin límites y gratis</b>. Mor la usa para el agente de código y para crear juegos (y, si quieres, también para el chat). Solo funciona en el ordenador donde está instalada y con él encendido; si no responde, Mor sigue con Gemini.</div>
+  <ol class="lcPasos">
+    <li><b>Instala Ollama</b> desde <a href="https://ollama.com/download" target="_blank" rel="noopener">ollama.com/download</a> (Windows, Mac o Linux) y ábrelo.</li>
+    <li><b>Descarga un modelo para programar.</b> Abre la terminal (en Windows: tecla Windows, escribe <i>cmd</i>) y escribe el que vaya con tu ordenador:
+      <div class="lcCmd"><span>Tarjeta gráfica de 8 GB o 16 GB de RAM:</span><code>ollama pull qwen2.5-coder:7b</code><button class="tbtn" data-copy>Copiar</button></div>
+      <div class="lcCmd"><span>Gráfica de 12–16 GB:</span><code>ollama pull qwen2.5-coder:14b</code><button class="tbtn" data-copy>Copiar</button></div>
+      <div class="lcCmd"><span>Gráfica de 24 GB o Mac con 32 GB o más:</span><code>ollama pull qwen3-coder:30b</code><button class="tbtn" data-copy>Copiar</button></div>
+      <small>Cuanto más grande, más listo pero más lento. Tarda un rato en descargarse (de 5 a 20 GB).</small></li>
+    <li><b>Deja que Mor hable con Ollama</b> (una sola vez). En la misma terminal:
+      <div class="lcCmd"><span>Windows:</span><code>setx OLLAMA_ORIGINS "<span id="lcOrigen"></span>"</code><button class="tbtn" data-copy>Copiar</button></div>
+      <div class="lcCmd"><span>Mac:</span><code>launchctl setenv OLLAMA_ORIGINS "<span id="lcOrigen2"></span>"</code><button class="tbtn" data-copy>Copiar</button></div>
+      <small>Después cierra Ollama (icono junto al reloj › Quit) y vuelve a abrirlo. Si Chrome pregunta si esta web puede acceder a dispositivos de tu red local, pulsa <b>Permitir</b>.</small></li>
+    <li><b>Conéctalo aquí:</b>
+      <div class="row"><input type="text" id="lcUrl" style="flex:1" placeholder="http://localhost:11434"><button class="tbtn" id="lcBuscar">Buscar modelos</button></div>
+      <div class="row"><select id="lcModel" style="flex:1"></select></div>
+      <div class="row"><label>Usarlo para <select id="lcModo"><option value="off">nada (apagado)</option><option value="codigo">el agente de código y crear juegos</option><option value="todo">todo, también el chat</option></select></label>
+        <label>Memoria <select id="lcCtx"><option value="16384">16K (poca RAM)</option><option value="32768">32K (recomendado)</option><option value="65536">64K (mucha RAM)</option></select></label></div>
+      <div class="note" id="lcEstado"></div>
+      <div class="row"><button class="tbtn on" id="lcGuardar">Guardar</button><button class="tbtn" id="lcProbar">Probar</button></div></li></ol>
 </div>
 <div class="sheet" id="sheetTools"><button class="close" data-close>×</button><h3 style="margin-top:0">HERRAMIENTAS Y AJUSTES</h3><div class="note" style="margin-top:0">Todo esto también se lo puedes pedir a Mor en el chat, o con <b>/</b>.</div><div id="toolsBox"></div></div>
 <div class="sheet" id="sheetSync"><button class="close" data-close>×</button>
@@ -1205,7 +1232,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v23</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v24</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1369,7 +1396,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v23 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v24 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3210,7 +3237,7 @@ const PARAR={on:false,ctrls:new Set(),
 // todas las llamadas a cerebros/lectores pasan por aquí para poder pararlas
 const _fetch60=window.fetch.bind(window);
 window.fetch=function(u,o={}){ const url=String(u&&u.url||u);
-  if(!/generativelanguage|openrouter|r\.jina\.ai|pollinations|sketchfab|duckduckgo/.test(url)) return _fetch60(u,o);
+  if(!/generativelanguage|openrouter|r\.jina\.ai|pollinations|sketchfab|duckduckgo|\/api\/chat/.test(url)) return _fetch60(u,o);
   if(PARAR.on) return Promise.reject(new DOMException('Parado por ti','AbortError'));
   const ac=new AbortController(); if(o.signal){ if(o.signal.aborted) ac.abort(); else o.signal.addEventListener('abort',()=>ac.abort()); }
   PARAR.ctrls.add(ac); const p=_fetch60(u,Object.assign({},o,{signal:ac.signal})); p.then(()=>{},()=>{}).finally(()=>{}); return p; };
@@ -3908,6 +3935,81 @@ let _projNames=''; setInterval(async()=>{ try{ _projNames=(await DB.all('project
 const _sys89=systemPrompt; systemPrompt=function(extra){ return _sys89(extra)+`\n· AGENTE DE CÓDIGO: para CAMBIAR, ARREGLAR o AMPLIAR un juego que ya existe (un fallo, una mecánica nueva, mejorar algo) usa {{agente: nombre del proyecto | tarea detallada}}; trabaja paso a paso, lo prueba y lo corrige solo. Si no sabes el proyecto, {{agente: tarea}} y Mor le deja elegir (o traer los archivos de su juego). Proyectos en Mor: ${_projNames||'ninguno todavía'}.${Agente.running?' Ahora mismo el agente está trabajando.':''}`; };
 CMDS.splice(1,0,['/agente','Agente de código: cambiar o arreglar un juego',r=>Agente.elegir(r||'')]);
 ATAJOS.splice(2,0,['Agente de código',()=>Agente.elegir('')]); renderSide();
+
+/* =====================================================================
+   90. CEREBRO LOCAL (Ollama en vuestro ordenador): ilimitado y gratis
+   Mor habla con la IA que corre en vuestro ordenador. Modos:
+   - «código»: solo el agente de código y la creación de juegos
+   - «todo»: también el chat (Gemini queda de respaldo)
+   ===================================================================== */
+const Local={
+  cfg(){ const c=Conn.get(); return {url:(c.lcUrl||'http://localhost:11434').replace(/\/+$/,''),model:c.lcModel||'',modo:c.lcModo||'off',ctx:+c.lcCtx||32768}; },
+  on(){ const c=this.cfg(); return c.modo!=='off'&&!!c.model&&!this.caido(); },
+  codigo(){ return this.on(); }, todo(){ return this.on()&&this.cfg().modo==='todo'; },
+  _caido:0, caido(){ return Date.now()<this._caido; }, marcarCaido(){ this._caido=Date.now()+60000; },
+  esquema(s){ if(!s||typeof s!=='object') return s; const o={}; for(const [k,v] of Object.entries(s)){
+      if(k==='type') o.type=String(v).toLowerCase(); else if(k==='properties'){ o.properties={}; for(const [p,ps] of Object.entries(v)) o.properties[p]=this.esquema(ps); }
+      else if(k==='items') o.items=this.esquema(v); else o[k]=v; } return o; },
+  mensajes(body){ const M=[]; const txt=c=>(c.parts||[]).map(p=>p.text||'').filter(Boolean).join('\n');
+    if(body.systemInstruction) M.push({role:'system',content:txt(body.systemInstruction)});
+    (body.contents||[]).forEach(c=>{ const imgs=(c.parts||[]).filter(p=>p.inline_data&&/^image\//.test(p.inline_data.mime_type)).map(p=>p.inline_data.data);
+      const m={role:c.role==='model'?'assistant':'user',content:txt(c)||'…'}; if(imgs.length&&this.vision!==false) m.images=imgs; M.push(m); }); return M; },
+  peticion(body,stream){ const c=this.cfg(), gc=body.generationConfig||{}; const r={model:c.model,messages:this.mensajes(body),stream,options:{temperature:gc.temperature??.4,num_ctx:c.ctx}};
+    if(gc.responseMimeType==='application/json') r.format=gc.responseSchema?this.esquema(gc.responseSchema):'json'; if(gc.maxOutputTokens) r.options.num_predict=Math.min(gc.maxOutputTokens,32768); return r; },
+  async gen(body,timeout=600000){ const c=this.cfg(); const ac=new AbortController(), to=setTimeout(()=>ac.abort(),timeout);
+    try{ let r=await fetch(c.url+'/api/chat',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(this.peticion(body,false))});
+      if(!r.ok){ const e=await r.text(); if(/image|vision|multimodal/i.test(e)&&this.vision!==false){ this.vision=false; clearTimeout(to); return this.gen(body,timeout); } throw new Error('Ollama '+r.status+' '+e.slice(0,100)); }
+      const j=await r.json(); clearTimeout(to); this.ult='local:'+c.model; return {text:(j.message&&j.message.content||'').replace(/^<think>[\s\S]*?<\/think>\s*/,''),finish:j.done_reason==='length'?'MAX_TOKENS':'STOP'}; }
+    catch(e){ clearTimeout(to); if(e.name!=='AbortError'||!PARAR.on) this.marcarCaido(); throw e; } },
+  async stream(body,onText){ const c=this.cfg(); const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),20000);
+    try{ const r=await fetch(c.url+'/api/chat',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(this.peticion(body,true))});
+      if(!r.ok) throw new Error('Ollama '+r.status);
+      const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', full='', piensa=false;
+      while(true){ const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i;
+        while((i=buf.indexOf('\n'))>=0){ const l=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(!l) continue; let t=''; try{ t=JSON.parse(l).message?.content||''; }catch(e){}
+          if(!t) continue; if(t.includes('<think>')) piensa=true; if(piensa){ if(t.includes('</think>')){ piensa=false; t=t.split('</think>').pop(); } else continue; }
+          if(!full){ clearTimeout(to); to=setTimeout(()=>ac.abort(),300000); } full+=t; onText(t); } }
+      clearTimeout(to); if(full){ modelOk='local:'+c.model; return full; } return null; }
+    catch(e){ clearTimeout(to); this.marcarCaido(); return null; } },
+  async modelos(url){ const r=await fetch((url||this.cfg().url)+'/api/tags'); if(!r.ok) throw new Error('Ollama responde '+r.status); return ((await r.json()).models||[]).map(m=>({nombre:m.name,gb:m.size?(m.size/1e9).toFixed(1):'?'})); },
+  // pantalla de configuración
+  async abrir(){ cierraPaneles(); const c=this.cfg(); $('lcUrl').value=c.url; $('lcModo').value=c.modo; $('lcCtx').value=c.ctx; $('lcOrigen').textContent=location.origin;
+    $('lcOrigen2').textContent=location.origin; $('sheetLocal').classList.add('open'); this.listar(); },
+  async listar(){ const sel=$('lcModel'), est=$('lcEstado'); est.textContent='Buscando la IA de tu ordenador…'; est.className='note';
+    try{ const L=await this.modelos($('lcUrl').value.trim().replace(/\/+$/,'')); const cur=this.cfg().model;
+      sel.innerHTML=L.length?L.map(m=>`<option value="${esc(m.nombre)}"${m.nombre===cur?' selected':''}>${esc(m.nombre)} · ${m.gb} GB</option>`).join(''):'<option value="">(no hay modelos: descarga uno, paso 2)</option>';
+      est.textContent=L.length?'Conectado. '+L.length+' modelo'+(L.length>1?'s':'')+' en tu ordenador.':'Conectado, pero no hay ningún modelo descargado todavía.'; est.className='note ok'; }
+    catch(e){ sel.innerHTML='<option value="">—</option>'; est.textContent='No llego a la IA de tu ordenador. Comprueba los pasos 1 y 3 (¿Ollama está abierto? ¿Has puesto el permiso para esta web?).'; est.className='note mal'; } },
+  guardar(){ Conn.set({lcUrl:$('lcUrl').value.trim()||'http://localhost:11434',lcModel:$('lcModel').value,lcModo:$('lcModo').value,lcCtx:+$('lcCtx').value||32768}); this._caido=0; this.vision=undefined;
+    toast(this.on()?'Cerebro local activado ('+(this.cfg().modo==='todo'?'chat y código':'solo código')+')':'Cerebro local desactivado'); },
+  async probar(){ this.guardar(); const est=$('lcEstado'); est.textContent='Probando… (la primera vez tarda porque carga el modelo en memoria)'; est.className='note'; const t0=Date.now();
+    try{ const r=await this.gen({contents:[{role:'user',parts:[{text:'Responde solo: "Listo, soy el cerebro local de Mor."'}]}]},180000);
+      est.textContent=`Responde en ${((Date.now()-t0)/1000).toFixed(1)} s: «${r.text.trim().slice(0,80)}»`; est.className='note ok'; }
+    catch(e){ est.textContent='Falla: '+e.message; est.className='note mal'; } }
+};
+$('lcBuscar').onclick=()=>Local.listar(); $('lcGuardar').onclick=()=>{ Local.guardar(); $('sheetLocal').classList.remove('open'); }; $('lcProbar').onclick=()=>Local.probar();
+document.querySelectorAll('#sheetLocal [data-copy]').forEach(b=>b.onclick=()=>{ const t=b.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(t).then(()=>toast('Copiado')); });
+// 1) el agente de código, Taller, etc. (todo lo que usa los modelos de programar) y lo que pida JSON
+const _gemini90=gemini;
+gemini=async function(body,models=MODELOS_RAPIDOS,timeout=20000){
+  if(Local.on()&&(Local.todo()||models===MODELOS_CODIGO)){ try{ const r=await Local.gen(body,Math.max(timeout,300000)); if(r.text) return r.text; }catch(e){ if(PARAR.on) throw e; toast('Cerebro local no responde: uso Gemini',4000); } }
+  return _gemini90(body,models,timeout); };
+// 2) la creación de juegos (archivos largos)
+const _genLong90=genLong;
+genLong=async function(prompt,onPart){ if(!Local.on()) return _genLong90(prompt,onPart);
+  try{ let code='', rounds=0;
+    while(rounds<8){ const r=await Local.gen({contents:[{role:'user',parts:[{text:rounds===0?prompt:prompt+`\n\nYA HAS ESCRITO ESTO (no lo repitas):\n…\n${code.split('\n').slice(-40).join('\n')}\n\nCONTINÚA exactamente desde la línea siguiente, sin repetir nada y sin explicaciones.`}]}],generationConfig:{temperature:.25,maxOutputTokens:32768}});
+      if(!r.text) throw new Error('vacío'); code+=(rounds?'\n':'')+(rounds?r.text.replace(/^\s*```[^\n]*\n/,'').replace(/\n?```\s*$/,''):stripFence(r.text));
+      onPart&&onPart(code.split('\n').length); if(r.finish!=='MAX_TOKENS') break; rounds++; }
+    return code.replace(/\s+$/,'')+'\n'; }
+  catch(e){ if(PARAR.on) throw e; toast('Cerebro local falló ('+e.message+'); uso el de internet',4000); return _genLong90(prompt,onPart); } };
+// 3) el chat, si el modo es «todo»
+const _stream90=geminiStream;
+geminiStream=async function(body,onText){ if(Local.todo()){ const t=await Local.stream(body,onText); if(t) return t; } return _stream90(body,onText); };
+SIDE.find(g=>g[0]==='AJUSTES')[1].unshift(['Cerebro local (Ollama)',()=>Local.abrir()]);
+CMDS.splice(2,0,['/local','Cerebro local en tu ordenador (Ollama)',()=>Local.abrir()]);
+const _sys90=systemPrompt; systemPrompt=function(extra){ return _sys90(extra)+(Local.on()?`\n· Estás usando el cerebro local de Rocket Jam (${Local.cfg().model}, en su ordenador): sin límites.`:''); };
+renderSide();
 
 /* =====================================================================
    15. DESPERTAR
