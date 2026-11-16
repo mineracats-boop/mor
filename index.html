@@ -189,6 +189,26 @@ body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area
 .pvTag{font-size:11px;background:rgba(255,90,31,.18);color:#ffb08f;border-radius:10px;padding:1px 7px}.pvIt small{display:block;color:var(--dim);margin-top:4px}.pvEst.ok{color:#7ee2a8!important}.pvEst.mal{color:#ff8f8f!important}
 .pvIt input{background:var(--panel2);color:var(--cel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}.pvIt .row{display:flex;gap:6px;margin-top:6px}
 code.inl{background:rgba(0,0,0,.35);border-radius:5px;padding:1px 5px;font-size:12px}
+.pj{padding:12px 14px;color:var(--cel2);font-size:14px}.pjTabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin:-4px -2px 12px;padding-bottom:6px}
+.pjTabs button{background:none;border:0;color:var(--dim);padding:7px 11px;border-radius:8px;cursor:pointer;font:600 13px Inter,system-ui;white-space:nowrap}.pjTabs button.on{color:#fff;background:rgba(255,90,31,.16);box-shadow:inset 0 -2px 0 var(--acc)}
+.pjTabs i{font-style:normal;background:var(--acc);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:3px}
+.pj input,.pj textarea,.pj select{background:var(--panel2);color:var(--cel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:13px Inter,system-ui;box-sizing:border-box}.pj textarea{width:100%;resize:vertical;line-height:1.45}
+.pj h4{font:600 14px Fredoka,Inter,system-ui;margin:14px 0 6px;color:#fff}.pj .row{display:flex;gap:6px;align-items:center}
+.pjHead .pjNom{width:100%;font:700 20px Fredoka,Inter;border:0;background:none;padding:2px 0}.pjHead textarea{margin-top:4px}
+.pjStats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.pjStats div{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}.pjStats b{display:block;font:700 22px Fredoka,Inter;color:#fff}.pjStats span{font-size:11px;color:var(--dim)}
+.pjBar{height:6px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;margin-bottom:6px}.pjBar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--amber))}
+.pjList{margin:6px 0 6px 18px;padding:0;line-height:1.5}.pjList li{margin:3px 0}.pjAviso{border-left:3px solid var(--amber);background:rgba(255,178,31,.08);padding:8px 10px;border-radius:6px;margin:8px 0}.pjAviso.ok{border-color:var(--acc)}
+.pjKanban{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pjCol{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;padding:8px;min-height:80px}.pjCol h4{margin:2px 2px 8px;font-size:13px}.pjCol h4 small{color:var(--dim)}
+.pjT{background:var(--panel2);border:1px solid var(--line);border-left:3px solid rgba(255,255,255,.2);border-radius:9px;padding:7px 8px;margin-bottom:6px;font-size:13px}.pjT.p3{border-left-color:var(--acc)}.pjT.p1{opacity:.85}
+.pjTm{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.chip{font-size:10.5px;background:rgba(255,255,255,.07);border-radius:9px;padding:1px 7px;color:var(--dim)}.chip.alta{background:rgba(255,90,31,.2);color:#ffb08f}
+.pjTb{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}.pjTb button,.pjTab button,.pjV button{background:none;border:1px solid var(--line);color:var(--cel2);border-radius:7px;padding:2px 8px;cursor:pointer;font-size:12px}
+.pjSec h4{margin-top:12px}.pjTab{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}.pjTab th{text-align:left;color:var(--dim);font-weight:600;padding:4px;border-bottom:1px solid var(--line)}.pjTab td{padding:3px;vertical-align:top}.pjTab input,.pjTab textarea,.pjTab select{width:100%}.pjTab select{min-width:86px}
+.pjCurva{display:flex;align-items:flex-end;gap:3px;height:90px;border-bottom:1px solid var(--line);margin:6px 0 4px}.pjCurva i{flex:1;background:linear-gradient(0deg,var(--acc),var(--amber));border-radius:4px 4px 0 0;position:relative;min-height:4px}.pjCurva b{position:absolute;bottom:-17px;left:0;right:0;text-align:center;font-size:10px;color:var(--dim);font-weight:500}
+.pjA{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:8px;margin:8px 0}.pjA.hecho{border-color:rgba(126,226,168,.35)}
+.pjAt{width:64px;height:64px;border-radius:9px;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:11px;color:var(--dim);text-align:center}.pjAt img{width:100%;height:100%;object-fit:cover}
+.pjAi input{width:100%;font-weight:600}.pjAi small{display:block;color:var(--dim);margin:3px 0}.pjAi .mal{color:#ff8f8f}.pjAb{display:flex;flex-direction:column;gap:4px}.pjAb .tbtn{font-size:12px;padding:4px 8px}.pjCuenta{margin-left:auto;color:var(--dim);font-size:12px}
+.pjV{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:8px 2px}.pjV small{color:var(--dim)}.pjPre{white-space:pre-wrap;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:10px;font:13px/1.5 Inter,system-ui}
+@media (max-width:700px){.pjKanban{grid-template-columns:1fr}.pjStats{grid-template-columns:repeat(2,1fr)}.pjA{grid-template-columns:48px 1fr}.pjAb{grid-column:1/-1;flex-direction:row}}
 /* ===== Marca Rocket Jam ===== */
 body{background:radial-gradient(1200px 600px at 80% -10%,rgba(255,90,31,.08),transparent 60%),var(--bg)}
 h1,h2,h3,.ctit,.brand,.shead,.sbrand span{font-family:Fredoka,Inter,system-ui,sans-serif}
@@ -1246,7 +1266,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v25</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v26</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1410,7 +1430,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v25 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v26 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -4105,6 +4125,175 @@ gemini=async function(body,models=MODELOS_RAPIDOS,timeout=20000){
 SIDE.find(g=>g[0]==='AJUSTES')[1].unshift(['Cerebros gratis (llaves)',()=>Prov.abrir()]);
 CMDS.splice(3,0,['/cerebros','Llaves de los cerebros gratis',()=>Prov.abrir()]);
 renderSide();
+
+/* =====================================================================
+   92. GESTIÓN DE PROYECTOS Y DISEÑO DE JUEGO
+   Panel por juego: resumen, tareas, documento de diseño, niveles,
+   economía, lista de assets (imágenes, modelos, sonidos) y versiones
+   ===================================================================== */
+const GDD_SEC=[['concepto','Concepto y pitch'],['publico','Público y plataformas'],['mecanicas','Mecánicas principales'],['bucle','Bucle de juego'],['controles','Controles'],['progresion','Progresión'],
+  ['modos','Modos de juego'],['personajes','Personajes'],['arte','Arte y estilo'],['audio','Audio'],['monetizacion','Monetización'],['hitos','Hitos y fechas']];
+const TIPOS_T=['código','arte','3D','animación','audio','diseño','fallo','otro'], TIPOS_A=['imagen','fondo','sprite','modelo 3D','animación','sonido','música','otro'];
+const _pid=()=>Math.random().toString(36).slice(2,9);
+async function pjIA(prompt,schema,temp=.6){ const t=await gemini({systemInstruction:{parts:[{text:'Eres el diseñador jefe de Rocket Jam. Escribes en español, concreto y profesional, sin emojis.\nSOBRE EL ESTUDIO:\n'+estudioRJ()}]},
+  contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:temp,responseMimeType:'application/json',responseSchema:schema}},MODELOS_LISTOS,90000);
+  return JSON.parse(String(t).replace(/^```(json)?\s*|```\s*$/g,'').trim()); }
+const PJ={P:null, tab:'resumen', root:null,
+  async lista(){ return (await DB.all('projects')).filter(p=>!p.modelo).sort((a,b)=>(b.at||0)-(a.at||0)); },
+  norm(P){ P.tareas=P.tareas||[]; P.gdd=P.gdd||{}; P.niveles=P.niveles||[]; P.economia=P.economia||[]; P.assets=P.assets||[]; P.versiones=P.versiones||[]; P.files=P.files||[]; return P; },
+  async guardar(){ this.P.at=Date.now(); this.P.upd=Date.now(); await DB.put('projects',this.P); try{ Sync.dirty=true; }catch(e){} },
+  async abrir(id){ const L=await this.lista(); const P=typeof id==='object'?id:(L.find(p=>p.id===id)||null); if(!P) return this.elegir(); this.P=this.norm(P);
+    this.root=document.createElement('div'); this.root.className='pj'; Art.open(P.nombre||'Proyecto',{el:this.root}); this.pinta(); },
+  async elegir(){ const L=await this.lista();
+    const c=chatCard(`<div class="ctit">Proyectos</div><small>Elige un juego para ver sus tareas, diseño, niveles, economía, assets y versiones.</small>
+      <div class="row" style="flex-wrap:wrap;margin-top:6px">${L.map(p=>`<button class="tbtn" data-p="${p.id}">${esc(p.nombre||'Proyecto')}</button>`).join('')}<button class="tbtn on" data-p="nuevo">Nuevo proyecto</button></div>`);
+    c.querySelectorAll('[data-p]').forEach(b=>b.onclick=async()=>{ if(b.dataset.p!=='nuevo') return this.abrir(b.dataset.p);
+      const n=prompt('Nombre del juego'); if(!n) return; const P=this.norm({id:'pr'+Date.now(),nombre:n.trim(),desc:'',at:Date.now(),estado:'gestion',gestion:true,files:[]}); await DB.put('projects',P); this.abrir(P); }); },
+  pinta(){ const P=this.P, T=[['resumen','Resumen'],['tareas','Tareas'],['diseno','Diseño'],['niveles','Niveles'],['economia','Economía'],['assets','Assets'],['versiones','Versiones']];
+    this.root.innerHTML=`<div class="pjTabs">${T.map(([k,n])=>`<button class="${k===this.tab?'on':''}" data-tab="${k}">${n}${k==='tareas'&&P.tareas.filter(t=>t.estado!=='hecho').length?` <i>${P.tareas.filter(t=>t.estado!=='hecho').length}</i>`:''}${k==='assets'&&P.assets.filter(a=>a.estado!=='hecho').length?` <i>${P.assets.filter(a=>a.estado!=='hecho').length}</i>`:''}</button>`).join('')}</div><div class="pjBody"></div>`;
+    this.root.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ this.tab=b.dataset.tab; this.pinta(); });
+    const B=this.root.querySelector('.pjBody'); try{ this['t_'+this.tab](B); }catch(e){ B.textContent='Error: '+e.message; } },
+  ocupado(b,txt){ b.disabled=true; b.dataset.t=b.textContent; b.textContent=txt||'Pensando…'; return ()=>{ b.disabled=false; b.textContent=b.dataset.t; }; },
+  // ---------- RESUMEN
+  t_resumen(B){ const P=this.P, t=P.tareas, h=t.filter(x=>x.estado==='hecho').length, pct=t.length?Math.round(h/t.length*100):0, falt=P.assets.filter(a=>a.estado!=='hecho').length, v=P.versiones[P.versiones.length-1];
+    const tieneCodigo=P.files.some(f=>!f.bin);
+    B.innerHTML=`<div class="pjHead"><input class="pjNom" value="${esc(P.nombre||'')}"><textarea class="pjDesc" rows="2" placeholder="Descripción corta del juego">${esc(P.desc||'')}</textarea></div>
+      <div class="pjStats"><div><b>${t.length-h}</b><span>tareas pendientes</span></div><div><b>${pct}%</b><span>completado</span></div><div><b>${falt}</b><span>assets por hacer</span></div><div><b>${P.versiones.length}</b><span>versiones</span></div></div>
+      <div class="pjBar"><i style="width:${pct}%"></i></div>
+      ${v?`<small>Última versión: ${new Date(v.at).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · ${esc(v.nota||'')}</small>`:''}
+      <div class="row" style="margin-top:10px;flex-wrap:wrap">${tieneCodigo?'<button class="tbtn on" data-a="j">Jugar</button><button class="tbtn" data-a="ag">Agente de código</button>':'<button class="tbtn" data-a="imp">Traer el código del juego</button>'}<button class="tbtn" data-a="sig">¿Qué hago ahora?</button></div><div class="pjOut"></div>`;
+    B.querySelector('.pjNom').onchange=e=>{ P.nombre=e.target.value.trim()||P.nombre; $('artTitle').textContent=P.nombre; this.guardar(); };
+    B.querySelector('.pjDesc').onchange=e=>{ P.desc=e.target.value; this.guardar(); };
+    const q=a=>B.querySelector(`[data-a=${a}]`);
+    q('j')&&(q('j').onclick=()=>{ const h=Agente.bundle(P); if(h) Art.open(P.nombre,{html:h}); });
+    q('ag')&&(q('ag').onclick=()=>{ const t=prompt('¿Qué hace el agente en '+P.nombre+'?'); if(t) Agente.run(P.id,t); });
+    q('imp')&&(q('imp').onclick=async()=>{ const N=await Agente.importar(); if(!N) return; P.files=[...P.files,...N.files]; await DB.del('projects',N.id); await this.guardar(); this.pinta(); toast('Código añadido al proyecto'); });
+    q('sig').onclick=async()=>{ const fin=this.ocupado(q('sig')); try{ const r=await pjIA(`Proyecto ${P.nombre}. ${P.desc||''}\nTareas: ${JSON.stringify(t.map(x=>({t:x.t,tipo:x.tipo,estado:x.estado,prioridad:x.prio})))}\nAssets que faltan: ${P.assets.filter(a=>a.estado!=='hecho').map(a=>a.nombre).join(', ')||'ninguno'}\nDiseño: ${Object.keys(P.gdd).filter(k=>P.gdd[k]).join(', ')||'sin documento de diseño'}\nDi en qué debería trabajar el equipo AHORA (máximo 3 cosas, por orden) y por qué, y un riesgo si lo hay.`,
+        {type:'OBJECT',properties:{prioridades:{type:'ARRAY',items:{type:'OBJECT',properties:{que:{type:'STRING'},porque:{type:'STRING'}},required:['que','porque']}},riesgo:{type:'STRING'}},required:['prioridades']});
+      B.querySelector('.pjOut').innerHTML=`<ol class="pjList">${r.prioridades.map(x=>`<li><b>${esc(x.que)}</b><br><small>${esc(x.porque)}</small></li>`).join('')}</ol>${r.riesgo?`<div class="pjAviso">Riesgo: ${esc(r.riesgo)}</div>`:''}`; }catch(e){ toast(e.message); } fin(); }; },
+  // ---------- TAREAS
+  t_tareas(B){ const P=this.P, col=[['pendiente','Pendiente'],['curso','En curso'],['hecho','Hecho']];
+    B.innerHTML=`<div class="row pjAdd"><input class="tTit" placeholder="Nueva tarea (p. ej. «el portero no se tira a los tiros altos»)" style="flex:1"><select class="tTipo">${TIPOS_T.map(t=>`<option>${t}</option>`).join('')}</select><select class="tPrio"><option value="2">normal</option><option value="3">alta</option><option value="1">baja</option></select><input class="tQuien" placeholder="Quién" style="width:90px"><button class="tbtn on tAdd">Añadir</button></div>
+      <div class="row" style="margin:4px 0 8px"><button class="tbtn" data-a="sug">Proponer tareas con Mor</button></div>
+      <div class="pjKanban">${col.map(([k,n])=>`<div class="pjCol"><h4>${n} <small>${P.tareas.filter(t=>t.estado===k).length}</small></h4>${P.tareas.filter(t=>t.estado===k).sort((a,b)=>(b.prio||2)-(a.prio||2)).map(t=>`
+        <div class="pjT p${t.prio||2}" data-id="${t.id}"><div>${esc(t.t)}</div><div class="pjTm"><span class="chip">${esc(t.tipo||'otro')}</span>${t.prio==3?'<span class="chip alta">alta</span>':''}${t.quien?`<span class="chip">${esc(t.quien)}</span>`:''}</div>
+        <div class="pjTb">${k!=='pendiente'?'<button data-m="-1" title="Atrás">←</button>':''}${k!=='hecho'?'<button data-m="1" title="Adelante">→</button>':''}${(t.tipo==='código'||t.tipo==='fallo')&&P.files.some(f=>!f.bin)&&k!=='hecho'?'<button data-ag="1">Que lo haga el agente</button>':''}<button data-x="1" title="Borrar">✕</button></div></div>`).join('')}</div>`).join('')}</div>`;
+    const add=async()=>{ const t=B.querySelector('.tTit').value.trim(); if(!t) return; P.tareas.push({id:_pid(),t,tipo:B.querySelector('.tTipo').value,prio:+B.querySelector('.tPrio').value,quien:B.querySelector('.tQuien').value.trim(),estado:'pendiente',at:Date.now()}); await this.guardar(); this.pinta(); };
+    B.querySelector('.tAdd').onclick=add; B.querySelector('.tTit').onkeydown=e=>{ if(e.key==='Enter') add(); };
+    B.querySelectorAll('.pjT').forEach(d=>{ const t=P.tareas.find(x=>x.id===d.dataset.id), orden=['pendiente','curso','hecho'];
+      d.querySelectorAll('[data-m]').forEach(b=>b.onclick=async()=>{ t.estado=orden[orden.indexOf(t.estado)+ +b.dataset.m]; if(t.estado==='hecho') t.hechaAt=Date.now(); await this.guardar(); this.pinta(); });
+      d.querySelector('[data-x]').onclick=async()=>{ P.tareas=P.tareas.filter(x=>x!==t); await this.guardar(); this.pinta(); };
+      const ag=d.querySelector('[data-ag]'); ag&&(ag.onclick=async()=>{ t.estado='curso'; await this.guardar(); this.pinta(); Art.close&&Art.close(); await Agente.run(P.id,t.t);
+        const R=(await DB.all('projects')).find(p=>p.id===P.id); if(R){ this.P=this.norm(R); } }); });
+    B.querySelector('[data-a=sug]').onclick=async e=>{ const fin=this.ocupado(e.target); try{ const r=await pjIA(`Proyecto de juego: ${P.nombre}. ${P.desc||''}\nDocumento de diseño: ${JSON.stringify(P.gdd).slice(0,6000)}\nTareas actuales: ${P.tareas.map(t=>t.t+' ['+t.estado+']').join('; ')||'ninguna'}\nPropón de 4 a 8 tareas NUEVAS, concretas y accionables (no repitas las que hay), cada una con tipo (${TIPOS_T.join(', ')}) y prioridad (1 baja, 2 normal, 3 alta).`,
+        {type:'OBJECT',properties:{tareas:{type:'ARRAY',items:{type:'OBJECT',properties:{t:{type:'STRING'},tipo:{type:'STRING',enum:TIPOS_T},prio:{type:'INTEGER'}},required:['t','tipo','prio']}}},required:['tareas']});
+      r.tareas.forEach(x=>P.tareas.push({id:_pid(),t:x.t,tipo:x.tipo,prio:Math.min(3,Math.max(1,x.prio||2)),estado:'pendiente',at:Date.now(),ia:true})); await this.guardar(); this.pinta(); toast(r.tareas.length+' tareas propuestas'); }catch(x){ toast(x.message); fin(); } }; },
+  // ---------- DISEÑO (GDD)
+  t_diseno(B){ const P=this.P, vacias=GDD_SEC.filter(([k])=>!P.gdd[k]).length;
+    B.innerHTML=`<div class="row" style="flex-wrap:wrap;margin-bottom:8px"><button class="tbtn on" data-a="gen">${vacias===GDD_SEC.length?'Escribir el documento con Mor':'Completar lo que falta con Mor'}</button><button class="tbtn" data-a="rev">Revisar el diseño</button><button class="tbtn" data-a="md">Descargar (.md)</button></div><div class="pjOut"></div>
+      ${GDD_SEC.map(([k,n])=>`<div class="pjSec"><h4>${n}</h4><textarea data-k="${k}" rows="${Math.min(14,Math.max(3,String(P.gdd[k]||'').split('\n').length+1))}" placeholder="Sin escribir">${esc(P.gdd[k]||'')}</textarea></div>`).join('')}`;
+    B.querySelectorAll('textarea[data-k]').forEach(t=>t.onchange=()=>{ P.gdd[t.dataset.k]=t.value; this.guardar(); });
+    const q=a=>B.querySelector(`[data-a=${a}]`);
+    q('gen').onclick=async()=>{ let idea=''; if(!P.desc&&!Object.values(P.gdd).some(Boolean)){ idea=prompt('Cuéntame la idea del juego en pocas frases'); if(!idea) return; P.desc=idea; }
+      const fin=this.ocupado(q('gen'),'Escribiendo…'); const props={}; GDD_SEC.forEach(([k])=>props[k]={type:'STRING'});
+      try{ const r=await pjIA(`Escribe el documento de diseño (GDD) del juego «${P.nombre}». Idea: ${P.desc||idea}\nLo que ya está escrito (respétalo y sé coherente; no lo reescribas): ${JSON.stringify(P.gdd)}\nRellena SOLO las secciones vacías, con contenido concreto (listas con guiones, números, ejemplos). Secciones: ${GDD_SEC.map(s=>s[0]+' = '+s[1]).join('; ')}.`,{type:'OBJECT',properties:props});
+        GDD_SEC.forEach(([k])=>{ if(!P.gdd[k]&&r[k]) P.gdd[k]=String(r[k]).trim(); }); await this.guardar(); this.pinta(); }catch(e){ toast(e.message); fin(); } };
+    q('rev').onclick=async()=>{ const fin=this.ocupado(q('rev')); try{ const r=await pjIA(`Revisa como diseñador jefe el documento de diseño de «${P.nombre}»: ${JSON.stringify(P.gdd)}\nSeñala incoherencias, huecos, riesgos de diversión o de alcance (demasiado grande para un estudio pequeño) y propuestas concretas.`,
+        {type:'OBJECT',properties:{fuerte:{type:'ARRAY',items:{type:'STRING'}},problemas:{type:'ARRAY',items:{type:'STRING'}},propuestas:{type:'ARRAY',items:{type:'STRING'}}},required:['problemas','propuestas']});
+      B.querySelector('.pjOut').innerHTML=`${(r.fuerte||[]).length?'<h4>Lo mejor</h4><ul class="pjList">'+r.fuerte.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':''}<h4>Problemas</h4><ul class="pjList">${r.problemas.map(x=>'<li>'+esc(x)+'</li>').join('')}</ul><h4>Propuestas</h4><ul class="pjList">${r.propuestas.map(x=>'<li>'+esc(x)+'</li>').join('')}</ul>`; }catch(e){ toast(e.message); } fin(); };
+    q('md').onclick=()=>{ const md=`# ${P.nombre}\n\n${P.desc||''}\n\n`+GDD_SEC.filter(([k])=>P.gdd[k]).map(([k,n])=>`## ${n}\n\n${P.gdd[k]}\n`).join('\n')+(P.niveles.length?`\n## Niveles\n\n| # | Nivel | Objetivo | Novedad | Dificultad |\n|---|---|---|---|---|\n`+P.niveles.map((l,i)=>`| ${i+1} | ${l.nombre} | ${l.objetivo||''} | ${l.novedad||''} | ${l.dif||''} |`).join('\n')+'\n':'');
+      const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'})); a.download='diseno-'+(P.nombre||'juego').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.md'; a.click(); }; },
+  // ---------- NIVELES
+  t_niveles(B){ const P=this.P, L=P.niveles;
+    B.innerHTML=`<div class="row" style="flex-wrap:wrap;margin-bottom:8px"><button class="tbtn on" data-a="gen">Diseñar niveles con Mor</button><button class="tbtn" data-a="add">Añadir nivel</button></div>
+      ${L.length?`<div class="pjCurva" title="Curva de dificultad">${L.map((l,i)=>`<i style="height:${(Math.max(1,Math.min(10,+l.dif||1)))*10}%" title="${esc(l.nombre)}: ${l.dif}"><b>${i+1}</b></i>`).join('')}</div>`:'<small>Aún no hay niveles.</small>'}
+      <table class="pjTab"><thead><tr><th>#</th><th>Nivel</th><th>Objetivo</th><th>Novedad</th><th>Dific.</th><th></th></tr></thead><tbody>${L.map((l,i)=>`<tr data-i="${i}"><td>${i+1}</td><td><input data-f="nombre" value="${esc(l.nombre||'')}"></td><td><textarea data-f="objetivo" rows="2">${esc(l.objetivo||'')}</textarea></td><td><textarea data-f="novedad" rows="2">${esc(l.novedad||'')}</textarea></td><td><input data-f="dif" type="number" min="1" max="10" value="${+l.dif||1}" style="width:48px"></td><td><button data-x>✕</button></td></tr>`).join('')}</tbody></table>`;
+    B.querySelectorAll('tr[data-i]').forEach(tr=>{ const l=L[+tr.dataset.i]; tr.querySelectorAll('[data-f]').forEach(x=>x.onchange=()=>{ l[x.dataset.f]=x.dataset.f==='dif'?+x.value:x.value; this.guardar(); if(x.dataset.f==='dif') this.pinta(); });
+      tr.querySelector('[data-x]').onclick=async()=>{ L.splice(+tr.dataset.i,1); await this.guardar(); this.pinta(); }; });
+    B.querySelector('[data-a=add]').onclick=async()=>{ L.push({nombre:'Nivel '+(L.length+1),objetivo:'',novedad:'',dif:Math.min(10,(+(L[L.length-1]||{}).dif||0)+1)}); await this.guardar(); this.pinta(); };
+    B.querySelector('[data-a=gen]').onclick=async e=>{ const n=prompt('¿Cuántos niveles nuevos?','8'); if(!n) return; const fin=this.ocupado(e.target,'Diseñando…');
+      try{ const r=await pjIA(`Diseña ${+n||8} niveles nuevos para «${P.nombre}». Diseño del juego: ${JSON.stringify(P.gdd).slice(0,7000)}\nNiveles que ya existen (continúa después de ellos): ${JSON.stringify(L)}\nCurva de dificultad buena (sube con descansos), y cada nivel enseña o combina UNA cosa nueva. Dificultad 1-10.`,
+          {type:'OBJECT',properties:{niveles:{type:'ARRAY',items:{type:'OBJECT',properties:{nombre:{type:'STRING'},objetivo:{type:'STRING'},novedad:{type:'STRING'},dif:{type:'INTEGER'}},required:['nombre','objetivo','novedad','dif']}}},required:['niveles']});
+        r.niveles.forEach(x=>L.push(x)); await this.guardar(); this.pinta(); }catch(x){ toast(x.message); fin(); } }; },
+  // ---------- ECONOMÍA
+  t_economia(B){ const P=this.P, E=P.economia, T=['moneda','gana','gasta','objeto'];
+    B.innerHTML=`<div class="note" style="margin:0 0 8px">Apunta las monedas, de dónde se ganan, en qué se gastan y cuánto, y Mor revisa si el balance funciona (si se progresa demasiado rápido o demasiado lento, o si hay que pagar para avanzar).</div>
+      <div class="row" style="flex-wrap:wrap;margin-bottom:8px"><button class="tbtn" data-a="add">Añadir fila</button><button class="tbtn" data-a="gen">Proponer economía con Mor</button><button class="tbtn on" data-a="ana">Analizar el balance</button></div>
+      <table class="pjTab"><thead><tr><th>Qué</th><th>Tipo</th><th>Cantidad / precio</th><th>Cada cuánto / notas</th><th></th></tr></thead><tbody>${E.map((r,i)=>`<tr data-i="${i}"><td><input data-f="que" value="${esc(r.que||'')}"></td><td><select data-f="tipo">${T.map(t=>`<option${t===r.tipo?' selected':''}>${t}</option>`).join('')}</select></td><td><input data-f="valor" value="${esc(r.valor||'')}"></td><td><input data-f="nota" value="${esc(r.nota||'')}"></td><td><button data-x>✕</button></td></tr>`).join('')}</tbody></table><div class="pjOut"></div>`;
+    B.querySelectorAll('tr[data-i]').forEach(tr=>{ const r=E[+tr.dataset.i]; tr.querySelectorAll('[data-f]').forEach(x=>x.onchange=()=>{ r[x.dataset.f]=x.value; this.guardar(); }); tr.querySelector('[data-x]').onclick=async()=>{ E.splice(+tr.dataset.i,1); await this.guardar(); this.pinta(); }; });
+    const q=a=>B.querySelector(`[data-a=${a}]`);
+    q('add').onclick=async()=>{ E.push({que:'',tipo:'gana',valor:'',nota:''}); await this.guardar(); this.pinta(); };
+    q('gen').onclick=async()=>{ const fin=this.ocupado(q('gen')); try{ const r=await pjIA(`Propón la economía de «${P.nombre}» (monedas, cómo se ganan con cantidades, en qué se gastan con precios). Diseño: ${JSON.stringify(P.gdd).slice(0,6000)}\nFilas que ya hay (no las repitas): ${JSON.stringify(E)}`,
+        {type:'OBJECT',properties:{filas:{type:'ARRAY',items:{type:'OBJECT',properties:{que:{type:'STRING'},tipo:{type:'STRING',enum:T},valor:{type:'STRING'},nota:{type:'STRING'}},required:['que','tipo','valor']}}},required:['filas']});
+      r.filas.forEach(x=>E.push(x)); await this.guardar(); this.pinta(); }catch(e){ toast(e.message); fin(); } };
+    q('ana').onclick=async()=>{ if(!E.length) return toast('Primero apunta la economía (o pide a Mor que la proponga)'); const fin=this.ocupado(q('ana'),'Calculando…');
+      try{ const r=await pjIA(`Analiza el balance de la economía de «${P.nombre}». Filas: ${JSON.stringify(E)}\nDiseño: ${JSON.stringify(P.gdd).slice(0,4000)}\nCalcula cuánto tiempo de juego hace falta para conseguir lo principal (haz las cuentas), si hay inflación de monedas, si algo es imposible sin pagar, y qué cambiarías con números concretos.`,
+          {type:'OBJECT',properties:{tiempos:{type:'ARRAY',items:{type:'OBJECT',properties:{que:{type:'STRING'},tiempo:{type:'STRING'}},required:['que','tiempo']}},problemas:{type:'ARRAY',items:{type:'STRING'}},cambios:{type:'ARRAY',items:{type:'STRING'}},veredicto:{type:'STRING'}},required:['problemas','cambios','veredicto']},.3);
+        B.querySelector('.pjOut').innerHTML=`<div class="pjAviso ok">${esc(r.veredicto)}</div>${(r.tiempos||[]).length?'<h4>Tiempo para conseguirlo</h4><ul class="pjList">'+r.tiempos.map(x=>`<li><b>${esc(x.que)}</b>: ${esc(x.tiempo)}</li>`).join('')+'</ul>':''}<h4>Problemas</h4><ul class="pjList">${r.problemas.map(x=>'<li>'+esc(x)+'</li>').join('')||'<li>Ninguno grave</li>'}</ul><h4>Cambios propuestos</h4><ul class="pjList">${r.cambios.map(x=>'<li>'+esc(x)+'</li>').join('')}</ul>`; }catch(e){ toast(e.message); } fin(); }; },
+  // ---------- ASSETS
+  t_assets(B){ const P=this.P, A=P.assets;
+    B.innerHTML=`<div class="note" style="margin:0 0 8px">Lo que hace falta hacer a mano: imágenes (en ChatGPT), modelos 3D (Sketchfab o Vértice 3D), animaciones (Mixamo) y sonidos. Cada imagen trae su prompt listo para copiar. Al subir el archivo se guarda en el proyecto.</div>
+      <div class="row" style="flex-wrap:wrap;margin-bottom:8px"><button class="tbtn on" data-a="gen">Sacar la lista con Mor</button><button class="tbtn" data-a="add">Añadir</button><span class="pjCuenta">${A.filter(a=>a.estado==='hecho').length}/${A.length} hechos</span></div>
+      ${A.map((a,i)=>{ const f=a.ruta&&P.files.find(x=>x.ruta===a.ruta); return `<div class="pjA ${a.estado==='hecho'?'hecho':''}" data-i="${i}">
+        <div class="pjAt">${f&&/^data:image/.test(f.data||'')?`<img src="${f.data}">`:`<span>${esc(a.tipo||'')}</span>`}</div>
+        <div class="pjAi"><input data-f="nombre" value="${esc(a.nombre||'')}"><small>${esc(a.tipo||'')}${a.tam?' · '+esc(a.tam):''}${a.aviso?` · <b class="mal">${esc(a.aviso)}</b>`:''}</small><textarea data-f="desc" rows="2" placeholder="Descripción / prompt">${esc(a.prompt||a.desc||'')}</textarea></div>
+        <div class="pjAb"><button class="tbtn" data-c>Copiar prompt</button><button class="tbtn" data-s>${a.estado==='hecho'?'Cambiar archivo':'Subir archivo'}</button><button class="tbtn" data-x>✕</button></div></div>`; }).join('')}`;
+    B.querySelectorAll('.pjA').forEach(d=>{ const a=A[+d.dataset.i];
+      d.querySelector('[data-f=nombre]').onchange=e=>{ a.nombre=e.target.value; this.guardar(); }; d.querySelector('[data-f=desc]').onchange=e=>{ a.prompt=e.target.value; this.guardar(); };
+      d.querySelector('[data-c]').onclick=()=>navigator.clipboard.writeText(a.prompt||a.desc||a.nombre).then(()=>toast('Prompt copiado: pégalo en ChatGPT'));
+      d.querySelector('[data-x]').onclick=async()=>{ A.splice(+d.dataset.i,1); await this.guardar(); this.pinta(); };
+      d.querySelector('[data-s]').onclick=()=>{ const i=document.createElement('input'); i.type='file'; i.accept=/sonido|música/.test(a.tipo)?'audio/*':/modelo|animación/.test(a.tipo)?'.glb,.gltf,.fbx':'image/*';
+        i.onchange=async()=>{ const f=i.files[0]; if(!f) return; const data=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(f); });
+          const ext=f.name.split('.').pop().toLowerCase(), ruta='assets/'+(a.nombre||'asset').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.'+ext;
+          a.aviso=''; a.tam='';
+          if(/^image\//.test(f.type)){ const im=await new Promise(r=>{ const x=new Image(); x.onload=()=>r(x); x.onerror=()=>r(null); x.src=data; });
+            if(im){ a.tam=im.width+'×'+im.height; const fondo=/fondo/.test(a.tipo)||/fondo|escenario|background/i.test(a.nombre||'');
+              if(fondo&&(im.width<1280||im.height<720)) a.aviso='baja resolución para un fondo: se verá borroso (pide al menos 1920×1080)';
+              else if(Math.max(im.width,im.height)<256) a.aviso='muy pequeña: se verá pixelada'; } }
+          P.files=P.files.filter(x=>x.ruta!==a.ruta&&x.ruta!==ruta); P.files.push({ruta,bin:true,data}); a.ruta=ruta; a.estado='hecho';
+          await this.guardar(); this.pinta(); if(a.aviso) toast('Ojo: '+a.aviso,7000); else toast('Guardado en el proyecto: '+ruta); }; i.click(); }; });
+    B.querySelector('[data-a=add]').onclick=async()=>{ const n=prompt('Nombre del asset (p. ej. «Fondo del estadio de noche»)'); if(!n) return; A.push({id:_pid(),nombre:n,tipo:/fondo/i.test(n)?'fondo':'imagen',prompt:'',estado:'falta'}); await this.guardar(); this.pinta(); };
+    B.querySelector('[data-a=gen]').onclick=async e=>{ const fin=this.ocupado(e.target,'Mirando el juego…'); const cod=P.files.filter(f=>!f.bin).map(f=>f.code).join('\n');
+      const usados=[...new Set((cod.match(/['"`]([\w\-/]+\.(png|jpe?g|webp|gif|glb|gltf|fbx|mp3|wav|ogg))['"`]/gi)||[]).map(s=>s.slice(1,-1)))].filter(r=>!P.files.some(f=>f.ruta===r));
+      try{ const r=await pjIA(`Haz la lista de assets que hay que crear A MANO para «${P.nombre}». Diseño: ${JSON.stringify(P.gdd).slice(0,6000)}\nNiveles: ${JSON.stringify(P.niveles).slice(0,2000)}\nArchivos que el código pide y no existen: ${usados.join(', ')||'ninguno'}\nAssets ya apuntados (no los repitas): ${A.map(a=>a.nombre).join(', ')||'ninguno'}\nPara cada imagen, fondo o sprite escribe un PROMPT para ChatGPT en español, muy concreto (estilo, encuadre, fondo blanco liso si es un personaje u objeto suelto, resolución, sin texto). Para modelos 3D di si buscarlo en Sketchfab o hacerlo en Vértice 3D; para animaciones, Mixamo. Tipos: ${TIPOS_A.join(', ')}.`,
+          {type:'OBJECT',properties:{assets:{type:'ARRAY',items:{type:'OBJECT',properties:{nombre:{type:'STRING'},tipo:{type:'STRING',enum:TIPOS_A},prompt:{type:'STRING'}},required:['nombre','tipo','prompt']}}},required:['assets']});
+        r.assets.forEach(x=>A.push({id:_pid(),nombre:x.nombre,tipo:x.tipo,prompt:x.prompt,estado:'falta'})); await this.guardar(); this.pinta(); toast(r.assets.length+' assets en la lista'); }catch(x){ toast(x.message); fin(); } }; },
+  // ---------- VERSIONES
+  t_versiones(B){ const P=this.P, V=P.versiones, tieneCodigo=P.files.some(f=>!f.bin);
+    B.innerHTML=`<div class="row" style="flex-wrap:wrap;margin-bottom:8px">${tieneCodigo?'<button class="tbtn on" data-a="save">Guardar versión ahora</button>':''}<button class="tbtn" data-a="notas">Notas de la versión con Mor</button></div><div class="pjOut"></div>
+      ${V.length?[...V].reverse().map((v,k)=>{ const i=V.length-1-k; return `<div class="pjV" data-i="${i}"><div><b>${new Date(v.at).toLocaleString('es-ES',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</b><br><small>${esc(v.nota||'')} · ${(v.files||[]).length} archivos</small></div>${v.files?'<button class="tbtn" data-r>Volver a esta</button>':''}</div>`; }).join(''):'<small>Todavía no hay versiones. El agente de código guarda una antes de cada cambio; también puedes guardar una a mano.</small>'}`;
+    const q=a=>B.querySelector(`[data-a=${a}]`);
+    q('save')&&(q('save').onclick=async()=>{ const n=prompt('Nota de esta versión (p. ej. «1.1: modo carrera»)'); if(n===null) return; V.push({at:Date.now(),nota:n||'Versión guardada a mano',files:Agente.textos(P).map(f=>({ruta:f.ruta,code:f.code}))}); if(V.length>30) V.shift(); await this.guardar(); this.pinta(); });
+    B.querySelectorAll('.pjV [data-r]').forEach(b=>b.onclick=async()=>{ const v=V[+b.closest('.pjV').dataset.i]; if(!confirm('¿Volver a la versión «'+(v.nota||'')+'»? Antes guardo la actual por si acaso.')) return;
+      V.push({at:Date.now(),nota:'Antes de volver a: '+(v.nota||''),files:Agente.textos(P).map(f=>({ruta:f.ruta,code:f.code}))}); P.files=[...v.files.map(f=>({ruta:f.ruta,code:f.code})),...P.files.filter(f=>f.bin)]; await this.guardar(); this.pinta(); toast('Versión restaurada'); });
+    q('notas').onclick=async()=>{ const desde=(V[V.length-1]||{}).at||0, hechas=P.tareas.filter(t=>t.estado==='hecho'&&(t.hechaAt||0)>=desde-864e5*30);
+      const fin=this.ocupado(q('notas'),'Escribiendo…'); try{ const r=await pjIA(`Escribe las notas de la versión (changelog para los jugadores) de «${P.nombre}». Tareas terminadas: ${hechas.map(t=>t.t+' ('+t.tipo+')').join('; ')||'ninguna apuntada'}\nCambios del agente: ${V.slice(-5).map(v=>v.nota).join('; ')}\nTono cercano y claro, por secciones (Novedades, Mejoras, Arreglos), sin emojis.`,
+          {type:'OBJECT',properties:{titulo:{type:'STRING'},novedades:{type:'ARRAY',items:{type:'STRING'}},mejoras:{type:'ARRAY',items:{type:'STRING'}},arreglos:{type:'ARRAY',items:{type:'STRING'}}},required:['titulo']});
+        const txt=`${r.titulo}\n\n`+[['Novedades',r.novedades],['Mejoras',r.mejoras],['Arreglos',r.arreglos]].filter(([,l])=>l&&l.length).map(([n,l])=>n+':\n'+l.map(x=>'- '+x).join('\n')).join('\n\n');
+        B.querySelector('.pjOut').innerHTML=`<pre class="pjPre">${esc(txt)}</pre><button class="tbtn" data-cp>Copiar</button>`; B.querySelector('[data-cp]').onclick=()=>navigator.clipboard.writeText(txt).then(()=>toast('Copiado')); }catch(e){ toast(e.message); } fin(); }; }
+};
+// proyectos de gestión de los juegos del estudio (una sola vez)
+setTimeout(async()=>{ try{ if(MEM.pjEstudio) return; const L=await PJ.lista(); for(const n of ['MDG 27','Minera Cats']) if(!L.some(p=>(p.nombre||'').toLowerCase()===n.toLowerCase()))
+    await DB.put('projects',PJ.norm({id:'pr'+Date.now()+Math.floor(Math.random()*999),nombre:n,desc:n==='MDG 27'?'Juego de fútbol 3D con Ultimate Team, partido rápido, carrera, draft histórico y torneos. Solo web, con servidor online.':'Gatos que defienden la base de los minerales que caen, con pase de batalla y bailes.',at:Date.now()-1000,estado:'gestion',gestion:true,files:[]}));
+  MEM.pjEstudio=1; saveMem(); }catch(e){} },6000);
+// sincronizar también los proyectos (los grandes, solo la gestión)
+const _paq92=Sync.paquete.bind(Sync);
+Sync.paquete=async function(){ const p=await _paq92(); p.proyectos=(await DB.all('projects')).map(P=>{ const peso=JSON.stringify(P.files||[]).length; return peso<6e6?P:Object.assign({},P,{files:(P.files||[]).filter(f=>!f.bin),soloGestion:true,versiones:(P.versiones||[]).slice(-3)}); }); return p; };
+const _unir92=Sync.unir.bind(Sync);
+Sync.unir=async function(R){ await _unir92(R); if(!R||!R.proyectos) return; const L=new Map((await DB.all('projects')).map(p=>[p.id,p]));
+  for(const P of R.proyectos){ const A=L.get(P.id); if(!A) await DB.put('projects',P); else if((P.upd||P.at||0)>(A.upd||A.at||0)){ if(P.soloGestion) P.files=[...(P.files||[]),...(A.files||[]).filter(f=>f.bin&&!(P.files||[]).some(x=>x.ruta===f.ruta))]; delete P.soloGestion; await DB.put('projects',P); } } };
+// Mor lo usa desde el chat
+const _apply92=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply92(acts); for(const a of acts){ const s=String(a); let m;
+  if((m=s.match(/^\s*proyecto\s*:\s*(.+)$/i))) setTimeout(async()=>{ const P=(await PJ.lista()).find(p=>(p.nombre||'').toLowerCase().includes(m[1].trim().toLowerCase())); P?PJ.abrir(P):PJ.elegir(); },300);
+  else if((m=s.match(/^\s*tarea_juego\s*:\s*([\s\S]+)$/i))) setTimeout(async()=>{ const [pn,t,tipo,prio]=m[1].split('|').map(x=>(x||'').trim()); const P=(await PJ.lista()).find(p=>(p.nombre||'').toLowerCase().includes(pn.toLowerCase())); if(!P||!t) return;
+      PJ.norm(P).tareas.push({id:_pid(),t,tipo:TIPOS_T.includes(tipo)?tipo:'otro',prio:/alta/i.test(prio)?3:/baja/i.test(prio)?1:2,estado:'pendiente',at:Date.now()}); P.upd=Date.now(); await DB.put('projects',P); toast('Tarea añadida a '+P.nombre); },300);
+  else if((m=s.match(/^\s*asset\s*:\s*([\s\S]+)$/i))) setTimeout(async()=>{ const [pn,n,tipo,pr]=m[1].split('|').map(x=>(x||'').trim()); const P=(await PJ.lista()).find(p=>(p.nombre||'').toLowerCase().includes(pn.toLowerCase())); if(!P||!n) return;
+      PJ.norm(P).assets.push({id:_pid(),nombre:n,tipo:TIPOS_A.includes(tipo)?tipo:'imagen',prompt:pr||'',estado:'falta'}); P.upd=Date.now(); await DB.put('projects',P); toast('Asset apuntado en '+P.nombre); },300); } return made; };
+let _pjRes=''; setInterval(async()=>{ try{ _pjRes=(await PJ.lista()).slice(0,8).map(p=>{ const t=(p.tareas||[]).filter(x=>x.estado!=='hecho'); return `${p.nombre} (${t.length} tareas pendientes${t.length?': '+t.slice(0,4).map(x=>x.t).join('; '):''}${(p.assets||[]).filter(a=>a.estado!=='hecho').length?'; faltan '+(p.assets||[]).filter(a=>a.estado!=='hecho').length+' assets':''})`; }).join(' · '); }catch(e){} },6000);
+const _sys92=systemPrompt; systemPrompt=function(extra){ return _sys92(extra)+`\n· PROYECTOS DEL ESTUDIO: ${_pjRes||'ninguno'}.\n  {{proyecto: nombre}} abre el panel del juego (tareas, diseño, niveles, economía, assets, versiones). {{tarea_juego: proyecto | tarea | tipo (${TIPOS_T.join('/')}) | prioridad}} apunta una tarea cuando el equipo diga algo que hay que hacer en un juego. {{asset: proyecto | nombre | tipo | prompt para ChatGPT}} apunta una imagen, modelo o sonido que falta.`; };
+CMDS.splice(1,0,['/proyecto','Panel del proyecto: tareas, diseño, niveles, economía, assets, versiones',r=>r?Agenda.apply(['proyecto: '+r]):PJ.elegir()]);
+ATAJOS.splice(1,0,['Proyectos',()=>PJ.elegir()]); renderSide();
 
 /* =====================================================================
    15. DESPERTAR
