@@ -1,12 +1,12 @@
 {
- "name": "M.O.R.",
+ "name": "MOR · Rocket Jam",
  "short_name": "MOR",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
- "orientation": "portrait",
- "background_color": "#050b14",
- "theme_color": "#050b14",
+ "orientation": "any",
+ "background_color": "#050c1f",
+ "theme_color": "#050c1f",
  "lang": "es",
  "icons": [
   {
