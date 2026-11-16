@@ -1271,7 +1271,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v29b</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v29c</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1436,7 +1436,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v29b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v29c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3864,7 +3864,9 @@ const Agente={running:false, espera:null,
   async ejecutar(P,x,est){ const T=this.textos(P), F=r=>T.find(f=>f.ruta===r)||T.find(f=>f.ruta.endsWith('/'+r)||r.endsWith('/'+f.ruta));
     switch(x.accion){
       case 'listar': return P.files.map(f=>f.bin?`${f.ruta} (imagen/modelo)`:`${f.ruta} (${f.code.split('\n').length} líneas)`).join('\n');
-      case 'leer':{ const f=F(x.ruta||''); if(!f) return 'ERROR: no existe '+x.ruta+'. Archivos: '+T.map(f=>f.ruta).join(', '); const n=f.code.split('\n').length; let a=Math.max(1,x.desde||1), b=Math.min(n,x.hasta||a+299); if(b-a>399) b=a+399;
+      case 'leer':{ const f=F(x.ruta||''); if(!f) return 'ERROR: no existe '+x.ruta+'. Archivos: '+T.map(f=>f.ruta).join(', '); const n=f.code.split('\n').length; est.leido=est.leido||{}; const ya=est.leido[f.ruta]||0;
+        let a=Math.max(1,+x.desde||0)||(ya&&ya<n?ya+1:1), b=Math.min(n,+x.hasta||a+299); if(b<a) b=Math.min(n,a+299); if(b-a>399) b=a+399;
+        if(!x.desde&&ya>=n) return `Ya has leído entero ${f.ruta} (${n} líneas): está en tu contexto. No lo vuelvas a leer: edita o prueba.`; est.leido[f.ruta]=Math.max(ya,b);
         return `${f.ruta} · líneas ${a}-${b} de ${n}\n`+this.numerar(f.code,a,b); }
       case 'buscar':{ let re; try{ re=new RegExp(x.texto,'i'); }catch(e){ re=new RegExp(String(x.texto).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'); } const out=[];
         T.forEach(f=>f.code.split('\n').forEach((l,i)=>{ if(out.length<50&&re.test(l)) out.push(`${f.ruta}:${i+1}: ${l.trim().slice(0,160)}`); })); return out.length?out.join('\n'):'Sin resultados para «'+x.texto+'»'; }
@@ -3900,7 +3902,9 @@ const Agente={running:false, espera:null,
       for(let i=0;i<MAX&&this.running;i++){
         const files=P.files.map(f=>f.bin?`${f.ruta} (imagen/modelo)`:`${f.ruta} (${f.code.split('\n').length} líneas)`).join('\n');
         const hist=est.hist.map((h,k)=>{ const viejo=k<est.hist.length-5; return `#${k+1} ${h.a}\n${viejo?String(h.o).slice(0,400)+(String(h.o).length>400?' […]':''):String(h.o).slice(0,14000)}`; }).join('\n\n');
-        const prompt=`PROYECTO: ${P.nombre||''}\nARCHIVOS:\n${files}\n\nTAREA DEL EQUIPO: ${tarea}\n${est.plan.length?'\nTU PLAN:\n'+est.plan.map((p,k)=>(k+1)+') '+p).join('\n'):''}\n\nLO QUE HAS HECHO HASTA AHORA:\n${hist||'(nada todavía: empieza con el plan)'}\n\n${i>=MAX-4?'¡Te quedan muy pocos pasos! Termina ya con un resumen honesto de lo que falta.':''}Siguiente acción (JSON):`;
+        const T2=this.textos(P), totalL=T2.reduce((s,f)=>s+f.code.split('\n').length,0), entero=totalL<=1400;
+        const contenido=entero?'\n\nCONTENIDO ACTUAL DE LOS ARCHIVOS (ya lo tienes delante: NO uses «leer», edita directamente copiando el texto exacto, sin los números de línea):\n'+T2.map(f=>`===== ${f.ruta} =====\n`+this.numerar(f.code,1,f.code.split('\n').length)).join('\n'):'';
+        const prompt=`PROYECTO: ${P.nombre||''}\nARCHIVOS:\n${files}${contenido}\n\nTAREA DEL EQUIPO: ${tarea}\n${est.plan.length?'\nTU PLAN:\n'+est.plan.map((p,k)=>(k+1)+') '+p).join('\n'):''}\n\nLO QUE HAS HECHO HASTA AHORA:\n${hist||'(nada todavía: empieza con el plan)'}\n\n${i>=MAX-4?'¡Te quedan muy pocos pasos! Termina ya con un resumen honesto de lo que falta.':''}Siguiente acción (JSON):`;
         const parts=[{text:prompt}]; if(est.shot) parts.unshift({inline_data:{mime_type:'image/jpeg',data:est.shot}});
         let x; try{ const t=await gemini({systemInstruction:{parts:[{text:AG_REGLAS+'\n\nSOBRE EL ESTUDIO:\n'+estudioRJ()}]},contents:[{role:'user',parts}],generationConfig:{temperature:.2,responseMimeType:'application/json',responseSchema:AGSCHEMA}},MODELOS_CODIGO,120000);
           x=JSON.parse(t.replace(/^```(json)?|```$/g,'').trim()); }
@@ -3918,7 +3922,8 @@ const Agente={running:false, espera:null,
             if(est.errs.length){ this.log(c,est.errs.length+' error(es) al probar: sigo corrigiendo','mal'); est.hist.push({a:'probar (automático antes de terminar)',o:o+'\nHay errores: corrígelos antes de terminar.'}); continue; } }
           fin=x.mensaje||'Hecho.'; break; }
         this.log(c,this.etiqueta(x));
-        let o; try{ o=await this.ejecutar(P,x,est); }catch(e){ o='ERROR: '+e.message; }
+        const firma=JSON.stringify([x.accion,x.ruta,x.desde,x.hasta,x.texto,x.buscar]); est.firmas=(est.firmas||[]).concat(firma).slice(-4);
+        let o; if(x.accion!=='probar'&&est.firmas.filter(f=>f===firma).length>=2) o='AVISO: acabas de hacer exactamente esto mismo. No lo repitas: con lo que ya sabes, EDITA el código o PRUEBA el juego.'; else { try{ o=await this.ejecutar(P,x,est); }catch(e){ o='ERROR: '+e.message; } }
         if(/^ERROR:/.test(o)) this.log(c,o.split('\n')[0].slice(0,140),'mal'); else if(x.accion==='probar') this.log(c,est.errs.length?est.errs.length+' error(es) en la consola':'Funciona sin errores',est.errs.length?'mal':'ok');
         est.hist.push({a:`${x.accion}${x.ruta?' '+x.ruta:''}${x.accion==='editar'?' (buscar: '+String(x.buscar||'').slice(0,60).replace(/\n/g,'⏎')+'…)':''}`,o});
         if(Object.keys(est.cambios).length){ P.at=Date.now(); await DB.put('projects',P); }
