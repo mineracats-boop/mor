@@ -998,13 +998,11 @@ async function geminiStream(body,onText){
   throw new Error(last||'sin respuesta');
 }
 
-const ESTUDIO_RJ=`Rocket Jam es un estudio independiente de videojuegos de Cádiz (España). Hace juegos para navegador (HTML, JavaScript y Three.js), publicados en la web y en servicios como Render, Cloudflare y GitHub Pages, y también experiencias en Roblox.
-JUEGOS DEL ESTUDIO:
+const ESTUDIO_RJ=`Rocket Jam es un estudio independiente de videojuegos de Cádiz (España). Hace juegos para navegador (HTML, JavaScript y Three.js), publicados en la web y en servicios como Render, Cloudflare y GitHub Pages.
+JUEGOS DEL ESTUDIO (solo dos):
 - MDG 27 (Master Digital Game 27): el proyecto principal. Juego de fútbol en 3D con Ultimate Team (sobres, cartas, ligas con amigos por código), partido rápido, modo carrera, draft histórico, torneos y ciudad deportiva. Eslogan: "TODO EL FÚTBOL EN TUS MANOS". Solo web, con servidor online. Animaciones de Mixamo. Está en desarrollo un modo Street Football (calle, 1v1, 3v3, futsal), ahora aparcado.
 - Minera Cats (Minera Cats Studio: Ultimate Base Defense): gatos que defienden la base de los minerales que caen, estilo "Shoot the Box", con pase de batalla, bailes y panel de administración. Pensado para itch.io y con versión de Halloween prevista.
-- Futboltoons: fútbol 2D de humor con personajes inventados, partido con cámara desde arriba estilo Brawl Stars, hasta 4 amigos y roles de futbolista, utillero o entrenador.
-- Medieval Regions: juego 3D medieval multijugador de supervivencia, construcción, diplomacia y guerra; regiones de 6 jugadores y cinco razas; se gana robando la corona del rey rival.
-- Otros proyectos: un mundo abierto tipo GTA que pasó a apocalipsis zombi, un GTA ambientado en Cádiz, KRONOS RECURSION 1 (terror en primera persona), Reinos de Piedra (RPG de castillo) y un juego de terror para Roblox.
+Rocket Jam solo tiene estos dos juegos. Otros proyectos anteriores fueron prototipos internos que no salieron: no son juegos del estudio y no los presentes como tales.
 HERRAMIENTAS PROPIAS: Vértice 3D (editor 3D estilo Blender), ULTIMATE3D (motor de juegos 3D estilo Unreal) y DatabasePro (editor y publicador de HTML).
 FORMA DE TRABAJAR: los gráficos de los juegos no se dibujan con código ni con emojis: se hace la lista de imágenes necesarias y el equipo las genera (por ejemplo en ChatGPT). En los juegos de apuntar y hacer clic, una X pequeña en el suelo marca dónde colocar cada objeto. Hay que avisar siempre de los problemas de calidad (fondos borrosos, personajes que no pisan el suelo). Los modelos 3D salen de Sketchfab o se hacen en Vértice 3D; las animaciones, de Mixamo.`;
 const estudioRJ=()=>(MEM.estudio&&MEM.estudio.trim())||ESTUDIO_RJ;
