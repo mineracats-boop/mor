@@ -1271,7 +1271,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v28</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v29</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1436,7 +1436,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v28 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v29 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2461,7 +2461,7 @@ IMÁGENES DISPONIBLES (cárgalas con esas rutas exactas; si alguna falla, el jue
 ${lista}
 ${listaMod}`;
       const usaBase=!es3d;
-      const rules=(GameStudio._skills?GameStudio._skills(desc):'')+GAMEDEV_GUIA+(es3d?`\n\nMOTOR BASE 3D PROBADO (OBLIGATORIO: copia esta base y complétala; conserva el import map, la carga de modelos, la entrada, la física, la cámara, las pantallas y el bucle; rellena MODELOS, crea el mundo en preparar() con cargarModelo/cargarPersonaje y obstaculo(), y la lógica en update(); cambia el suelo/cielo/niebla al ambiente del juego; sustituye JUEGO por el título):\n${GAME_BASE_3D}`:'')+(usaBase?`\n\nMOTOR BASE PROBADO (OBLIGATORIO en 2D: copia esta base y complétala; conserva su estructura, el bucle, la entrada, el escalado y la interfaz; cambia W×H a horizontal 960×540 si el juego lo pide; añade los botones táctiles .tb que hagan falta; sustituye JUEGO por el título):\n${GAME_BASE}`:'')+`\n\nREGLAS DE CALIDAD (como un estudio profesional):
+      const rules=(GameStudio._skills?GameStudio._skills(desc):'')+GAMEDEV_GUIA+(typeof GAMEDEV_GUIA_EXTRA!=='undefined'?GAMEDEV_GUIA_EXTRA:'')+(es3d?`\n\nMOTOR BASE 3D PROBADO (OBLIGATORIO: copia esta base y complétala; conserva el import map, la carga de modelos, la entrada, la física, la cámara, las pantallas y el bucle; rellena MODELOS, crea el mundo en preparar() con cargarModelo/cargarPersonaje y obstaculo(), y la lógica en update(); cambia el suelo/cielo/niebla al ambiente del juego; sustituye JUEGO por el título):\n${GAME_BASE_3D}`:'')+(usaBase?`\n\nMOTOR BASE PROBADO (OBLIGATORIO en 2D: copia esta base y complétala; conserva su estructura, el bucle, la entrada, el escalado y la interfaz; cambia W×H a horizontal 960×540 si el juego lo pide; añade los botones táctiles .tb que hagan falta; sustituye JUEGO por el título):\n${GAME_BASE}`:'')+`\n\nREGLAS DE CALIDAD (como un estudio profesional):
 - Un único index.html completo, que funcione al abrirlo, sin compilar. Librerías solo por CDN (p. ej. Three.js desde unpkg/jsdelivr con import map).
 - Pantalla de inicio, juego, pausa, fin de partida con puntuación, botón de reiniciar y récord guardado en localStorage.
 - Controles táctiles visibles en móvil y teclado en ordenador. Se adapta a cualquier tamaño de pantalla (resize).
@@ -2469,18 +2469,20 @@ ${listaMod}`;
 - Sonidos con WebAudio (sin archivos). Nada de "TODO", "...", ni partes sin hacer. Código ordenado y comentado en español.`;
       log('Mor programar el juego…');
       let html=await genLong(`Eres un programador de videojuegos experto.\n${spec}\n\n${rules}\n\nEscribe el index.html COMPLETO. Responde SOLO con el código.`,n=>log(`Mor programar el juego… (${n} líneas)`));
-      // probar y corregir, como hago yo
-      for(let ronda=1;ronda<=3;ronda++){
-        log(`Mor probar el juego (prueba ${ronda})…`);
-        const t=await testGame(html,assets); let probs=[...t.errs];
-        if(t.shot){ try{ const rv=await geminiJSON(`Captura de un juego de navegador «${g.titulo}» tras unos segundos y algunas pulsaciones. ¿Se ve funcionando bien (no pantalla negra/vacía, elementos visibles, interfaz legible, personajes bien colocados)? Lista problemas visuales concretos si los hay.`,REVIEWSCHEMA,[{inline_data:{mime_type:'image/jpeg',data:t.shot}}],MODELOS_RAPIDOS,30000); if(!rv.funciona) probs=probs.concat(rv.problemas||[]); }catch(e){} }
-        else if(!/canvas/i.test(html)) {} else probs.push('No se ha podido ver nada dibujado en el canvas');
-        P.pruebas=(P.pruebas||[]).concat([{ronda,probs}]);
-        if(!probs.length){ log('¡El juego funciona en las pruebas!'); break; }
-        if(ronda===3) break;
-        log(`Mor arreglar ${probs.length} problema(s)…`);
-        html=await genLong(`Eres un programador de videojuegos experto. Este juego tiene problemas detectados al probarlo:\n${probs.map(p=>'- '+p).join('\n')}\n\n${spec}\n\n${rules}\n\nCÓDIGO ACTUAL:\n${html}\n\nArregla TODOS los problemas y devuelve el index.html COMPLETO corregido. Responde SOLO con el código.`,n=>log(`Mor arreglar… (${n} líneas)`));
+      // probar JUGANDO y corregir por partes con el agente (como un programador de verdad)
+      const revisar=async(h,ronda)=>{ log(`Mor jugar al juego para probarlo (prueba ${ronda})…`); const t=await testGame(h,assets); let probs=[...t.errs];
+        if(t.shot){ try{ const rv=await geminiJSON(`Captura de un juego de navegador «${g.titulo}» mientras se juega. ¿Se ve funcionando bien (no pantalla negra/vacía, elementos visibles, interfaz legible, personajes apoyados en el suelo)? Lista solo problemas visuales concretos y graves.`,REVIEWSCHEMA,[{inline_data:{mime_type:'image/jpeg',data:t.shot}}],MODELOS_RAPIDOS,30000); if(!rv.funciona) probs=probs.concat(rv.problemas||[]); }catch(e){} }
+        P.pruebas=(P.pruebas||[]).concat([{ronda,probs,notas:t.notas||[]}]); return probs; };
+      let probs=await revisar(html,1);
+      if(probs.length){
+        P.nombre=g.titulo; P.files=[{ruta:'index.html',code:html}]; P.estado='arreglando'; await DB.put('projects',P);
+        for(let ronda=2;ronda<=3&&probs.length&&!PARAR.on;ronda++){
+          log(`El agente arregla ${probs.length} problema(s) editando por partes…`);
+          await Agente.run(P.id,`Este juego nuevo «${g.titulo}» no pasa la prueba de jugar. Arregla estos problemas sin reescribir el juego entero (edita solo lo necesario), prueba y vuelve a probar hasta que funcione:\n${probs.map(p=>'- '+p).join('\n')}\n\nRECUERDA:${PRUEBA_JUEGO_REGLA}`);
+          const R=(await DB.all('projects')).find(x=>x.id===P.id); const idx=R&&R.files.find(f=>/index\.html$/.test(f.ruta)); if(idx) html=idx.code; if(R&&R.versiones) P.versiones=R.versiones;
+          probs=await revisar(html,ronda); }
       }
+      if(!probs.length) log('¡El juego se puede jugar: pasa la prueba de jugar!');
       P.creditos=P._cred; delete P._cred; P.files=(P.creditos&&P.creditos.length?[{ruta:'CREDITOS.md',code:creditosMd(P.creditos)}]:[]).concat([{ruta:'index.html',code:html},{ruta:'README.md',code:`# ${g.titulo}\n\n${g.resumen}\n\n## Controles\n${g.controles}\n\n## Mecánicas\n${(g.mecanicas||[]).map(m=>'- '+m).join('\n')}\n\nHecho por M.O.R.\n`}].concat(assets.map(a=>({ruta:a.ruta,data:a.data,bin:true}))));
       P.lineas=html.split('\n').length; P.estado='listo'; const faltan=slots.filter(a=>!a.data&&a.tipo!=='animacion').length; await DB.put('projects',P);
       ban.style.display='none'; const ult=(P.pruebas||[]).slice(-1)[0]; this.running=false; renderProjects(); Sfx.play('risa'); squash(.35);
@@ -3094,7 +3096,7 @@ const Informe={
     MEM.informe={d:hoyKey(),t:String(t).trim(),at:Date.now()}; saveMem(); return MEM.informe; },
   async mostrar(hablar=true){ showSub('Mor preparar tu informe del día…'); try{ const i=await this.hacer(); showSub(i.t); logChat('m','[Informe del día]'); if(hablar) localSay('Aquí tienes tu informe de hoy. '+i.t.replace(/\*\*/g,'').split('\n').slice(0,4).join(' ').slice(0,400),'tierno'); if($('sheetHoy').classList.contains('open')) Hoy.render(); }catch(e){ showSub('No pude hacer el informe: '+e.message); } }
 };
-setInterval(()=>{ const n=new Date(); if(n.getHours()*60+n.getMinutes()>=21*60+30&&(MEM.informe||{}).d!==hoyKey()&&!document.hidden&&!busy&&$('login').style.display==='none'&&MEM.informeAuto!==false) Informe.mostrar(); },60000);
+setInterval(()=>{ const n=new Date(); if(n.getHours()*60+n.getMinutes()>=21*60+30&&(MEM.informe||{}).d!==hoyKey()&&!document.hidden&&!busy&&$('login').style.display==='none'&&MEM.informeAuto===true) Informe.mostrar(); },60000);
 const Hoy={iv:null,
   open(){ cierraPaneles(); this.render(); $('sheetHoy').classList.add('open'); clearInterval(this.iv); this.iv=setInterval(()=>{ if($('sheetHoy').classList.contains('open')) this.render(); else clearInterval(this.iv); },30000); },
   async render(){ const n=new Date(), {cur,sig,L}=Rutina.ahora(), m=n.getHours()*60+n.getMinutes(); const fin=new Date(); fin.setHours(23,59,59,999);
@@ -3108,10 +3110,10 @@ const Hoy={iv:null,
       ${Goals.list().length?'<h3>OBJETIVOS</h3><ul>'+Goals.list().map(g=>`<li><span>${esc(g.t)}${g.steps&&g.steps.length?` <small>${g.steps.filter(s=>s.done).length}/${g.steps.length}</small>`:''}</span></li>`).join('')+'</ul>':''}
       ${Timers.list&&Timers.list.length?'<h3>TEMPORIZADORES</h3><ul>'+Timers.list.map(t=>`<li><span>${esc(t.why||'Temporizador')} · ${Math.max(0,Math.ceil((t.end-Date.now())/60000))} min</span></li>`).join('')+'</ul>':''}
       <h3>INFORME DEL DÍA</h3>${(MEM.informe||{}).d===hoyKey()?`<div class="txt">${mdLite(MEM.informe.t)}</div>`:'<div class="note">Se hace solo a partir de las 21:30, o pídelo ahora.</div>'}
-      <div class="row"><button class="tbtn on" id="hoyInf">${(MEM.informe||{}).d===hoyKey()?'Rehacer informe':'Hacer informe ahora'}</button><button class="tbtn" id="hoyAuto">Informe automático: ${MEM.informeAuto===false?'no':'sí'}</button></div>`;
+      <div class="row"><button class="tbtn on" id="hoyInf">${(MEM.informe||{}).d===hoyKey()?'Rehacer informe':'Hacer informe ahora'}</button><button class="tbtn" id="hoyAuto">Informe automático: ${MEM.informeAuto===true?'sí':'no'}</button></div>`;
     $('hoyBox').querySelectorAll('[data-ht]').forEach(b=>b.onclick=()=>{ const t=(MEM.tasks||[]).find(x=>x.id===b.dataset.ht); if(t){ t.done=true; t.doneAt=Date.now(); saveMem(); Sfx.play('risa'); this.render(); } });
     $('hoyBox').querySelectorAll('[data-hh]').forEach(b=>b.onclick=()=>{ Habits.done(b.dataset.hh); this.render(); });
-    $('hoyInf').onclick=()=>Informe.mostrar(false).then(()=>this.render()); $('hoyAuto').onclick=()=>{ MEM.informeAuto=MEM.informeAuto===false; saveMem(); this.render(); };
+    $('hoyInf').onclick=()=>Informe.mostrar(false).then(()=>this.render()); $('hoyAuto').onclick=()=>{ MEM.informeAuto=MEM.informeAuto!==true; saveMem(); this.render(); };
     if(MEM.ciudad){ try{ const w=await Weather.get(MEM.ciudad); if(w&&$('hoyTiempo')) $('hoyTiempo').textContent=String(w).slice(0,220); }catch(e){} } }
 };
 
@@ -4328,6 +4330,59 @@ const _sys93=systemPrompt; systemPrompt=function(extra){ return _sys93(extra)+`\
 const _sys94=systemPrompt; systemPrompt=function(extra){ return _sys94(extra)+`\n· ERES UNA IA DE TRABAJO: responde a lo que te piden y para. NUNCA hagas charla de relleno ni preguntas personales («¿qué tal tu día?», «¿cómo estás?», «¿algo más?») salvo que él saque el tema. No cambies de tema ni propongas cosas que no tienen que ver con lo que está haciendo. Si estáis programando o trabajando en un juego, céntrate solo en eso.`; };
 SIDE.find(g=>g[0]==='AJUSTES')[1].push(['Mor habla por su cuenta: '+(MEM.iniciativa===true?'sí':'no'),function(){ MEM.iniciativa=MEM.iniciativa!==true; saveMem(); toast(MEM.iniciativa?'Mor podrá hablarte por su cuenta de vez en cuando':'Mor ya no te interrumpirá: solo responde cuando le hablas'); this&&0; const g=SIDE.find(x=>x[0]==='AJUSTES')[1].find(x=>/habla por su cuenta/.test(x[0])); if(g) g[0]='Mor habla por su cuenta: '+(MEM.iniciativa?'sí':'no'); renderSide(); }]);
 renderSide();
+
+/* =====================================================================
+   95. PRUEBA DE JUGAR DE VERDAD (como un jugador)
+   Todo juego expone window.__juego={estado,puntos,vidas,jugador:{x,y}}.
+   La prueba: empieza la partida, mantiene pulsadas las teclas y los botones
+   táctiles, comprueba que el jugador se mueve y que pasa algo (puntos, vidas,
+   fin), y mira la pantalla. Los fallos los arregla el agente por partes.
+   ===================================================================== */
+const PRUEBA_JUEGO_REGLA=`
+GANCHO DE PRUEBA OBLIGATORIO (sin él el juego NO se da por terminado): en cada frame actualiza
+window.__juego = { estado:'inicio'|'jugando'|'pausa'|'fin', puntos:<número>, vidas:<número o null>, jugador:{x:<número>, y:<número>, z:<número si es 3D>} }
+(con la posición REAL del jugador en el mundo). Debe empezar en 'inicio' y pasar a 'jugando' al pulsar el botón JUGAR, Enter, Espacio o al tocar la pantalla.
+Las teclas se leen con addEventListener('keydown'/'keyup') en window guardando un mapa de teclas pulsadas (e.code), y el movimiento se aplica en el bucle mientras la tecla siga pulsada.
+Los botones táctiles usan pointerdown/pointerup (y pointerleave/pointercancel) y llevan data-k con el código de la tecla que imitan (por ejemplo data-k="ArrowLeft").`;
+const _testGame95=testGame;
+testGame=async function(html,assets,opts={}){
+  const inject=`<script>window.__errs=[];window.onerror=function(m,s,l,c){__errs.push(m+' (línea '+l+')');};addEventListener('unhandledrejection',function(e){__errs.push('promesa: '+((e.reason&&e.reason.message)||e.reason));});var __ce=console.error;console.error=function(){try{__errs.push('console.error: '+[].map.call(arguments,String).join(' ').slice(0,200));}catch(e){}__ce.apply(console,arguments);};<\/script>`;
+  let doc=htmlWithAssets(html,assets); doc=/<head[^>]*>/i.test(doc)?doc.replace(/<head[^>]*>/i,m=>m+inject):inject+doc;
+  const f=document.createElement('iframe'); f.style.cssText='position:fixed;left:-3000px;top:0;width:420px;height:760px;border:0;opacity:0;pointer-events:none';
+  f.srcdoc=doc; document.body.appendChild(f); await sleep(3500);
+  const probs=[], notas=[]; let shot=null, shot0=null;
+  try{ const w=f.contentWindow, d=f.contentDocument; const J=()=>{ try{ return w.__juego?JSON.parse(JSON.stringify(w.__juego)):null; }catch(e){ return null; } };
+    const snap=()=>{ const cvs=[...d.querySelectorAll('canvas')].sort((a,b)=>b.width*b.height-a.width*a.height); if(!cvs[0]) return null; try{ const s=document.createElement('canvas'); const k=Math.min(1,480/cvs[0].width); s.width=Math.max(1,cvs[0].width*k); s.height=Math.max(1,cvs[0].height*k); s.getContext('2d').drawImage(cvs[0],0,0,s.width,s.height); return s.toDataURL('image/jpeg',.7).split(',')[1]; }catch(e){ return null; } };
+    const tecla=(t,c)=>{ const o={code:c,key:c==='Space'?' ':c.replace(/^Key/,'').toLowerCase().length===1?c.replace(/^Key/,'').toLowerCase():c,bubbles:true}; try{ (d.activeElement||d.body).dispatchEvent(new w.KeyboardEvent(t,o)); }catch(e){} };  // como un teclado de verdad: al elemento con el foco, y sube hasta window
+    const mantener=async(c,ms)=>{ tecla('keydown',c); await sleep(ms); tecla('keyup',c); };
+    const toque=(el,t,x,y)=>{ try{ el.dispatchEvent(new w.PointerEvent(t,{bubbles:true,clientX:x,clientY:y,pointerId:1,pointerType:'touch',isPrimary:true})); }catch(e){} try{ el.dispatchEvent(new w.MouseEvent(t.replace('pointer','mouse'),{bubbles:true,clientX:x,clientY:y})); }catch(e){} };
+    shot0=snap(); const j0=J();
+    if(!j0) probs.push('Falta el gancho de prueba window.__juego (estado, puntos, vidas, jugador:{x,y}) actualizado en cada frame: sin él no se puede comprobar que el juego se juega.');
+    // 1) empezar
+    const btn=[...d.querySelectorAll('button,[role=button],.btn,.boton')].find(b=>/jugar|empezar|start|play|comenzar|inicio/i.test(b.textContent||''))||d.querySelector('button');
+    if(btn) try{ btn.click(); }catch(e){}
+    const cv=d.querySelector('canvas'); if(cv){ const r=cv.getBoundingClientRect(); toque(cv,'pointerdown',r.left+r.width/2,r.top+r.height/2); toque(cv,'pointerup',r.left+r.width/2,r.top+r.height/2); try{ cv.click(); }catch(e){} }
+    tecla('keydown','Enter'); tecla('keyup','Enter'); await sleep(150); tecla('keydown','Space'); tecla('keyup','Space'); await sleep(900);
+    let j1=J(); if(j0&&j1&&j1.estado!=='jugando') probs.push(`La partida no empieza: tras pulsar JUGAR, Enter, Espacio y tocar la pantalla, __juego.estado sigue en «${j1.estado}».`);
+    // 2) moverse con el teclado (manteniendo la tecla)
+    if(j1&&j1.jugador){ const movs=[]; for(const c of ['ArrowRight','ArrowLeft','ArrowUp','KeyD','KeyA','KeyW']){ const a=J(); await mantener(c,700); const b=J(); if(a&&b&&a.jugador&&b.jugador){ const dd=Math.hypot(b.jugador.x-a.jugador.x,b.jugador.y-a.jugador.y,(b.jugador.z||0)-(a.jugador.z||0)); movs.push([c,dd]); } }
+      if(!movs.some(([c,dd])=>dd>1)) probs.push('El jugador NO se mueve al mantener pulsadas las flechas ni WASD (su posición en __juego.jugador no cambia). Revisa la lectura de teclas y que el movimiento se aplique en el bucle.');
+      else notas.push('Se mueve con: '+movs.filter(([c,dd])=>dd>1).map(m=>m[0]).join(', '));
+      // táctil
+      const tb=[...d.querySelectorAll('[data-k]')].filter(b=>/Arrow|Key/.test(b.dataset.k));
+      if(tb.length){ let ok=false; for(const b of tb.slice(0,4)){ const a=J(), r=b.getBoundingClientRect(); toque(b,'pointerdown',r.left+5,r.top+5); await sleep(600); toque(b,'pointerup',r.left+5,r.top+5); const c=J(); if(a&&c&&Math.hypot(c.jugador.x-a.jugador.x,c.jugador.y-a.jugador.y,(c.jugador.z||0)-(a.jugador.z||0))>1){ ok=true; break; } }
+        if(!ok) probs.push('Los botones táctiles (data-k) no mueven al jugador al mantenerlos pulsados (usa pointerdown/pointerup).'); }
+      else if(!opts.sinTactil) probs.push('No hay botones táctiles en pantalla (con data-k): en el móvil no se puede jugar.'); }
+    // 3) jugar unos segundos al azar y ver que pasa algo
+    const a=J(); for(let i=0;i<8;i++){ await mantener(['ArrowRight','ArrowLeft','Space','ArrowUp'][i%4],500); }
+    const b=J(); if(a&&b&&b.estado==='jugando'&&a.puntos===b.puntos&&a.vidas===b.vidas) notas.push('En 4 s de juego no han cambiado ni los puntos ni las vidas (puede ser normal si el juego es lento al empezar).');
+    shot=snap(); if(shot&&shot0&&shot===shot0) probs.push('La pantalla no cambia nada mientras se juega (¿el bucle de dibujo está parado?).');
+    probs.unshift(...(w.__errs||[]).slice(0,12));
+    if(!d.body||(!d.querySelector('canvas')&&d.body.innerText.trim().length<5)) probs.push('La página sale vacía');
+  }catch(e){ probs.push('No se pudo probar: '+e.message); }
+  f.remove(); return {errs:probs,shot,notas}; };
+// el creador de juegos: exige el gancho, y los fallos los arregla el agente editando por partes (no reescribe todo)
+window.GAMEDEV_GUIA_EXTRA=PRUEBA_JUEGO_REGLA;
 
 /* =====================================================================
    15. DESPERTAR
