@@ -185,6 +185,10 @@ body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area
 .lcPasos li{display:block!important;padding:0!important;border:0!important;background:none!important}.lcPasos .lcCmd .tbtn{color:var(--cel2)!important;background:transparent!important;border:1px solid rgba(255,255,255,.18)!important;flex:none}.lcPasos .row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.lcPasos select,.lcPasos input{background:var(--panel2);color:var(--cel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
 .lcPasos li button.tbtn{color:var(--cel2)!important;border:1px solid rgba(255,255,255,.18)!important;font-size:13px}.lcPasos li button.tbtn.on{color:#fff!important;background:var(--acc)!important;border-color:var(--acc)!important}
 .note.ok{color:#7ee2a8}.note.mal{color:#ff8f8f}
+.pvIt{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:rgba(255,255,255,.02)}.pvTop{display:flex;align-items:center;gap:8px}.pvTop a{margin-left:auto;color:var(--amber);font-size:13px}
+.pvTag{font-size:11px;background:rgba(255,90,31,.18);color:#ffb08f;border-radius:10px;padding:1px 7px}.pvIt small{display:block;color:var(--dim);margin-top:4px}.pvEst.ok{color:#7ee2a8!important}.pvEst.mal{color:#ff8f8f!important}
+.pvIt input{background:var(--panel2);color:var(--cel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}.pvIt .row{display:flex;gap:6px;margin-top:6px}
+code.inl{background:rgba(0,0,0,.35);border-radius:5px;padding:1px 5px;font-size:12px}
 /* ===== Marca Rocket Jam ===== */
 body{background:radial-gradient(1200px 600px at 80% -10%,rgba(255,90,31,.08),transparent 60%),var(--bg)}
 h1,h2,h3,.ctit,.brand,.shead,.sbrand span{font-family:Fredoka,Inter,system-ui,sans-serif}
@@ -521,12 +525,22 @@ h1,h2,h3,.ctit,.brand,.shead,.sbrand span{font-family:Fredoka,Inter,system-ui,sa
       <div class="row"><label>Usarlo para <select id="lcModo"><option value="off">nada (apagado)</option><option value="codigo">el agente de código y crear juegos</option><option value="todo">todo, también el chat</option></select></label>
         <label>Memoria <select id="lcCtx"><option value="16384">16K (poca RAM)</option><option value="32768">32K (recomendado)</option><option value="65536">64K (mucha RAM)</option></select></label></div>
       <div class="note" id="lcEstado"></div>
-      <div class="row"><button class="tbtn on" id="lcGuardar">Guardar</button><button class="tbtn" id="lcProbar">Probar</button></div></li></ol>
+      <div class="row"><button class="tbtn on" id="lcGuardar">Guardar</button><button class="tbtn" id="lcProbar">Probar</button></div></li>
+    <li><b>Usarlo también desde el móvil</b> (opcional). En el ordenador, instala <i>cloudflared</i> (Windows: <code class="inl">winget install Cloudflare.cloudflared</code> · Mac: <code class="inl">brew install cloudflared</code>) y deja abierta una terminal con:
+      <div class="lcCmd"><span>Abre un túnel seguro (https) hacia tu Ollama:</span><code>cloudflared tunnel --url http://localhost:11434 --http-host-header="localhost:11434"</code><button class="tbtn" data-copy>Copiar</button></div>
+      <small>Saldrá una dirección como <i>https://algo-algo.trycloudflare.com</i>. Pégala aquí y guarda: se copia sola al móvil con la sincronización. No gasta nada de vuestra cuenta de Cloudflare (ni hace falta cuenta). La dirección cambia cada vez que abres el túnel, y mientras esté abierto cualquiera que la conozca podría usar vuestro Ollama: no la compartas y cierra la terminal cuando no lo uses.</small>
+      <div class="row"><input type="text" id="lcRemoto" style="flex:1" placeholder="https://….trycloudflare.com (dirección para el móvil)"></div></li>
+  </ol>
+</div>
+<div class="sheet" id="sheetProv"><button class="close" data-close>×</button>
+  <h3 style="margin-top:0">CEREBROS GRATIS</h3>
+  <div class="note" style="margin-top:0">Una llave gratuita de cada servicio: cuantas más pongáis, más difícil es que Mor se quede sin cerebro. <b>Groq</b> y <b>Cerebras</b> son los más rápidos y Mor los usa primero para las respuestas del chat; el resto, de respaldo. Para programar va primero vuestro <b>cerebro local (Ollama)</b>. Cada llave la crea el dueño de la cuenta en la web del servicio (enlace «Conseguir llave»); pégala y pulsa Probar. Se guardan solo en vuestros aparatos y viajan cifradas con la sincronización.</div>
+  <div id="pvLista"></div>
 </div>
 <div class="sheet" id="sheetTools"><button class="close" data-close>×</button><h3 style="margin-top:0">HERRAMIENTAS Y AJUSTES</h3><div class="note" style="margin-top:0">Todo esto también se lo puedes pedir a Mor en el chat, o con <b>/</b>.</div><div id="toolsBox"></div></div>
 <div class="sheet" id="sheetSync"><button class="close" data-close>×</button>
   <h3 style="margin-top:0">SINCRONIZAR Y COPIA DE SEGURIDAD</h3>
-  <div class="note" style="margin-top:0">Mor guarda su memoria, tus chats, rutina, apuntes, flashcards, skills y llaves en un repo <b>privado</b> de tu GitHub («mor-datos»), <b>cifrado</b> con tu contraseña: nadie más puede leerlo, ni GitHub. Así eres el mismo Mor en el móvil y en el ordenador, y si se borra el navegador no pierdes nada.</div>
+  <div class="note" style="margin-top:0">Mor guarda su memoria, tus chats, rutina, proyectos, skills y llaves en un repo <b>privado</b> de tu GitHub («mor-datos»), <b>cifrado</b> con tu contraseña: nadie más puede leerlo, ni GitHub. Así eres el mismo Mor en el móvil y en el ordenador, y si se borra el navegador no pierdes nada.</div>
   <div class="note">Usa la misma contraseña en todos tus aparatos (la de entrar a Mor). Necesita tu token de GitHub en Conectores.</div>
   <div class="row"><input type="password" id="syncPass" placeholder="Contraseña (la de entrar a Mor)" style="flex:1" autocomplete="current-password"><button class="tbtn on" id="syncGo">Guardar y sincronizar</button></div>
   <div class="row"><button class="tbtn" id="syncNow">Sincronizar ahora</button><span class="note" id="syncEstado" style="margin:0"></span></div>
@@ -1232,7 +1246,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v24</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v25</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1396,7 +1410,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v24 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v25 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3943,7 +3957,12 @@ ATAJOS.splice(2,0,['Agente de código',()=>Agente.elegir('')]); renderSide();
    - «todo»: también el chat (Gemini queda de respaldo)
    ===================================================================== */
 const Local={
-  cfg(){ const c=Conn.get(); return {url:(c.lcUrl||'http://localhost:11434').replace(/\/+$/,''),model:c.lcModel||'',modo:c.lcModo||'off',ctx:+c.lcCtx||32768}; },
+  cfg(){ const c=Conn.get(); return {url:(c.lcUrl||'http://localhost:11434').replace(/\/+$/,''),remoto:(c.lcRemoto||'').replace(/\/+$/,''),model:c.lcModel||'',modo:c.lcModo||'off',ctx:+c.lcCtx||32768}; },
+  _base:null,_baseAt:0,
+  async base(){ if(this._base&&Date.now()-this._baseAt<300000) return this._base; const c=this.cfg();
+    for(const u of [c.url,c.remoto].filter(Boolean)){ const ac=new AbortController(), to=setTimeout(()=>ac.abort(),3500);
+      try{ const r=await fetch(u+'/api/tags',{signal:ac.signal}); clearTimeout(to); if(r.ok){ this._base=u; this._baseAt=Date.now(); return u; } }catch(e){ clearTimeout(to); } }
+    this._base=null; throw new Error('no llego al ordenador con Ollama'); },
   on(){ const c=this.cfg(); return c.modo!=='off'&&!!c.model&&!this.caido(); },
   codigo(){ return this.on(); }, todo(){ return this.on()&&this.cfg().modo==='todo'; },
   _caido:0, caido(){ return Date.now()<this._caido; }, marcarCaido(){ this._caido=Date.now()+60000; },
@@ -3957,12 +3976,12 @@ const Local={
   peticion(body,stream){ const c=this.cfg(), gc=body.generationConfig||{}; const r={model:c.model,messages:this.mensajes(body),stream,options:{temperature:gc.temperature??.4,num_ctx:c.ctx}};
     if(gc.responseMimeType==='application/json') r.format=gc.responseSchema?this.esquema(gc.responseSchema):'json'; if(gc.maxOutputTokens) r.options.num_predict=Math.min(gc.maxOutputTokens,32768); return r; },
   async gen(body,timeout=600000){ const c=this.cfg(); const ac=new AbortController(), to=setTimeout(()=>ac.abort(),timeout);
-    try{ let r=await fetch(c.url+'/api/chat',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(this.peticion(body,false))});
+    try{ let r=await fetch((await this.base())+'/api/chat',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(this.peticion(body,false))});
       if(!r.ok){ const e=await r.text(); if(/image|vision|multimodal/i.test(e)&&this.vision!==false){ this.vision=false; clearTimeout(to); return this.gen(body,timeout); } throw new Error('Ollama '+r.status+' '+e.slice(0,100)); }
       const j=await r.json(); clearTimeout(to); this.ult='local:'+c.model; return {text:(j.message&&j.message.content||'').replace(/^<think>[\s\S]*?<\/think>\s*/,''),finish:j.done_reason==='length'?'MAX_TOKENS':'STOP'}; }
-    catch(e){ clearTimeout(to); if(e.name!=='AbortError'||!PARAR.on) this.marcarCaido(); throw e; } },
+    catch(e){ clearTimeout(to); this._base=null; if(e.name!=='AbortError'||!PARAR.on) this.marcarCaido(); throw e; } },
   async stream(body,onText){ const c=this.cfg(); const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),20000);
-    try{ const r=await fetch(c.url+'/api/chat',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(this.peticion(body,true))});
+    try{ const r=await fetch((await this.base())+'/api/chat',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(this.peticion(body,true))});
       if(!r.ok) throw new Error('Ollama '+r.status);
       const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', full='', piensa=false;
       while(true){ const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i;
@@ -3970,17 +3989,17 @@ const Local={
           if(!t) continue; if(t.includes('<think>')) piensa=true; if(piensa){ if(t.includes('</think>')){ piensa=false; t=t.split('</think>').pop(); } else continue; }
           if(!full){ clearTimeout(to); to=setTimeout(()=>ac.abort(),300000); } full+=t; onText(t); } }
       clearTimeout(to); if(full){ modelOk='local:'+c.model; return full; } return null; }
-    catch(e){ clearTimeout(to); this.marcarCaido(); return null; } },
+    catch(e){ clearTimeout(to); this._base=null; this.marcarCaido(); return null; } },
   async modelos(url){ const r=await fetch((url||this.cfg().url)+'/api/tags'); if(!r.ok) throw new Error('Ollama responde '+r.status); return ((await r.json()).models||[]).map(m=>({nombre:m.name,gb:m.size?(m.size/1e9).toFixed(1):'?'})); },
   // pantalla de configuración
-  async abrir(){ cierraPaneles(); const c=this.cfg(); $('lcUrl').value=c.url; $('lcModo').value=c.modo; $('lcCtx').value=c.ctx; $('lcOrigen').textContent=location.origin;
+  async abrir(){ cierraPaneles(); const c=this.cfg(); $('lcUrl').value=c.url; $('lcRemoto').value=c.remoto; $('lcModo').value=c.modo; $('lcCtx').value=c.ctx; $('lcOrigen').textContent=location.origin;
     $('lcOrigen2').textContent=location.origin; $('sheetLocal').classList.add('open'); this.listar(); },
   async listar(){ const sel=$('lcModel'), est=$('lcEstado'); est.textContent='Buscando la IA de tu ordenador…'; est.className='note';
-    try{ const L=await this.modelos($('lcUrl').value.trim().replace(/\/+$/,'')); const cur=this.cfg().model;
+    try{ const u1=$('lcUrl').value.trim().replace(/\/+$/,''), u2=$('lcRemoto').value.trim().replace(/\/+$/,''); let L, via=u1; try{ L=await this.modelos(u1); }catch(e){ if(!u2) throw e; L=await this.modelos(u2); via=u2; } const cur=this.cfg().model;
       sel.innerHTML=L.length?L.map(m=>`<option value="${esc(m.nombre)}"${m.nombre===cur?' selected':''}>${esc(m.nombre)} · ${m.gb} GB</option>`).join(''):'<option value="">(no hay modelos: descarga uno, paso 2)</option>';
-      est.textContent=L.length?'Conectado. '+L.length+' modelo'+(L.length>1?'s':'')+' en tu ordenador.':'Conectado, pero no hay ningún modelo descargado todavía.'; est.className='note ok'; }
+      est.textContent=L.length?'Conectado'+(via!==u1?' a través de la dirección para el móvil':'')+'. '+L.length+' modelo'+(L.length>1?'s':'')+' en tu ordenador.':'Conectado, pero no hay ningún modelo descargado todavía.'; est.className='note ok'; }
     catch(e){ sel.innerHTML='<option value="">—</option>'; est.textContent='No llego a la IA de tu ordenador. Comprueba los pasos 1 y 3 (¿Ollama está abierto? ¿Has puesto el permiso para esta web?).'; est.className='note mal'; } },
-  guardar(){ Conn.set({lcUrl:$('lcUrl').value.trim()||'http://localhost:11434',lcModel:$('lcModel').value,lcModo:$('lcModo').value,lcCtx:+$('lcCtx').value||32768}); this._caido=0; this.vision=undefined;
+  guardar(){ Conn.set({lcUrl:$('lcUrl').value.trim()||'http://localhost:11434',lcRemoto:$('lcRemoto').value.trim(),lcModel:$('lcModel').value||Conn.get().lcModel||'',lcModo:$('lcModo').value,lcCtx:+$('lcCtx').value||32768}); this._caido=0; this._base=null; this.vision=undefined;
     toast(this.on()?'Cerebro local activado ('+(this.cfg().modo==='todo'?'chat y código':'solo código')+')':'Cerebro local desactivado'); },
   async probar(){ this.guardar(); const est=$('lcEstado'); est.textContent='Probando… (la primera vez tarda porque carga el modelo en memoria)'; est.className='note'; const t0=Date.now();
     try{ const r=await this.gen({contents:[{role:'user',parts:[{text:'Responde solo: "Listo, soy el cerebro local de Mor."'}]}]},180000);
@@ -4005,10 +4024,86 @@ genLong=async function(prompt,onPart){ if(!Local.on()) return _genLong90(prompt,
   catch(e){ if(PARAR.on) throw e; toast('Cerebro local falló ('+e.message+'); uso el de internet',4000); return _genLong90(prompt,onPart); } };
 // 3) el chat, si el modo es «todo»
 const _stream90=geminiStream;
-geminiStream=async function(body,onText){ if(Local.todo()){ const t=await Local.stream(body,onText); if(t) return t; } return _stream90(body,onText); };
+geminiStream=async function(body,onText){ return _stream90(body,onText); };
 SIDE.find(g=>g[0]==='AJUSTES')[1].unshift(['Cerebro local (Ollama)',()=>Local.abrir()]);
 CMDS.splice(2,0,['/local','Cerebro local en tu ordenador (Ollama)',()=>Local.abrir()]);
 const _sys90=systemPrompt; systemPrompt=function(extra){ return _sys90(extra)+(Local.on()?`\n· Estás usando el cerebro local de Rocket Jam (${Local.cfg().model}, en su ordenador): sin límites.`:''); };
+renderSide();
+
+/* =====================================================================
+   91. CEREBROS GRATIS: una llave de cada servicio gratuito
+   - respuestas rápidas del chat: Groq y Cerebras primero (los más rápidos), luego Gemini y el resto
+   - programar: Ollama (cerebro local) primero; si no está, Gemini y el resto
+   ===================================================================== */
+const PROV=[
+  {id:'groq',nombre:'Groq',url:'https://api.groq.com/openai/v1',web:'https://console.groq.com/keys',rapido:true,pref:[/gpt-oss-120b/i,/llama-3\.3-70b/i,/kimi|qwen3/i,/llama/i]},
+  {id:'cerebras',nombre:'Cerebras',url:'https://api.cerebras.ai/v1',web:'https://cloud.cerebras.ai/',rapido:true,pref:[/gpt-oss-120b/i,/qwen-3.*(235|480)/i,/llama-3\.3-70b/i,/llama|qwen/i]},
+  {id:'mistral',nombre:'Mistral',url:'https://api.mistral.ai/v1',web:'https://console.mistral.ai/api-keys',pref:[/mistral-medium-latest/i,/mistral-large-latest/i,/mistral-small-latest/i]},
+  {id:'github',nombre:'GitHub Models',url:'https://models.github.ai/inference',web:'https://github.com/settings/personal-access-tokens/new',modelos:'https://models.github.ai/catalog/models',nota:'Token con el permiso «Models: read»',pref:[/gpt-4\.1-mini/i,/gpt-4o-mini/i,/gpt-4\.1|gpt-4o/i]},
+  {id:'sambanova',nombre:'SambaNova',url:'https://api.sambanova.ai/v1',web:'https://cloud.sambanova.ai/apis',pref:[/llama-4-maverick/i,/deepseek-v3/i,/llama-3\.3-70b/i,/llama/i]},
+  {id:'cohere',nombre:'Cohere',url:'https://api.cohere.ai/compatibility/v1',web:'https://dashboard.cohere.com/api-keys',pref:[/command-a-0/i,/command-a/i,/command-r-plus/i,/command/i]},
+  {id:'hf',nombre:'Hugging Face',url:'https://router.huggingface.co/v1',web:'https://huggingface.co/settings/tokens',nota:'Token de tipo «Read» con permiso de inferencia',pref:[/gpt-oss-120b/i,/qwen3.*(235|480|coder)/i,/llama-3\.3-70b/i,/qwen|llama/i]}
+];
+const Prov={
+  key:p=>Conn.get()['pv_'+p.id+'_key']||'', model:p=>Conn.get()['pv_'+p.id+'_model']||'',
+  listos(){ return PROV.filter(p=>this.key(p)&&this.model(p)&&!agotado('pv:'+p.id)); },
+  sinImagenNiHerramientas:body=>!(body.contents||[]).some(c=>(c.parts||[]).some(p=>p.inline_data))&&!body.tools,
+  async elegirModelo(p,key){ const H={Authorization:'Bearer '+key}; const r=await fetch(p.modelos||p.url+'/models',{headers:H});
+    if(r.status===401||r.status===403) throw new Error('llave no válida'); if(!r.ok) throw new Error('responde '+r.status);
+    const j=await r.json(); const L=(Array.isArray(j)?j:(j.data||j.models||[])).map(m=>m.id||m.name).filter(Boolean).filter(n=>!/embed|whisper|tts|guard|rerank|vision-only|audio|image|ocr|moderation|transcri/i.test(n));
+    for(const re of p.pref){ const m=L.find(n=>re.test(n)); if(m) return m; } if(!L.length) throw new Error('no hay modelos'); return L[0]; },
+  async chat(p,body,timeout=30000){ const ac=new AbortController(), to=setTimeout(()=>ac.abort(),timeout);
+    try{ const r=await fetch(p.url+'/chat/completions',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+this.key(p)},
+        body:JSON.stringify({model:this.model(p),messages:orMsgs(body),temperature:(body.generationConfig||{}).temperature??.5,max_tokens:Math.min((body.generationConfig||{}).maxOutputTokens||8000,8000)})});
+      clearTimeout(to); if(!r.ok){ if(r.status===429||r.status===402||r.status===503) marcarAgotado('pv:'+p.id,'rate limit'); throw new Error(p.nombre+' '+r.status); }
+      const j=await r.json(); let t=(j.choices?.[0]?.message?.content||'').replace(/^<think>[\s\S]*?<\/think>\s*/,'').trim();
+      if((body.generationConfig||{}).responseMimeType==='application/json'){ t=t.replace(/^```(json)?\s*|```\s*$/g,'').trim(); const a=t.search(/[\[{]/); if(a>0) t=t.slice(a); }
+      if(!t) throw new Error(p.nombre+' vacío'); modelOk='pv:'+p.id; return t; }
+    catch(e){ clearTimeout(to); throw e; } },
+  async stream(p,body,onText){ const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),8000);
+    try{ const r=await fetch(p.url+'/chat/completions',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+this.key(p)},
+        body:JSON.stringify({model:this.model(p),messages:orMsgs(body),temperature:(body.generationConfig||{}).temperature??.7,stream:true,max_tokens:4000})});
+      if(!r.ok){ clearTimeout(to); if(r.status===429||r.status===402||r.status===503) marcarAgotado('pv:'+p.id,'rate limit'); return null; }
+      const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', full='', piensa=false;
+      while(true){ const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i;
+        while((i=buf.indexOf('\n'))>=0){ const line=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(!line.startsWith('data:')||line.includes('[DONE]')) continue;
+          let t=''; try{ t=JSON.parse(line.slice(5)).choices?.[0]?.delta?.content||''; }catch(e){} if(!t) continue;
+          if(t.includes('<think>')) piensa=true; if(piensa){ if(t.includes('</think>')){ piensa=false; t=t.split('</think>').pop(); } else continue; }
+          if(!full){ clearTimeout(to); to=setTimeout(()=>ac.abort(),90000); } full+=t; onText(t); } }
+      clearTimeout(to); if(full){ modelOk='pv:'+p.id+':'+this.model(p); return full; } return null; }
+    catch(e){ clearTimeout(to); return null; } },
+  // pantalla
+  abrir(){ cierraPaneles(); const c=Conn.get();
+    $('pvLista').innerHTML=PROV.map(p=>`<div class="pvIt" data-id="${p.id}"><div class="pvTop"><b>${p.nombre}</b>${p.rapido?'<span class="pvTag">muy rápido</span>':''}<a href="${p.web}" target="_blank" rel="noopener">Conseguir llave</a></div>
+      ${p.nota?`<small>${p.nota}</small>`:''}<div class="row"><input type="text" class="pvKey" placeholder="Pega aquí la llave de ${p.nombre}" value="${c['pv_'+p.id+'_key']?'••••••••':''}" autocomplete="off" style="flex:1"><button class="tbtn pvProbar">Probar</button></div>
+      <small class="pvEst">${c['pv_'+p.id+'_model']?'Listo · '+esc(c['pv_'+p.id+'_model']):'Sin llave'}</small></div>`).join('');
+    $('pvLista').querySelectorAll('.pvIt').forEach(d=>{ const p=PROV.find(x=>x.id===d.dataset.id);
+      d.querySelector('.pvProbar').onclick=async()=>{ let k=d.querySelector('.pvKey').value.trim(); if(/^•+$/.test(k)) k=this.key(p); const est=d.querySelector('.pvEst');
+        if(!k){ Conn.set({['pv_'+p.id+'_key']:'',['pv_'+p.id+'_model']:''}); est.textContent='Sin llave'; return; }
+        est.textContent='Probando…'; est.className='pvEst';
+        try{ const m=await this.elegirModelo(p,k); Conn.set({['pv_'+p.id+'_key']:k,['pv_'+p.id+'_model']:m}); const t0=Date.now();
+          await this.chat(p,{contents:[{role:'user',parts:[{text:'Responde solo: ok'}]}],generationConfig:{maxOutputTokens:20}},20000);
+          est.textContent=`Listo · ${m} · responde en ${((Date.now()-t0)/1000).toFixed(1)} s`; est.className='pvEst ok'; d.querySelector('.pvKey').value='••••••••'; }
+        catch(e){ est.textContent=(/Failed to fetch|NetworkError|Load failed/i.test(e.message)?'Este servicio no deja que una web lo use directamente (bloqueo del navegador). Prueba otro.':'No funciona: '+e.message); est.className='pvEst mal'; } }; });
+    $('sheetProv').classList.add('open'); }
+};
+// --- chat (respuestas rápidas): Groq/Cerebras -> Gemini -> resto -> OpenRouter
+const _stream91=geminiStream;
+geminiStream=async function(body,onText){
+  if(Local.todo()){ const t=await Local.stream(body,onText); if(t) return t; }
+  if(Prov.sinImagenNiHerramientas(body)) for(const p of Prov.listos().filter(p=>p.rapido)){ const t=await Prov.stream(p,body,onText); if(t) return t; }
+  try{ const t=await _stream91(body,onText); if(t) return t; }catch(e){ var err=e; }
+  if(Prov.sinImagenNiHerramientas(body)) for(const p of Prov.listos().filter(p=>!p.rapido)){ const t=await Prov.stream(p,body,onText); if(t) return t; }
+  if(err) throw err; return null; };
+// el propio stream de Gemini ya no debe volver a llamar a Local (lo hace este)
+// --- tareas internas y de código: lo de siempre y, si todo falla, los cerebros gratis
+const _gemini91=gemini;
+gemini=async function(body,models=MODELOS_RAPIDOS,timeout=20000){
+  try{ return await _gemini91(body,models,timeout); }
+  catch(e){ if(PARAR.on) throw e; const L=Prov.listos(); if(!L.length||!Prov.sinImagenNiHerramientas(body)) throw e;
+    for(const p of models===MODELOS_CODIGO?[...L].reverse():L){ try{ return await Prov.chat(p,body,Math.max(timeout,60000)); }catch(x){} } throw e; } };
+SIDE.find(g=>g[0]==='AJUSTES')[1].unshift(['Cerebros gratis (llaves)',()=>Prov.abrir()]);
+CMDS.splice(3,0,['/cerebros','Llaves de los cerebros gratis',()=>Prov.abrir()]);
 renderSide();
 
 /* =====================================================================
