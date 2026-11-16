@@ -1266,7 +1266,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v26</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v26b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1430,7 +1430,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v26 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v26b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -4066,6 +4066,7 @@ const PROV=[
 ];
 const Prov={
   key:p=>Conn.get()['pv_'+p.id+'_key']||'', model:p=>Conn.get()['pv_'+p.id+'_model']||'',
+  extra(p){ const m=this.model(p); return /gpt-oss/i.test(m)&&/groq|cerebras/.test(p.id)?{reasoning_effort:'low'}:{}; },
   listos(){ return PROV.filter(p=>this.key(p)&&this.model(p)&&!agotado('pv:'+p.id)); },
   sinImagenNiHerramientas:body=>!(body.contents||[]).some(c=>(c.parts||[]).some(p=>p.inline_data))&&!body.tools,
   async elegirModelo(p,key){ const H={Authorization:'Bearer '+key}; const r=await fetch(p.modelos||p.url+'/models',{headers:H});
@@ -4074,7 +4075,7 @@ const Prov={
     for(const re of p.pref){ const m=L.find(n=>re.test(n)); if(m) return m; } if(!L.length) throw new Error('no hay modelos'); return L[0]; },
   async chat(p,body,timeout=30000){ const ac=new AbortController(), to=setTimeout(()=>ac.abort(),timeout);
     try{ const r=await fetch(p.url+'/chat/completions',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+this.key(p)},
-        body:JSON.stringify({model:this.model(p),messages:orMsgs(body),temperature:(body.generationConfig||{}).temperature??.5,max_tokens:Math.min((body.generationConfig||{}).maxOutputTokens||8000,8000)})});
+        body:JSON.stringify(Object.assign({model:this.model(p),messages:orMsgs(body),temperature:(body.generationConfig||{}).temperature??.5,max_tokens:Math.max(1500,Math.min((body.generationConfig||{}).maxOutputTokens||8000,8000))},this.extra(p)))});
       clearTimeout(to); if(!r.ok){ if(r.status===429||r.status===402||r.status===503) marcarAgotado('pv:'+p.id,'rate limit'); throw new Error(p.nombre+' '+r.status); }
       const j=await r.json(); let t=(j.choices?.[0]?.message?.content||'').replace(/^<think>[\s\S]*?<\/think>\s*/,'').trim();
       if((body.generationConfig||{}).responseMimeType==='application/json'){ t=t.replace(/^```(json)?\s*|```\s*$/g,'').trim(); const a=t.search(/[\[{]/); if(a>0) t=t.slice(a); }
@@ -4082,7 +4083,7 @@ const Prov={
     catch(e){ clearTimeout(to); throw e; } },
   async stream(p,body,onText){ const ac=new AbortController(); let to=setTimeout(()=>ac.abort(),8000);
     try{ const r=await fetch(p.url+'/chat/completions',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+this.key(p)},
-        body:JSON.stringify({model:this.model(p),messages:orMsgs(body),temperature:(body.generationConfig||{}).temperature??.7,stream:true,max_tokens:4000})});
+        body:JSON.stringify(Object.assign({model:this.model(p),messages:orMsgs(body),temperature:(body.generationConfig||{}).temperature??.7,stream:true,max_tokens:4000},this.extra(p)))});
       if(!r.ok){ clearTimeout(to); if(r.status===429||r.status===402||r.status===503) marcarAgotado('pv:'+p.id,'rate limit'); return null; }
       const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', full='', piensa=false;
       while(true){ const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i;
@@ -4102,7 +4103,7 @@ const Prov={
         if(!k){ Conn.set({['pv_'+p.id+'_key']:'',['pv_'+p.id+'_model']:''}); est.textContent='Sin llave'; return; }
         est.textContent='Probando…'; est.className='pvEst';
         try{ const m=await this.elegirModelo(p,k); Conn.set({['pv_'+p.id+'_key']:k,['pv_'+p.id+'_model']:m}); const t0=Date.now();
-          await this.chat(p,{contents:[{role:'user',parts:[{text:'Responde solo: ok'}]}],generationConfig:{maxOutputTokens:20}},20000);
+          await this.chat(p,{contents:[{role:'user',parts:[{text:'Responde solo: ok'}]}],generationConfig:{maxOutputTokens:1500}},30000);
           est.textContent=`Listo · ${m} · responde en ${((Date.now()-t0)/1000).toFixed(1)} s`; est.className='pvEst ok'; d.querySelector('.pvKey').value='••••••••'; }
         catch(e){ est.textContent=(/Failed to fetch|NetworkError|Load failed/i.test(e.message)?'Este servicio no deja que una web lo use directamente (bloqueo del navegador). Prueba otro.':'No funciona: '+e.message); est.className='pvEst mal'; } }; });
     $('sheetProv').classList.add('open'); }
