@@ -1271,7 +1271,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v29c</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v29d</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1436,7 +1436,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v29c · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v29d · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3844,7 +3844,7 @@ CADA RESPUESTA es UNA sola acción en JSON:
 - leer {ruta, desde, hasta}: lee líneas numeradas (máximo 400 por vez). Lee antes de editar: nunca edites a ciegas.
 - buscar {texto}: busca un texto (o expresión regular) en todos los archivos; devuelve ruta:línea.
 - editar {ruta, buscar, reemplazar}: cambia un trozo EXACTO del archivo por otro. "buscar" tiene que copiarse letra a letra del archivo (sin los números de línea) y aparecer UNA sola vez; incluye 2-3 líneas de contexto para que sea único. Para cambios grandes, haz varias ediciones pequeñas.
-- crear {ruta, contenido}: archivo nuevo completo (o reescribir uno pequeño entero).
+- crear {ruta, contenido}: SOLO para archivos nuevos o muy pequeños (menos de 120 líneas). NUNCA reescribas entero un archivo grande: usa «editar» varias veces.
 - borrar {ruta}.
 - probar: abre el juego en un navegador, pulsa teclas y clics, y te devuelve los errores de la consola y una captura de la pantalla.
 - preguntar {mensaje}: solo si te falta una decisión que no puedes tomar tú (paras y esperas la respuesta).
@@ -3880,7 +3880,9 @@ const Agente={running:false, espera:null,
         if(hits.length===1){ L.splice(hits[0],k,...b.split('\n')); f.code=L.join('\n'); est.cambios[f.ruta]=1; est.editado=true; return `OK: editado ${f.ruta} (coincidencia ignorando espacios, línea ${hits[0]+1})`; }
         const pista=a.split('\n').find(l=>l.trim().length>8)||''; const cerca=pista?f.code.split('\n').map((l,i)=>[i+1,l]).filter(([i,l])=>l.includes(pista.trim().slice(0,30))).slice(0,3):[];
         return `ERROR: no encuentro ese trozo en ${f.ruta}. Vuelve a leer la zona y copia el texto exacto.${cerca.length?' Parecido en las líneas: '+cerca.map(c=>c[0]).join(', '):''}`; }
-      case 'crear':{ if(!x.ruta) return 'ERROR: falta ruta'; const f=F(x.ruta); if(f){ f.code=String(x.contenido||''); } else P.files.push({ruta:x.ruta,code:String(x.contenido||'')}); est.cambios[x.ruta]=1; est.editado=true; return 'OK: '+(f?'reescrito ':'creado ')+x.ruta+' ('+String(x.contenido||'').split('\n').length+' líneas)'; }
+      case 'crear':{ if(!x.ruta) return 'ERROR: falta ruta'; const f=F(x.ruta); const cont=String(x.contenido||'');
+        if(cont.trim().length<20) return 'ERROR: el contenido está vacío o cortado: no he escrito nada. Para cambiar un archivo que ya existe usa «editar» por partes.';
+        if(f&&f.code.split('\n').length>120) return `ERROR: ${f.ruta} tiene ${f.code.split('\n').length} líneas: no lo reescribas entero (se corta y se pierde el juego). Cámbialo con varias acciones «editar», trozo a trozo.`; if(f){ f.code=String(x.contenido||''); } else P.files.push({ruta:x.ruta,code:String(x.contenido||'')}); est.cambios[x.ruta]=1; est.editado=true; return 'OK: '+(f?'reescrito ':'creado ')+x.ruta+' ('+String(x.contenido||'').split('\n').length+' líneas)'; }
       case 'borrar':{ const i=P.files.findIndex(f=>f.ruta===x.ruta); if(i<0) return 'ERROR: no existe '+x.ruta; P.files.splice(i,1); est.cambios[x.ruta]=1; est.editado=true; return 'OK: borrado '+x.ruta; }
       case 'probar':{ const h=this.bundle(P); if(!h) return 'ERROR: el proyecto no tiene ningún .html para abrir'; const t=await testGame(h,[]); est.probado=true; est.editado=false; est.shot=t.shot||null; est.errs=t.errs;
         return (t.errs.length?'ERRORES EN LA CONSOLA:\n'+t.errs.join('\n'):'Sin errores en la consola.')+(t.shot?'\n(Te adjunto la captura de la pantalla: mírala y comprueba que se ve bien.)':'\n(No hay canvas para capturar.)'); }
@@ -3906,7 +3908,7 @@ const Agente={running:false, espera:null,
         const contenido=entero?'\n\nCONTENIDO ACTUAL DE LOS ARCHIVOS (ya lo tienes delante: NO uses «leer», edita directamente copiando el texto exacto, sin los números de línea):\n'+T2.map(f=>`===== ${f.ruta} =====\n`+this.numerar(f.code,1,f.code.split('\n').length)).join('\n'):'';
         const prompt=`PROYECTO: ${P.nombre||''}\nARCHIVOS:\n${files}${contenido}\n\nTAREA DEL EQUIPO: ${tarea}\n${est.plan.length?'\nTU PLAN:\n'+est.plan.map((p,k)=>(k+1)+') '+p).join('\n'):''}\n\nLO QUE HAS HECHO HASTA AHORA:\n${hist||'(nada todavía: empieza con el plan)'}\n\n${i>=MAX-4?'¡Te quedan muy pocos pasos! Termina ya con un resumen honesto de lo que falta.':''}Siguiente acción (JSON):`;
         const parts=[{text:prompt}]; if(est.shot) parts.unshift({inline_data:{mime_type:'image/jpeg',data:est.shot}});
-        let x; try{ const t=await gemini({systemInstruction:{parts:[{text:AG_REGLAS+'\n\nSOBRE EL ESTUDIO:\n'+estudioRJ()}]},contents:[{role:'user',parts}],generationConfig:{temperature:.2,responseMimeType:'application/json',responseSchema:AGSCHEMA}},MODELOS_CODIGO,120000);
+        let x; try{ const t=await gemini({systemInstruction:{parts:[{text:AG_REGLAS+'\n\nSOBRE EL ESTUDIO:\n'+estudioRJ()}]},contents:[{role:'user',parts}],generationConfig:{temperature:.2,maxOutputTokens:32768,responseMimeType:'application/json',responseSchema:AGSCHEMA}},MODELOS_CODIGO,120000);
           x=JSON.parse(t.replace(/^```(json)?|```$/g,'').trim()); }
         catch(e){ if(PARAR.on||!this.running) break; this.log(c,'No he podido pensar este paso ('+e.message+'). Reintento…','mal'); est.hist.push({a:'(fallo del cerebro)',o:'La respuesta anterior no era un JSON válido. Responde solo con el JSON de UNA acción.'}); await sleep(1500); continue; }
         est.shot=null;
