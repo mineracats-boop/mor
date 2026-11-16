@@ -175,6 +175,11 @@ body.vozFull .col{position:fixed;left:0;right:0;bottom:calc(24px + env(safe-area
   .col .sub{margin:0 10px;font-size:14px}
 }
 
+.agPlan{margin:8px 0 6px 18px;padding:0;font-size:13px;line-height:1.5;color:var(--dim)}.agPlan li.hecho{color:var(--cel2);text-decoration:line-through;opacity:.6}.agPlan li.ahora{color:#fff;font-weight:600}.agPlan li.ahora::marker{color:var(--acc)}
+.agLog{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:8px 10px;max-height:240px;overflow:auto}
+.agL{padding:1px 0;color:var(--dim)}.agL.piensa{color:var(--cel2);font-family:Inter,system-ui;font-size:13px;margin-top:4px}.agL.mal{color:#ff8f8f}.agL.ok{color:#7ee2a8}.agL.preg{color:var(--amber);font-family:Inter,system-ui;font-size:13px}
+.agRes{margin-top:10px;font-size:14px;line-height:1.5}.agDiff{margin-top:8px;font:12px ui-monospace,Menlo,monospace;background:rgba(0,0,0,.25);border-radius:8px;padding:6px 10px}.agDiff .mas{color:#7ee2a8}.agDiff .menos{color:#ff8f8f}
+.agTarea,.agResp{background:var(--panel2);color:var(--cel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:14px Inter,system-ui}
 /* ===== Marca Rocket Jam ===== */
 body{background:radial-gradient(1200px 600px at 80% -10%,rgba(255,90,31,.08),transparent 60%),var(--bg)}
 h1,h2,h3,.ctit,.brand,.shead,.sbrand span{font-family:Fredoka,Inter,system-ui,sans-serif}
@@ -1200,7 +1205,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v22</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v23</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1364,7 +1369,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v22 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v23 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3209,7 +3214,7 @@ window.fetch=function(u,o={}){ const url=String(u&&u.url||u);
   if(PARAR.on) return Promise.reject(new DOMException('Parado por ti','AbortError'));
   const ac=new AbortController(); if(o.signal){ if(o.signal.aborted) ac.abort(); else o.signal.addEventListener('abort',()=>ac.abort()); }
   PARAR.ctrls.add(ac); const p=_fetch60(u,Object.assign({},o,{signal:ac.signal})); p.then(()=>{},()=>{}).finally(()=>{}); return p; };
-const trabajando=()=>busy||!!(GameStudio.running||Taller3D.running||Dev.running||Projects.running);
+const trabajando=()=>busy||!!(GameStudio.running||Taller3D.running||Dev.running||Projects.running||(typeof Agente!=='undefined'&&Agente.running));
 function botonEnviar(){ const w=trabajando(), b=$('bSend'); b.disabled=false; b.classList.toggle('stop',w); b.textContent=w?'■':'OK'; b.title=w?'Parar':'Enviar'; }
 setInterval(botonEnviar,300);
 document.querySelector('.main .bottom').addEventListener('click',e=>{ if(e.target.closest('#bSend')&&trabajando()){ e.stopImmediatePropagation(); e.preventDefault(); PARAR.parar(); } },true);
@@ -3753,6 +3758,156 @@ const _apply88=Agenda.apply.bind(Agenda);
 Agenda.apply=function(acts){ const made=_apply88(acts); for(const a of acts){ const m=String(a).match(/^\s*estudio_dato\s*:\s*([\s\S]+)$/i); if(m){ MEM.estudio=estudioRJ()+'\n- '+m[1].trim(); saveMem(); } } return made; };
 const _sys88=systemPrompt; systemPrompt=function(extra){ return _sys88(extra)+`\n· {{estudio_dato: dato}} cuando el equipo te cuente algo nuevo y duradero del estudio o de sus juegos (un juego nuevo, una decisión, una fecha de lanzamiento), para que quede en lo que sabes de Rocket Jam.`; };
 renderSide();
+
+/* =====================================================================
+   89. AGENTE DE CÓDIGO (como Claude Code): planifica, lee, edita por partes,
+   prueba el juego, mira los errores y la pantalla, corrige y te lo entrega
+   ===================================================================== */
+const AGSCHEMA={type:'OBJECT',properties:{
+  pensamiento:{type:'STRING'}, plan:{type:'ARRAY',items:{type:'STRING'}}, paso:{type:'INTEGER'},
+  accion:{type:'STRING',enum:['listar','leer','buscar','editar','crear','borrar','probar','preguntar','terminar']},
+  ruta:{type:'STRING'}, desde:{type:'INTEGER'}, hasta:{type:'INTEGER'}, texto:{type:'STRING'},
+  buscar:{type:'STRING'}, reemplazar:{type:'STRING'}, contenido:{type:'STRING'}, mensaje:{type:'STRING'}},
+  required:['pensamiento','accion']};
+const AG_REGLAS=`Eres el agente de código de Rocket Jam (como Claude Code). Trabajas sobre los archivos de un proyecto de juego web (HTML, JavaScript, CSS, Three.js) con herramientas, paso a paso, hasta dejar la tarea TERMINADA y PROBADA.
+CADA RESPUESTA es UNA sola acción en JSON:
+- listar: lista de archivos con su número de líneas.
+- leer {ruta, desde, hasta}: lee líneas numeradas (máximo 400 por vez). Lee antes de editar: nunca edites a ciegas.
+- buscar {texto}: busca un texto (o expresión regular) en todos los archivos; devuelve ruta:línea.
+- editar {ruta, buscar, reemplazar}: cambia un trozo EXACTO del archivo por otro. "buscar" tiene que copiarse letra a letra del archivo (sin los números de línea) y aparecer UNA sola vez; incluye 2-3 líneas de contexto para que sea único. Para cambios grandes, haz varias ediciones pequeñas.
+- crear {ruta, contenido}: archivo nuevo completo (o reescribir uno pequeño entero).
+- borrar {ruta}.
+- probar: abre el juego en un navegador, pulsa teclas y clics, y te devuelve los errores de la consola y una captura de la pantalla.
+- preguntar {mensaje}: solo si te falta una decisión que no puedes tomar tú (paras y esperas la respuesta).
+- terminar {mensaje}: resumen claro para el equipo de lo que has hecho y de lo que deberían comprobar o mejorar.
+MÉTODO: 1) en el PRIMER paso escribe "plan" (3-8 pasos concretos); 2) investiga (listar, buscar, leer) lo justo; 3) edita por partes; 4) PRUEBA siempre después de editar; si hay errores o la captura muestra algo mal, corrígelo y vuelve a probar; 5) termina solo cuando funcione. Indica en "paso" por qué paso del plan vas.
+REGLAS DEL ESTUDIO: no dibujes gráficos con formas de código ni emojis como sustituto de imágenes reales: si faltan imágenes o modelos, nómbralos en el resumen final para que el equipo los haga. En juegos de apuntar y hacer clic, marca con una X pequeña en el suelo dónde colocar cada objeto. Avisa en el resumen de problemas de calidad (fondos borrosos, personajes que no pisan el suelo). No rompas lo que ya funciona; no reescribas archivos grandes enteros. Código moderno y limpio, sin dependencias nuevas salvo que hagan falta (CDN de unpkg o jsdelivr).
+En "pensamiento" explica en una o dos frases, en español, qué vas a hacer y por qué (lo verá el equipo).`;
+const Agente={running:false, espera:null,
+  textos:P=>P.files.filter(f=>!f.bin&&typeof f.code==='string'),
+  bundle(P){ const T=this.textos(P); const idx=T.find(f=>/(^|\/)index\.html?$/i.test(f.ruta))||T.find(f=>/\.html?$/i.test(f.ruta)); if(!idx) return null;
+    let h=idx.code; const base=idx.ruta.includes('/')?idx.ruta.replace(/[^/]+$/,''):'';
+    const find=r=>{ r=r.replace(/^\.\//,'').split('?')[0]; return T.find(f=>f.ruta===r||f.ruta===base+r); };
+    h=h.replace(/<script([^>]*)\ssrc=["']([^"']+)["']([^>]*)>\s*<\/script>/gi,(m,a,src,b)=>{ const f=find(src); return f?`<script${a}${b}>${f.code.replace(/<\/script/gi,'<\\/script')}<\/script>`:m; });
+    h=h.replace(/<link([^>]*)href=["']([^"']+\.css)["']([^>]*)>/gi,(m,a,href)=>{ const f=find(href); return f?`<style>${f.code}</style>`:m; });
+    return htmlWithAssets(h,P.files.filter(f=>f.bin)); },
+  numerar:(code,a,b)=>code.split('\n').slice(a-1,b).map((l,i)=>String(a+i).padStart(5)+'│'+l).join('\n'),
+  async ejecutar(P,x,est){ const T=this.textos(P), F=r=>T.find(f=>f.ruta===r)||T.find(f=>f.ruta.endsWith('/'+r)||r.endsWith('/'+f.ruta));
+    switch(x.accion){
+      case 'listar': return P.files.map(f=>f.bin?`${f.ruta} (imagen/modelo)`:`${f.ruta} (${f.code.split('\n').length} líneas)`).join('\n');
+      case 'leer':{ const f=F(x.ruta||''); if(!f) return 'ERROR: no existe '+x.ruta+'. Archivos: '+T.map(f=>f.ruta).join(', '); const n=f.code.split('\n').length; let a=Math.max(1,x.desde||1), b=Math.min(n,x.hasta||a+299); if(b-a>399) b=a+399;
+        return `${f.ruta} · líneas ${a}-${b} de ${n}\n`+this.numerar(f.code,a,b); }
+      case 'buscar':{ let re; try{ re=new RegExp(x.texto,'i'); }catch(e){ re=new RegExp(String(x.texto).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'); } const out=[];
+        T.forEach(f=>f.code.split('\n').forEach((l,i)=>{ if(out.length<50&&re.test(l)) out.push(`${f.ruta}:${i+1}: ${l.trim().slice(0,160)}`); })); return out.length?out.join('\n'):'Sin resultados para «'+x.texto+'»'; }
+      case 'editar':{ const f=F(x.ruta||''); if(!f) return 'ERROR: no existe '+x.ruta; const a=String(x.buscar||''), b=String(x.reemplazar??''); if(!a) return 'ERROR: falta "buscar"';
+        let n=f.code.split(a).length-1;
+        if(n===1){ f.code=f.code.replace(a,()=>b); est.cambios[f.ruta]=1; est.editado=true; return `OK: editado ${f.ruta} (${a.split('\n').length} líneas → ${b.split('\n').length})`; }
+        if(n>1) return `ERROR: ese trozo aparece ${n} veces en ${f.ruta}. Añade más contexto para que sea único.`;
+        // tolerante con los espacios
+        const norm=s=>s.split('\n').map(l=>l.trim()).join('\n').trim(); const L=f.code.split('\n'), k=a.split('\n').length, na=norm(a);
+        const hits=[]; for(let i=0;i+k<=L.length;i++) if(norm(L.slice(i,i+k).join('\n'))===na) hits.push(i);
+        if(hits.length===1){ L.splice(hits[0],k,...b.split('\n')); f.code=L.join('\n'); est.cambios[f.ruta]=1; est.editado=true; return `OK: editado ${f.ruta} (coincidencia ignorando espacios, línea ${hits[0]+1})`; }
+        const pista=a.split('\n').find(l=>l.trim().length>8)||''; const cerca=pista?f.code.split('\n').map((l,i)=>[i+1,l]).filter(([i,l])=>l.includes(pista.trim().slice(0,30))).slice(0,3):[];
+        return `ERROR: no encuentro ese trozo en ${f.ruta}. Vuelve a leer la zona y copia el texto exacto.${cerca.length?' Parecido en las líneas: '+cerca.map(c=>c[0]).join(', '):''}`; }
+      case 'crear':{ if(!x.ruta) return 'ERROR: falta ruta'; const f=F(x.ruta); if(f){ f.code=String(x.contenido||''); } else P.files.push({ruta:x.ruta,code:String(x.contenido||'')}); est.cambios[x.ruta]=1; est.editado=true; return 'OK: '+(f?'reescrito ':'creado ')+x.ruta+' ('+String(x.contenido||'').split('\n').length+' líneas)'; }
+      case 'borrar':{ const i=P.files.findIndex(f=>f.ruta===x.ruta); if(i<0) return 'ERROR: no existe '+x.ruta; P.files.splice(i,1); est.cambios[x.ruta]=1; est.editado=true; return 'OK: borrado '+x.ruta; }
+      case 'probar':{ const h=this.bundle(P); if(!h) return 'ERROR: el proyecto no tiene ningún .html para abrir'; const t=await testGame(h,[]); est.probado=true; est.editado=false; est.shot=t.shot||null; est.errs=t.errs;
+        return (t.errs.length?'ERRORES EN LA CONSOLA:\n'+t.errs.join('\n'):'Sin errores en la consola.')+(t.shot?'\n(Te adjunto la captura de la pantalla: mírala y comprueba que se ve bien.)':'\n(No hay canvas para capturar.)'); }
+      default: return 'ERROR: acción desconocida '+x.accion; } },
+  tarjeta(P,tarea){ const c=chatCard(`<div class="ctit">Agente de código · ${esc(P.nombre||'Proyecto')}</div><small>${esc(tarea)}</small><ol class="agPlan"></ol><div class="agLog"></div><div class="agFin"></div>`); return c; },
+  pintaPlan(c,plan,paso){ c.querySelector('.agPlan').innerHTML=(plan||[]).map((p,i)=>`<li class="${i+1<paso?'hecho':i+1===paso?'ahora':''}">${esc(p)}</li>`).join(''); },
+  log(c,txt,tipo){ const d=document.createElement('div'); d.className='agL '+(tipo||''); d.textContent=txt; const L=c.querySelector('.agLog'); L.appendChild(d); while(L.children.length>14) L.firstChild.remove(); $('feed').scrollTop=1e9; },
+  etiqueta(x){ return {listar:'Mirando los archivos',leer:`Leyendo ${x.ruta||''}${x.desde?' ('+x.desde+'-'+(x.hasta||'')+')':''}`,buscar:`Buscando «${String(x.texto||'').slice(0,40)}»`,editar:`Editando ${x.ruta||''}`,crear:`Escribiendo ${x.ruta||''}`,borrar:`Borrando ${x.ruta||''}`,probar:'Probando el juego',preguntar:'Pregunta',terminar:'Terminado'}[x.accion]||x.accion; },
+  async run(Pid,tarea,cont){ if(this.running) return toast('El agente ya está trabajando. Espera o pulsa parar.');
+    const P=typeof Pid==='object'?Pid:(await DB.all('projects')).find(p=>p.id===Pid); if(!P) return toast('No encuentro ese proyecto');
+    if(!this.textos(P).length) return toast('Ese proyecto no tiene código que editar');
+    this.running=true; PARAR.on=false; Life.touch&&Life.touch(); setEmotion('concentrado');
+    const antes=this.textos(P).map(f=>({ruta:f.ruta,code:f.code}));
+    P.versiones=(P.versiones||[]); P.versiones.push({at:Date.now(),nota:'Antes de: '+tarea.slice(0,80),files:antes}); if(P.versiones.length>12) P.versiones.shift();
+    const c=cont?cont.c:this.tarjeta(P,tarea); const est=cont?cont.est:{cambios:{},editado:false,probado:false,plan:[],paso:0,shot:null,errs:[],hist:[],avisos:0};
+    if(cont){ est.hist.push({a:'respuesta del equipo',o:cont.respuesta}); c.querySelector('.agFin').innerHTML=''; }
+    let fin=null; const MAX=36;
+    try{
+      for(let i=0;i<MAX&&this.running;i++){
+        const files=P.files.map(f=>f.bin?`${f.ruta} (imagen/modelo)`:`${f.ruta} (${f.code.split('\n').length} líneas)`).join('\n');
+        const hist=est.hist.map((h,k)=>{ const viejo=k<est.hist.length-5; return `#${k+1} ${h.a}\n${viejo?String(h.o).slice(0,400)+(String(h.o).length>400?' […]':''):String(h.o).slice(0,14000)}`; }).join('\n\n');
+        const prompt=`PROYECTO: ${P.nombre||''}\nARCHIVOS:\n${files}\n\nTAREA DEL EQUIPO: ${tarea}\n${est.plan.length?'\nTU PLAN:\n'+est.plan.map((p,k)=>(k+1)+') '+p).join('\n'):''}\n\nLO QUE HAS HECHO HASTA AHORA:\n${hist||'(nada todavía: empieza con el plan)'}\n\n${i>=MAX-4?'¡Te quedan muy pocos pasos! Termina ya con un resumen honesto de lo que falta.':''}Siguiente acción (JSON):`;
+        const parts=[{text:prompt}]; if(est.shot) parts.unshift({inline_data:{mime_type:'image/jpeg',data:est.shot}});
+        let x; try{ const t=await gemini({systemInstruction:{parts:[{text:AG_REGLAS+'\n\nSOBRE EL ESTUDIO:\n'+estudioRJ()}]},contents:[{role:'user',parts}],generationConfig:{temperature:.2,responseMimeType:'application/json',responseSchema:AGSCHEMA}},MODELOS_CODIGO,120000);
+          x=JSON.parse(t.replace(/^```(json)?|```$/g,'').trim()); }
+        catch(e){ if(PARAR.on||!this.running) break; this.log(c,'No he podido pensar este paso ('+e.message+'). Reintento…','mal'); est.hist.push({a:'(fallo del cerebro)',o:'La respuesta anterior no era un JSON válido. Responde solo con el JSON de UNA acción.'}); await sleep(1500); continue; }
+        est.shot=null;
+        if(x.plan&&x.plan.length&&!est.plan.length) est.plan=x.plan.slice(0,10); if(x.paso) est.paso=x.paso; this.pintaPlan(c,est.plan,est.paso);
+        if(x.pensamiento) this.log(c,serio(x.pensamiento),'piensa');
+        if(x.accion==='preguntar'){ this.espera={P,tarea,c,est}; this.log(c,'Pregunta: '+(x.mensaje||''),'preg');
+          c.querySelector('.agFin').innerHTML=`<div class="row" style="margin-top:6px"><input class="agResp" placeholder="Tu respuesta…" style="flex:1"><button class="tbtn on agOk">Responder</button></div>`;
+          const go=()=>{ const v=c.querySelector('.agResp').value.trim(); if(!v) return; const w=this.espera; this.espera=null; this.run(w.P,w.tarea,{c:w.c,est:w.est,respuesta:v}); };
+          c.querySelector('.agOk').onclick=go; c.querySelector('.agResp').onkeydown=e=>{ if(e.key==='Enter') go(); };
+          await DB.put('projects',P); this.running=false; setEmotion('neutral'); return; }
+        if(x.accion==='terminar'){
+          if((est.editado||!est.probado)&&est.avisos<2&&Object.keys(est.cambios).length){ est.avisos++; this.log(c,'Antes de terminar, lo pruebo…'); const o=await this.ejecutar(P,{accion:'probar'},est);
+            if(est.errs.length){ this.log(c,est.errs.length+' error(es) al probar: sigo corrigiendo','mal'); est.hist.push({a:'probar (automático antes de terminar)',o:o+'\nHay errores: corrígelos antes de terminar.'}); continue; } }
+          fin=x.mensaje||'Hecho.'; break; }
+        this.log(c,this.etiqueta(x));
+        let o; try{ o=await this.ejecutar(P,x,est); }catch(e){ o='ERROR: '+e.message; }
+        if(/^ERROR:/.test(o)) this.log(c,o.split('\n')[0].slice(0,140),'mal'); else if(x.accion==='probar') this.log(c,est.errs.length?est.errs.length+' error(es) en la consola':'Funciona sin errores',est.errs.length?'mal':'ok');
+        est.hist.push({a:`${x.accion}${x.ruta?' '+x.ruta:''}${x.accion==='editar'?' (buscar: '+String(x.buscar||'').slice(0,60).replace(/\n/g,'⏎')+'…)':''}`,o});
+        if(Object.keys(est.cambios).length){ P.at=Date.now(); await DB.put('projects',P); }
+      }
+    }finally{ this.running=false; setEmotion('neutral'); }
+    if(PARAR.on){ this.log(c,'Parado. Los cambios hechos hasta aquí están guardados (puedes deshacerlos).','mal'); }
+    if(fin) this.pintaPlan(c,est.plan,est.plan.length+1);
+    P.at=Date.now(); await DB.put('projects',P); try{ renderProjects(); }catch(e){}
+    this.final(c,P,fin||(PARAR.on?'Parado por ti.':'He llegado al límite de pasos sin terminar del todo. Revisa lo hecho y dime cómo sigo.'),antes);
+    try{ logChat('m','[Agente de código en '+(P.nombre||'proyecto')+': '+(fin||'sin terminar').slice(0,600)+']'); }catch(e){} },
+  diff(antes,P){ const res=[]; const now=this.textos(P);
+    now.forEach(f=>{ const a=antes.find(x=>x.ruta===f.ruta); if(!a) return res.push({ruta:f.ruta,mas:f.code.split('\n').length,menos:0,nuevo:true}); if(a.code===f.code) return;
+      const A=new Map(); a.code.split('\n').forEach(l=>A.set(l,(A.get(l)||0)+1)); let mas=0; f.code.split('\n').forEach(l=>{ if(A.get(l)) A.set(l,A.get(l)-1); else mas++; });
+      res.push({ruta:f.ruta,mas,menos:[...A.values()].reduce((s,v)=>s+v,0)}); });
+    antes.forEach(a=>{ if(!now.find(f=>f.ruta===a.ruta)) res.push({ruta:a.ruta,mas:0,menos:a.code.split('\n').length,borrado:true}); }); return res; },
+  final(c,P,msg,antes){ const d=this.diff(antes,P);
+    c.querySelector('.agFin').innerHTML=`<div class="agRes">${mdLite(serio(msg))}</div>
+      ${d.length?`<div class="agDiff">${d.map(x=>`<div><b>${esc(x.ruta)}</b> <span class="mas">+${x.mas}</span> <span class="menos">−${x.menos}</span>${x.nuevo?' (nuevo)':x.borrado?' (borrado)':''}</div>`).join('')}</div>`:'<small>No ha cambiado ningún archivo.</small>'}
+      <div class="row" style="margin-top:8px">${this.bundle(P)?'<button class="tbtn on" data-a="j">Jugar</button>':''}<button class="tbtn" data-a="m">Pedir otro cambio</button>${d.length?'<button class="tbtn" data-a="u">Deshacer</button>':''}<button class="tbtn" data-a="z">Descargar .zip</button></div>`;
+    const q=s=>c.querySelector(`.agFin [data-a=${s}]`);
+    q('j')&&(q('j').onclick=()=>Art.open(P.nombre||'Juego',{html:this.bundle(P)}));
+    q('m').onclick=()=>{ const t=prompt('¿Qué cambio quieres en '+(P.nombre||'el proyecto')+'?'); if(t) this.run(P.id,t); };
+    q('u')&&(q('u').onclick=async()=>{ if(!confirm('¿Deshacer todos los cambios de esta tarea?')) return; const bins=P.files.filter(f=>f.bin); P.files=[...antes.map(f=>({ruta:f.ruta,code:f.code})),...bins]; P.at=Date.now(); await DB.put('projects',P); q('u').disabled=true; q('u').textContent='Deshecho'; toast('Cambios deshechos'); });
+    q('z').onclick=()=>Files.zip(projToFiles(P),(P.nombre||'proyecto').toLowerCase().replace(/[^a-z0-9]+/g,'-')); },
+  // elegir proyecto (o traer uno de fuera)
+  async elegir(tarea){ const L=(await DB.all('projects')).filter(p=>!p.modelo&&p.files.some(f=>!f.bin)).sort((a,b)=>b.at-a.at);
+    const c=chatCard(`<div class="ctit">Agente de código</div><small>¿Sobre qué proyecto trabajo?${tarea?' Tarea: «'+esc(tarea)+'»':''}</small>
+      <div class="row" style="margin:6px 0;flex-wrap:wrap">${L.slice(0,10).map(p=>`<button class="tbtn" data-p="${p.id}">${esc(p.nombre||'Proyecto')}</button>`).join('')}<button class="tbtn on" data-p="nuevo">Traer archivos de mi juego…</button></div>
+      <textarea class="agTarea" rows="2" placeholder="Qué quieres que haga (p. ej. «el portero no se tira a los tiros altos»)" style="width:100%">${esc(tarea||'')}</textarea>`);
+    c.querySelectorAll('[data-p]').forEach(b=>b.onclick=async()=>{ const t=c.querySelector('.agTarea').value.trim(); if(!t) return c.querySelector('.agTarea').focus();
+      if(b.dataset.p==='nuevo'){ const P=await this.importar(); if(P) this.run(P,t); } else this.run(b.dataset.p,t); }); },
+  importar(){ return new Promise(res=>{ const i=document.createElement('input'); i.type='file'; i.multiple=true; i.accept='.html,.htm,.js,.css,.json,.zip,.png,.jpg,.jpeg,.webp,.glb,.gltf,.mp3,.wav,.ogg';
+    i.onchange=async()=>{ const files=[]; for(const f of i.files){
+        if(/\.zip$/i.test(f.name)){ if(!window.JSZip) await loadScript('lib/jszip.min.js'); const z=await JSZip.loadAsync(f); const raiz=Object.keys(z.files).every(n=>n.split('/')[0]===Object.keys(z.files)[0].split('/')[0])?Object.keys(z.files)[0].split('/')[0]+'/':'';
+          for(const [n,e] of Object.entries(z.files)){ if(e.dir) continue; const ruta=raiz&&n.startsWith(raiz)?n.slice(raiz.length):n; if(/\.(html?|js|mjs|css|json|txt|md|glsl)$/i.test(n)) files.push({ruta,code:await e.async('string')}); else files.push({ruta,bin:true,data:'data:'+mimeDe(n)+';base64,'+await e.async('base64')}); } }
+        else if(/\.(html?|js|mjs|css|json|txt|md)$/i.test(f.name)) files.push({ruta:f.name,code:await f.text()});
+        else files.push({ruta:f.name,bin:true,data:await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(f); })}); }
+      if(!files.some(f=>!f.bin)) { toast('No hay código en esos archivos'); return res(null); }
+      const nombre=(files.find(f=>/\.html?$/i.test(f.ruta))?.code.match(/<title>([^<]+)/i)||[])[1]||files[0].ruta.replace(/\.[^.]+$/,'');
+      const P={id:'pr'+Date.now(),nombre,desc:'Traído por el equipo',at:Date.now(),estado:'listo',juego:true,files}; await DB.put('projects',P); try{ renderProjects(); }catch(e){} res(P); };
+    i.click(); }); }
+};
+const mimeDe=n=>({png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',gif:'image/gif',glb:'model/gltf-binary',gltf:'model/gltf+json',mp3:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',svg:'image/svg+xml'})[String(n).split('.').pop().toLowerCase()]||'application/octet-stream';
+// el botón de parar también para al agente
+const _parar89=PARAR.parar.bind(PARAR); PARAR.parar=function(){ Agente.running=false; return _parar89(); };
+// «modificar» un proyecto de juego desde la lista de proyectos -> el agente
+const _mod89=Projects.modify.bind(Projects); Projects.modify=function(id,txt){ return Agente.run(id,txt); };
+// Mor lo usa desde el chat
+async function proyectoPorNombre(n){ const L=(await DB.all('projects')).filter(p=>!p.modelo&&p.files.some(f=>!f.bin)); n=String(n||'').toLowerCase().trim();
+  return L.find(p=>(p.nombre||'').toLowerCase()===n)||L.find(p=>n&&(p.nombre||'').toLowerCase().includes(n))||null; }
+const _apply89=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply89(acts); for(const a of acts){ const m=String(a).match(/^\s*agente\s*:\s*([\s\S]+)$/i); if(!m) continue;
+    const [p,...r]=m[1].split('|'); const tarea=(r.join('|')||'').trim()||p.trim();
+    setTimeout(async()=>{ const P=r.length?await proyectoPorNombre(p):null; if(P) Agente.run(P.id,tarea); else Agente.elegir(tarea); },300); } return made; };
+let _projNames=''; setInterval(async()=>{ try{ _projNames=(await DB.all('projects')).filter(p=>!p.modelo&&p.files.some(f=>!f.bin)).sort((a,b)=>b.at-a.at).slice(0,12).map(p=>p.nombre).join(', '); }catch(e){} },5000);
+const _sys89=systemPrompt; systemPrompt=function(extra){ return _sys89(extra)+`\n· AGENTE DE CÓDIGO: para CAMBIAR, ARREGLAR o AMPLIAR un juego que ya existe (un fallo, una mecánica nueva, mejorar algo) usa {{agente: nombre del proyecto | tarea detallada}}; trabaja paso a paso, lo prueba y lo corrige solo. Si no sabes el proyecto, {{agente: tarea}} y Mor le deja elegir (o traer los archivos de su juego). Proyectos en Mor: ${_projNames||'ninguno todavía'}.${Agente.running?' Ahora mismo el agente está trabajando.':''}`; };
+CMDS.splice(1,0,['/agente','Agente de código: cambiar o arreglar un juego',r=>Agente.elegir(r||'')]);
+ATAJOS.splice(2,0,['Agente de código',()=>Agente.elegir('')]); renderSide();
 
 /* =====================================================================
    15. DESPERTAR
