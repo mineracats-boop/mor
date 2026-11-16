@@ -1271,7 +1271,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v29</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v29b</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1436,7 +1436,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v29 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v29b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -4340,8 +4340,8 @@ renderSide();
    ===================================================================== */
 const PRUEBA_JUEGO_REGLA=`
 GANCHO DE PRUEBA OBLIGATORIO (sin él el juego NO se da por terminado): en cada frame actualiza
-window.__juego = { estado:'inicio'|'jugando'|'pausa'|'fin', puntos:<número>, vidas:<número o null>, jugador:{x:<número>, y:<número>, z:<número si es 3D>} }
-(con la posición REAL del jugador en el mundo). Debe empezar en 'inicio' y pasar a 'jugando' al pulsar el botón JUGAR, Enter, Espacio o al tocar la pantalla.
+window.__juego = { estado:'inicio'|'jugando'|'pausa'|'fin', puntos:<número>, vidas:<número o null>, jugador:{x:<número>, y:<número>, z:<número si es 3D>}, mundo:{ancho:<ancho del área de juego en las mismas unidades>, alto:<alto>} }
+(con la posición REAL del jugador en el mundo). El jugador debe moverse con soltura: cruzar la pantalla de lado a lado en 1,5-3 segundos como mucho (salvo que el juego pida otra cosa). Debe empezar en 'inicio' y pasar a 'jugando' al pulsar el botón JUGAR, Enter, Espacio o al tocar la pantalla.
 Las teclas se leen con addEventListener('keydown'/'keyup') en window guardando un mapa de teclas pulsadas (e.code), y el movimiento se aplica en el bucle mientras la tecla siga pulsada.
 Los botones táctiles usan pointerdown/pointerup (y pointerleave/pointercancel) y llevan data-k con el código de la tecla que imitan (por ejemplo data-k="ArrowLeft").`;
 const _testGame95=testGame;
@@ -4366,6 +4366,8 @@ testGame=async function(html,assets,opts={}){
     let j1=J(); if(j0&&j1&&j1.estado!=='jugando') probs.push(`La partida no empieza: tras pulsar JUGAR, Enter, Espacio y tocar la pantalla, __juego.estado sigue en «${j1.estado}».`);
     // 2) moverse con el teclado (manteniendo la tecla)
     if(j1&&j1.jugador){ const movs=[]; for(const c of ['ArrowRight','ArrowLeft','ArrowUp','KeyD','KeyA','KeyW']){ const a=J(); await mantener(c,700); const b=J(); if(a&&b&&a.jugador&&b.jugador){ const dd=Math.hypot(b.jugador.x-a.jugador.x,b.jugador.y-a.jugador.y,(b.jugador.z||0)-(a.jugador.z||0)); movs.push([c,dd]); } }
+      const M=(J()||{}).mundo, mx=Math.max(0,...movs.map(m=>m[1]));
+      if(M&&M.ancho>0&&mx>1&&mx<M.ancho*0.12) probs.push(`El jugador se mueve demasiado despacio: manteniendo la tecla 0,7 s solo avanza ${Math.round(mx)} de ${Math.round(M.ancho)} (${Math.round(mx/M.ancho*100)} % del ancho). Debe cruzar la pantalla en 1,5-3 s: sube su velocidad.`);
       if(!movs.some(([c,dd])=>dd>1)) probs.push('El jugador NO se mueve al mantener pulsadas las flechas ni WASD (su posición en __juego.jugador no cambia). Revisa la lectura de teclas y que el movimiento se aplique en el bucle.');
       else notas.push('Se mueve con: '+movs.filter(([c,dd])=>dd>1).map(m=>m[0]).join(', '));
       // táctil
@@ -4383,6 +4385,15 @@ testGame=async function(html,assets,opts={}){
   f.remove(); return {errs:probs,shot,notas}; };
 // el creador de juegos: exige el gancho, y los fallos los arregla el agente editando por partes (no reescribe todo)
 window.GAMEDEV_GUIA_EXTRA=PRUEBA_JUEGO_REGLA;
+
+/* =====================================================================
+   96. ACTUALIZARSE SOLA (sin recargar dos veces)
+   ===================================================================== */
+(()=>{ const yo=((document.body.innerHTML.match(/· (v[0-9a-z]+)<\/small>/)||[])[1])||'';
+  const mira=async()=>{ try{ const t=await (await fetch('index.html?u='+Date.now(),{cache:'no-store'})).text(); const v=(t.match(/· (v[0-9a-z]+)<\/small>/)||[])[1];
+      if(v&&yo&&v!==yo){ if(trabajando()||Agente.running||GameStudio.running) return; try{ const r=await navigator.serviceWorker.getRegistration(); r&&await r.update(); }catch(e){}
+        toast('Hay una versión nueva de Mor ('+v+'): actualizando…',3000); setTimeout(()=>location.reload(),2500); } }catch(e){} };
+  setTimeout(mira,15000); setInterval(mira,5*60000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) mira(); }); })();
 
 /* =====================================================================
    15. DESPERTAR
