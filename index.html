@@ -1271,7 +1271,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v27</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v28</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1307,7 +1307,7 @@ const Ears={rec:null,on:false,mode:'idle',until:0,running:false,manual:false,
   },
   listenFor(ms){ this.mode='cmd'; this.until=Date.now()+ms; $('bMic').classList.add('live'); clearTimeout(this._t);
     this._t=setTimeout(()=>{ if(this.mode==='cmd'){ this.mode='idle'; $('bMic').classList.remove('live'); if(this.manual){ this.manual=false; this.ui(); if(!this.on) try{this.rec.stop()}catch(e){} } } },ms); },
-  followUp(){ if(this.on) setTimeout(()=>{ if(!Voice.playing&&!Voice.cur) this.listenFor(8000); },900); },   // tras contestar, puedes seguir hablando sin decir "MOR"
+  followUp(){ if(this.on&&document.body.classList.contains('vozFull')) setTimeout(()=>{ if(!Voice.playing&&!Voice.cur) this.listenFor(8000); },900); },   // tras contestar, puedes seguir hablando sin decir "MOR"
   heard(t){
     $('hear').textContent='';
     if(Voice.isEcho(t)) return;                                   // es su propia voz
@@ -1344,6 +1344,7 @@ async function shrinkImage(file){ // las fotos grandes se reducen para ir más r
    ===================================================================== */
 const Proactive={
   tick(){
+    if(MEM.iniciativa!==true) return;   // IA de trabajo: no interrumpe salvo que lo actives
     if(!awake||busy||Life.asleep||Voice.playing) return;
     const idle=(performance.now()-Life.lastAct)/1000, sinceP=(Date.now()-(MEM.lastProactive||0))/60000;
     if(idle<200 || sinceP<20) return;
@@ -1435,7 +1436,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v27 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v28 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -4322,6 +4323,13 @@ geminiStream=async function(body,onText){ const programar=((body.generationConfi
 const _sys93=systemPrompt; systemPrompt=function(extra){ return _sys93(extra)+`\n· Si te piden CREAR un juego nuevo, NO escribas el código en el chat: pon {{juego: descripción detallada | 2D o 3D}} y Mor lo crea, lo prueba y lo corrige. Para cambiar uno que ya existe, {{agente: proyecto | tarea}}. Cuando sí escribas código en el chat, ponlo siempre entre bloques \`\`\`.`; };
 
 /* =====================================================================
+   94. MODO TRABAJO: sin charla de relleno ni interrupciones
+   ===================================================================== */
+const _sys94=systemPrompt; systemPrompt=function(extra){ return _sys94(extra)+`\n· ERES UNA IA DE TRABAJO: responde a lo que te piden y para. NUNCA hagas charla de relleno ni preguntas personales («¿qué tal tu día?», «¿cómo estás?», «¿algo más?») salvo que él saque el tema. No cambies de tema ni propongas cosas que no tienen que ver con lo que está haciendo. Si estáis programando o trabajando en un juego, céntrate solo en eso.`; };
+SIDE.find(g=>g[0]==='AJUSTES')[1].push(['Mor habla por su cuenta: '+(MEM.iniciativa===true?'sí':'no'),function(){ MEM.iniciativa=MEM.iniciativa!==true; saveMem(); toast(MEM.iniciativa?'Mor podrá hablarte por su cuenta de vez en cuando':'Mor ya no te interrumpirá: solo responde cuando le hablas'); this&&0; const g=SIDE.find(x=>x[0]==='AJUSTES')[1].find(x=>/habla por su cuenta/.test(x[0])); if(g) g[0]='Mor habla por su cuenta: '+(MEM.iniciativa?'sí':'no'); renderSide(); }]);
+renderSide();
+
+/* =====================================================================
    15. DESPERTAR
    ===================================================================== */
 face.sleep=1; Voice.on=MEM.voice; vozModoUI(); $('bVoice').textContent='Voz: '+(MEM.voice?'sí':'no');
@@ -4343,9 +4351,9 @@ $('gate').onclick=async()=>{
   setTimeout(async()=>{
     if(brief){ MEM.lastBrief=hoy; saveMem();
       const w=await Weather.get(); const recHoy=Agenda.upcoming().filter(r=>new Date(r.when).toDateString()===hoy);
-      return send(null,{image:null,event:`BUENOS DÍAS: es la primera vez que te abre hoy. Hazle un resumen de buenos días breve y alegre (máximo 5 frases), en este orden: saludo con su nombre; ${w?'el tiempo de hoy ('+w+')':'(no sabes su ciudad: pregúntasela al final)'}; recordatorios de hoy: ${recHoy.length?recHoy.map(r=>pad2(new Date(r.when).getHours())+':'+pad2(new Date(r.when).getMinutes())+' '+r.t).join('; '):'ninguno'}; tareas pendientes: ${Agenda.pending().length?Agenda.pending().slice(0,4).map(x=>x.t).join('; '):'ninguna'}; . Si algo no hay, sáltalo.`}); }
+      return send(null,{image:null,event:`BUENOS DÍAS: es la primera vez que te abre hoy. Hazle un resumen de buenos días breve y profesional (máximo 4 frases), sin preguntas personales, en este orden: saludo con su nombre; ${w?'el tiempo de hoy ('+w+')':''}; recordatorios de hoy: ${recHoy.length?recHoy.map(r=>pad2(new Date(r.when).getHours())+':'+pad2(new Date(r.when).getMinutes())+' '+r.t).join('; '):'ninguno'}; tareas pendientes: ${Agenda.pending().length?Agenda.pending().slice(0,4).map(x=>x.t).join('; '):'ninguna'}; . Si algo no hay, sáltalo.`}); }
     send(null,{event: MEM.firstMet
-      ? `EL USUARIO TE ACABA DE DESPERTAR. Es por la ${momento}. ${gapH<1?'Os habéis visto hace un rato.':gapH<20?'Hace unas '+Math.round(gapH)+' horas que no os veíais.':'Hace '+Math.round(gapH/24)+' días que no te abre: estás un poco celoso y lo has echado de menos.'} Salúdale por su nombre si lo sabes. Breve.`
+      ? `EL USUARIO TE ACABA DE DESPERTAR. Es por la ${momento}. ${gapH<1?'Os habéis visto hace un rato.':gapH<20?'Hace unas '+Math.round(gapH)+' horas que no os veíais.':'Hace '+Math.round(gapH/24)+' días que no te abre.'} Salúdale por su nombre en una sola frase, como un compañero de trabajo. Si hay recordatorios o tareas para hoy, nómbralos. No hagas preguntas personales ni de relleno.`
       : 'TE ACABAN DE DESPERTAR POR PRIMERA VEZ. No conoces a nadie todavía.', image:null}); },1500);
 };
 </script>
