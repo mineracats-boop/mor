@@ -1208,7 +1208,7 @@ async function send(text,opts={}){
   const slow=setTimeout(()=>{ if(!raw) showSub(rnd(['MOR pensar…','Mmm… MOR buscar en cabeza…']),text); },1800);
   try{
     lastStreamHadText=false;
-    let inF=false, fbuf='', tick='', fullClean=''; const ffiles=[];
+    let inF=false, fbuf='', tick='', fullClean='', fz=false; const ffiles=[];
     const routeFence=t=>{ t=tick+t; tick=''; const mt=t.match(/`{1,2}$/); if(mt){ tick=mt[0]; t=t.slice(0,-mt[0].length); } let out='';
       while(true){ const i=t.indexOf('```'); if(i<0){ if(inF) fbuf+=t; else out+=t; break; }
         if(inF){ fbuf+=t.slice(0,i); inF=false; const f=parseFence(fbuf,ffiles.length+1); ffiles.push(f); fbuf=''; out+=' (te dejo el archivo '+f.name+') '; }
@@ -1216,17 +1216,22 @@ async function send(text,opts={}){
         t=t.slice(i+3); } return out; };
     await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:coding?.5:.85,maxOutputTokens:coding?65536:8192}},chunk=>{
       lastStreamHadText=true; raw+=chunk; pending+=chunk;
-      let m; const re=/\[([\wáéíóúñÁÉÍÓÚÑ]+)\]|\{\{([^{}]*)\}\}/g; let clean=''; let lastIdx=0;
-      while((m=re.exec(pending))){ clean+=pending.slice(lastIdx,m.index); lastIdx=re.lastIndex;
-        if(m[2]!==undefined){ acts.push(m[2]); continue; }
-        const e=emoAlias(m[1]); if(EMO[e]){ setEmotion(e,9000); if(firstEmo){ squash(.12); firstEmo=false;
-          if(e==='feliz'||e==='carinoso') Sfx.play('si'); if(e==='asustado') Sfx.play('susto'); if(e==='enfadado') Sfx.play('enfado'); if(e==='triste') Sfx.play('triste'); } } }
-      const rest=pending.slice(lastIdx); const ob=rest.lastIndexOf('['), oc=rest.indexOf('{');
-      let hold=-1;
-      if(ob>=0 && rest.indexOf(']',ob)<0 && rest.length-ob<16) hold=ob;
-      if(oc>=0 && rest.indexOf('}}',oc)<0 && rest.length-oc<260) hold=hold<0?oc:Math.min(hold,oc);
-      if(hold>=0){ clean+=rest.slice(0,hold); pending=rest.slice(hold); } else { clean+=rest; pending=''; }
-      clean=clean.replace(/[*#$]/g,'');
+      // el CÓDIGO (entre ```) pasa intacto; las caras, etiquetas y el formato solo se quitan del texto normal
+      let clean=''; { let w=pending; pending=''; const tk=w.match(/`{1,2}$/); if(tk){ pending=tk[0]; w=w.slice(0,-tk[0].length); }
+        while(w.length){ const i=w.indexOf('```');
+          if(fz){ if(i<0){ clean+=w; w=''; } else { clean+=w.slice(0,i+3); w=w.slice(i+3); fz=false; } continue; }
+          const seg=i<0?w:w.slice(0,i), tail=i<0?'':'```'; w=i<0?'':w.slice(i+3);
+          let m, c='', lastIdx=0; const re=/\[([\wáéíóúñÁÉÍÓÚÑ]+)\]|\{\{([^{}]*)\}\}/g;
+          while((m=re.exec(seg))){ c+=seg.slice(lastIdx,m.index); lastIdx=re.lastIndex;
+            if(m[2]!==undefined){ acts.push(m[2]); continue; }
+            const e=emoAlias(m[1]); if(EMO[e]){ setEmotion(e,9000); if(firstEmo){ squash(.12); firstEmo=false;
+          if(e==='feliz'||e==='carinoso') Sfx.play('si'); if(e==='asustado') Sfx.play('susto'); if(e==='enfadado') Sfx.play('enfado'); if(e==='triste') Sfx.play('triste'); } }  else c+=m[0]; }
+          let rest=seg.slice(lastIdx);
+          if(!tail){ const ob=rest.lastIndexOf('['), oc=rest.indexOf('{'); let hold=-1;
+            if(ob>=0 && rest.indexOf(']',ob)<0 && rest.length-ob<16) hold=ob;
+            if(oc>=0 && rest.indexOf('}}',oc)<0 && rest.length-oc<260) hold=hold<0?oc:Math.min(hold,oc);
+            if(hold>=0){ pending=rest.slice(hold)+pending; rest=rest.slice(0,hold); } }
+          clean+=(c+rest).replace(/[*#$]/g,'')+tail; if(tail) fz=true; } }
       if(/\n\s*\n\s*\n/.test(shown+clean)){ clean=(shown+clean).replace(/\n\s*\n(\s*\n)+/g,'\n\n').slice(shown.length); }
       if(clean){ fullClean+=clean; const vis=routeFence(clean); if(vis){ shown+=vis; showSub(shown.trimStart(),text); Voice.feed(vis); } else if(inF) showSub(shown.trimStart()+'\n(Mor escribiendo código…)',text); }
     });
@@ -1266,7 +1271,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v26b</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v27</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1430,7 +1435,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v26b · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v27 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -4295,6 +4300,26 @@ let _pjRes=''; setInterval(async()=>{ try{ _pjRes=(await PJ.lista()).slice(0,8).
 const _sys92=systemPrompt; systemPrompt=function(extra){ return _sys92(extra)+`\n· PROYECTOS DEL ESTUDIO: ${_pjRes||'ninguno'}.\n  {{proyecto: nombre}} abre el panel del juego (tareas, diseño, niveles, economía, assets, versiones). {{tarea_juego: proyecto | tarea | tipo (${TIPOS_T.join('/')}) | prioridad}} apunta una tarea cuando el equipo diga algo que hay que hacer en un juego. {{asset: proyecto | nombre | tipo | prompt para ChatGPT}} apunta una imagen, modelo o sonido que falta.`; };
 CMDS.splice(1,0,['/proyecto','Panel del proyecto: tareas, diseño, niveles, economía, assets, versiones',r=>r?Agenda.apply(['proyecto: '+r]):PJ.elegir()]);
 ATAJOS.splice(1,0,['Proyectos',()=>PJ.elegir()]); renderSide();
+
+/* =====================================================================
+   93. QUE «HAZME UN JUEGO» SIEMPRE PASE POR EL CREADOR DE JUEGOS
+   (planifica, programa por partes, lo prueba y corrige) y no se escriba
+   a pelo en el chat. Y las preguntas de programar, al cerebro de programar.
+   ===================================================================== */
+let _ultU=''; const _send93=send; send=function(t,o){ if(t) _ultU=String(t); return _send93.apply(this,arguments); };
+const PIDE_JUEGO=/\b(haz|hazme|hacer|crea|cr[eé]ame|crear|programa|progr[aá]mame|dise[ñn]a|quiero|monta|genera)\b[^.?!]{0,50}\b(juego|videojuego|minijuego)\b/i;
+const _apply93=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const u=_ultU; _ultU='';
+  if(u&&PIDE_JUEGO.test(u)&&!/\b(arregla|cambia|corrige|mejora|a[ñn]ade|ponle|quita|en mi juego|del juego|al juego)\b/i.test(u)&&!acts.some(a=>/^\s*(juego|agente)\s*:/i.test(a)))
+    acts=[...acts,'juego: '+u+' | '+(/\b3d\b|tres d|tridimensional/i.test(u)?'3D':'2D')];
+  return _apply93(acts); };
+const _stream93=geminiStream;
+geminiStream=async function(body,onText){ const programar=((body.generationConfig||{}).maxOutputTokens||0)>8192;
+  if(programar){ if(Local.on()&&!Local.todo()){ const t=await Local.stream(body,onText); if(t) return t; }
+    // para programar no usamos los rápidos (Groq/Cerebras): primero Gemini
+    const pre=Prov.listos; Prov.listos=function(){ return pre.call(Prov).filter(p=>!p.rapido); }; try{ return await _stream93(body,onText); } finally{ Prov.listos=pre; } }
+  return _stream93(body,onText); };
+const _sys93=systemPrompt; systemPrompt=function(extra){ return _sys93(extra)+`\n· Si te piden CREAR un juego nuevo, NO escribas el código en el chat: pon {{juego: descripción detallada | 2D o 3D}} y Mor lo crea, lo prueba y lo corrige. Para cambiar uno que ya existe, {{agente: proyecto | tarea}}. Cuando sí escribas código en el chat, ponlo siempre entre bloques \`\`\`.`; };
 
 /* =====================================================================
    15. DESPERTAR
