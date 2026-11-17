@@ -1,0 +1,3 @@
+ual.glb: Universal Animation Library (Standard) de Quaternius, licencia CC0 (dominio público).
+https://quaternius.com/packs/universalanimationlibrary.html
+Mor reutiliza estas animaciones en cualquier personaje humanoide con esqueleto (retargeting).

@@ -1272,7 +1272,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v33</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v34</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1436,7 +1436,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v33 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v34 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -4655,6 +4655,92 @@ ESPECIFICACIÓN DEL JUEGO:\n${spec}`);
 };
 window.Plantillas=Plantillas;
 
+/* =====================================================================
+   99. ANIMACIONES AUTOMÁTICAS
+   Mor pone solo las animaciones a cualquier personaje humanoide con
+   esqueleto: las saca de su biblioteca (Universal Animation Library de
+   Quaternius, CC0, 33 animaciones) y las adapta a los huesos del modelo,
+   se llamen como se llamen. Si no hay personaje, usa el maniquí animado.
+   ===================================================================== */
+const ANIM_LISTA={quieto:'Quieto',andar:'Andar',correr:'Correr',esprintar:'Esprintar',saltar:'Saltar (en el aire)',saltar_inicio:'Impulso del salto',aterrizar:'Aterrizar',atacar:'Puñetazo',atacar2:'Puñetazo cruzado',espada:'Ataque con espada',espada_quieto:'Guardia con espada',golpe:'Recibir golpe',golpe_cabeza:'Golpe en la cabeza',morir:'Morir',bailar:'Bailar',agacharse:'Agachado',andar_agachado:'Andar agachado',rodar:'Rodar',disparar:'Disparar',apuntar:'Apuntar',recargar:'Recargar',hechizo:'Lanzar hechizo',hechizo_quieto:'Preparar hechizo',nadar:'Nadar',flotar:'Flotar en el agua',coger:'Coger del suelo',usar:'Usar o abrir',empujar:'Empujar',sentarse:'Sentarse',sentado:'Sentado'};
+const ANIM_BASICAS=['quieto','andar','correr','saltar','atacar','golpe','morir','bailar'];
+const AnimAuto={
+  frame:null, listo:null, pend:{}, n:0,
+  abrir(){ if(this.listo) return this.listo;
+    const LIBA=new URL('lib/anim-auto.js',location.href).href, UAL=new URL('lib/anims/ual.glb',location.href).href;
+    this.listo=new Promise((ok,ko)=>{ const t=setTimeout(()=>{ this.listo=null; ko(new Error('El motor de animaciones no arranca')); },30000);
+      addEventListener('message',e=>{ const d=e.data||{}; if(!d.__aa) return; if(d.listo){ clearTimeout(t); ok(); return; } const p=this.pend[d.id]; if(p){ delete this.pend[d.id]; p(d); } });
+      const f=document.createElement('iframe'); f.style.cssText='position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity:0;pointer-events:none';
+      f.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><script type="importmap">{"imports":{"three":"${LIB3D}three.module.min.js","three/addons/":"${LIB3D}addons/"}}<\/script></head><body><script type="module">
+import {animar} from '${LIBA}';
+addEventListener('message',async e=>{ const d=e.data||{}; if(!d.__aa||d.listo) return;
+  try{ const r=await animar({glb:d.glb,quiero:d.quiero,color:d.color,lib:'${UAL}',forzar:d.forzar}); parent.postMessage(Object.assign({__aa:1,id:d.id},r),'*'); }
+  catch(err){ parent.postMessage({__aa:1,id:d.id,error:String(err&&err.message||err)},'*'); } });
+parent.postMessage({__aa:1,listo:true},'*');
+<\/script></body></html>`;
+      document.body.appendChild(f); this.frame=f; });
+    return this.listo; },
+  // src: dataURL / ArrayBuffer / Blob del personaje, o null = maniquí animado de Rocket Jam
+  async poner(src,{quiero=ANIM_BASICAS,color=null,forzar=false}={}){ await this.abrir();
+    const glb=src?(await Modelo3D.bytes(src)).slice().buffer:null, id=++this.n;
+    const r=await new Promise(ok=>{ this.pend[id]=ok; this.frame.contentWindow.postMessage({__aa:1,id,glb,quiero,color,forzar},'*'); });
+    if(r.error) return r;
+    const data=r.glb?'data:model/gltf-binary;base64,'+await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]); fr.readAsDataURL(new Blob([r.glb])); }):null;
+    return {data,glb:r.glb,clips:r.clips||[],nuevas:r.nuevas||[],maniqui:!!r.maniqui}; },
+  // después de buscar personajes: a todos les pone animaciones; al que falte, el maniquí
+  async llenar(slots,log){
+    for(const s of slots.filter(s=>s.tipo==='personaje')){ const nom=s.ruta.split('/').pop().replace(/\.glb$/,'');
+      try{
+        if(s.data){ log(`Poniendo animaciones a «${nom}»…`); const r=await this.poner(s.data);
+          if(r.error){ log(`«${nom}»: ${r.error} Se queda con sus animaciones.`); continue; }
+          s.data=r.data; s.info=Object.assign(s.info||{},{anims:r.clips,auto:r.nuevas});
+          log(r.nuevas.length?`«${nom}» ya se mueve: ${r.nuevas.map(n=>ANIM_LISTA[n]||n).join(', ').toLowerCase()}.`:`«${nom}» ya traía sus animaciones.`); }
+        else { log(`No hay modelo para «${nom}»: pongo el maniquí animado de Rocket Jam hasta que tengas el tuyo…`); const r=await this.poner(null,{color:0x2f8fd8});
+          if(r.error) continue; s.data=r.data; s.maniqui=true; s.info={anims:r.clips,maniqui:true}; }
+        slots.filter(a=>a.tipo==='animacion'&&a.ruta.startsWith(`models/${nom}_`)).forEach(a=>a.cubierta=true);
+      }catch(e){ log('Animaciones: '+e.message); } } },
+  // tarjeta en el chat para un modelo concreto
+  async tarjeta(src,nombre){
+    const c=chatCard(`<div class="ctit">Animaciones automáticas · ${esc(nombre)}</div><small>Elige qué animaciones quieres. Las adapto a su esqueleto (sirve cualquier humanoide: Mixamo, Sketchfab, Vértice 3D…).</small>
+      <div class="aaL" style="display:flex;flex-wrap:wrap;gap:4px;margin:8px 0">${Object.entries(ANIM_LISTA).map(([k,v])=>`<label style="font-size:12px;border:1px solid rgba(127,216,255,.3);border-radius:10px;padding:3px 7px"><input type="checkbox" value="${k}" ${ANIM_BASICAS.includes(k)?'checked':''}> ${esc(v)}</label>`).join('')}</div>
+      <div class="row"><button class="tbtn on" data-a="go">Poner animaciones</button><button class="tbtn" data-a="all">Marcar todas</button></div><div class="aaR"></div>`);
+    c.querySelector('[data-a=all]').onclick=()=>c.querySelectorAll('.aaL input').forEach(i=>i.checked=true);
+    c.querySelector('[data-a=go]').onclick=async e=>{ const b=e.target, quiero=[...c.querySelectorAll('.aaL input:checked')].map(i=>i.value); if(!quiero.length) return toast('Marca alguna animación');
+      b.disabled=true; b.textContent='Adaptando…'; Paso.set('aa','Poniendo '+quiero.length+' animaciones a '+nombre+'…');
+      try{ const r=await this.poner(src,{quiero,forzar:true}); if(r.error) throw new Error(r.error);
+        Paso.fin('aa',`${nombre}: ${r.nuevas.length} animaciones puestas`);
+        const blob=new Blob([r.glb],{type:'model/gltf-binary'}), box=c.querySelector('.aaR');
+        box.innerHTML=`<div class="m3Ok" style="margin-top:8px">${r.nuevas.length} animaciones puestas. Ahora tiene: ${r.clips.map(esc).join(', ')}.</div><div class="row" style="flex-wrap:wrap;margin-top:6px"><button class="tbtn" data-r="ver">Ver en 3D</button><button class="tbtn on" data-r="dl">Descargar GLB</button><button class="tbtn" data-r="g">Guardar en mis modelos</button></div>`;
+        box.querySelector('[data-r=ver]').onclick=()=>Modelo3D.ver(r.glb,nombre+' animado');
+        box.querySelector('[data-r=dl]').onclick=()=>{ const x=document.createElement('a'); x.href=URL.createObjectURL(blob); x.download=SkChat.nombre({name:nombre})+'-animado.glb'; x.click(); };
+        box.querySelector('[data-r=g]').onclick=async ev=>{ await SkChat.guardar({name:nombre+' (animado)',user:'Animado por Mor (animaciones de Quaternius, CC0)',lic:'Igual que el original',url:''},blob); ev.target.disabled=true; ev.target.textContent='Guardado'; };
+      }catch(err){ Paso.fin('aa','No he podido animarlo: '+err.message); toast(err.message,7000); }
+      b.disabled=false; b.textContent='Poner animaciones'; }; },
+  async maniqui(){ Paso.set('aa','Preparando el maniquí animado…'); const r=await this.poner(null,{quiero:Object.keys(ANIM_LISTA),color:0x2f8fd8}); Paso.fin('aa','Maniquí listo');
+    if(r.error) return toast(r.error); this.tarjetaGlb(r,'Maniquí Rocket Jam'); },
+  tarjetaGlb(r,nombre){ const blob=new Blob([r.glb],{type:'model/gltf-binary'}); const c=chatCard(`<div class="ctit">${esc(nombre)}</div><small>${r.clips.length} animaciones: ${r.clips.map(esc).join(', ')}</small><div class="row" style="margin-top:6px"><button class="tbtn" data-r="ver">Ver en 3D</button><button class="tbtn on" data-r="dl">Descargar GLB</button><button class="tbtn" data-r="g">Guardar en mis modelos</button></div>`);
+    c.querySelector('[data-r=ver]').onclick=()=>Modelo3D.ver(r.glb,nombre);
+    c.querySelector('[data-r=dl]').onclick=()=>{ const x=document.createElement('a'); x.href=URL.createObjectURL(blob); x.download=SkChat.nombre({name:nombre})+'.glb'; x.click(); };
+    c.querySelector('[data-r=g]').onclick=async ev=>{ await SkChat.guardar({name:nombre,user:'Rocket Jam (animaciones de Quaternius, CC0)',lic:'CC0',url:'https://quaternius.com'},blob); ev.target.disabled=true; ev.target.textContent='Guardado'; }; }
+};
+// en los juegos 3D: después de buscar los personajes, animarlos
+const _llenar99=SkAuto.llenar.bind(SkAuto);
+SkAuto.llenar=async function(slots,log){ const cred=await _llenar99(slots,log); try{ await AnimAuto.llenar(slots,log); }catch(e){} return cred; };
+// en la tarjeta de un modelo con esqueleto: botón para animarlo
+const _tarjeta99=Modelo3D.tarjeta.bind(Modelo3D);
+Modelo3D.tarjeta=async function(src,nombre,g){ const a=await _tarjeta99(src,nombre,g);
+  if(a&&a.skins){ const c=chatCard(`<div class="row"><button class="tbtn on" data-a="aa">Ponerle animaciones automáticas</button></div><small>${a.anims.length?'Ya trae '+a.anims.length+'; puedo añadirle andar, correr, saltar, atacar, morir y más.':'No trae animaciones: se las pongo yo (andar, correr, saltar, atacar, morir…).'}</small>`);
+    c.querySelector('[data-a=aa]').onclick=()=>AnimAuto.tarjeta(src,nombre); }
+  return a; };
+const _apply99=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply99(acts); for(const a of acts){ const m=String(a).match(/^\s*animar_modelo\s*:?\s*(.*)$/i); if(!m) continue;
+  setTimeout(async()=>{ const n=m[1].trim().toLowerCase(); if(/maniqu/.test(n)) return AnimAuto.maniqui();
+    const L=(await DB.all('projects')).filter(p=>p.files&&p.files.some(f=>f.bin&&/\.glb$/.test(f.ruta))); const P=n?L.find(p=>(p.nombre||'').toLowerCase().includes(n)):null;
+    if(P) AnimAuto.tarjeta(P.files.find(f=>f.bin&&/\.glb$/.test(f.ruta)).data,P.nombre||'Personaje');
+    else { const i=document.createElement('input'); i.type='file'; i.accept='.glb'; i.onchange=()=>{ const f=i.files[0]; if(f) AnimAuto.tarjeta(f,f.name.replace(/\.glb$/i,'')); }; i.click(); } },300); } return made; };
+const _sys99=systemPrompt; systemPrompt=function(extra){ return _sys99(extra)+`\n· ANIMACIONES AUTOMÁTICAS: {{animar_modelo: nombre}} pone animaciones (quieto, andar, correr, saltar, atacar, golpe, morir, bailar, espada, disparar, nadar, rodar… hasta 30) a cualquier personaje humanoide con esqueleto, adaptándolas a sus huesos; sin nombre deja elegir un .glb. {{animar_modelo: maniquí}} da el maniquí animado de Rocket Jam. Al crear juegos 3D lo hago solo. Úsalo cuando pidan animar un personaje o «ponerle animaciones».`; };
+CMDS.splice(5,0,['/animar','Poner animaciones automáticas a un personaje con esqueleto',r=>Agenda.apply(['animar_modelo: '+(r||'')])]);
+window.AG_SABER=(window.AG_SABER||'')+`\nANIMACIONES AUTOMÁTICAS: al crear un juego 3D, Mor mete dentro del GLB de cada personaje las animaciones con nombre en español: quieto, andar, correr, saltar, atacar, golpe, morir, bailar (el motor las encuentra con anim('andar') etc.). Si no había personaje, models/NOMBRE.glb es el maniquí animado de Rocket Jam: avisa en el resumen de que conviene cambiarlo por el personaje definitivo. Para atacar/morir/golpe usa LoopOnce y clampWhenFinished.`;
 /* =====================================================================
    15. DESPERTAR
    ===================================================================== */
