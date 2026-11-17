@@ -62,7 +62,7 @@ async function cargarModelo(nombre,{altura=1,color=0xcccccc,forma='caja'}={}){
     const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color,roughness:.7})); m.position.y=altura/2; m.castShadow=m.receiveShadow=true; g.add(m); }
   return g; }
 // personaje animado: models/NOMBRE.glb y, opcionales, models/NOMBRE_quieto|andar|correr|saltar.glb (p. ej. de Mixamo, «In Place»)
-const SIN={quieto:['quieto','idle','stand','breath'],andar:['andar','walk'],correr:['correr','run','sprint'],saltar:['saltar','jump'],atacar:['atacar','attack','punch','slash'],morir:['morir','death','die']};
+const SIN={quieto:['quieto','idle','stand','breath','fly'],andar:['andar','walk','fly'],correr:['correr','run','sprint','gallop','fly'],saltar:['saltar','jump'],atacar:['atacar','attack','punch','slash','kick'],golpe:['golpe','hit','hurt'],morir:['morir','death','die'],bailar:['bailar','danc']};
 async function cargarPersonaje(nombre,{altura=1.8,color=0x3366ff,anims=['quieto','andar','correr','saltar']}={}){
   const g=await cargarModelo(nombre,{altura,color,forma:'capsula'}), clips={};
   g.userData.anims.forEach(c=>clips[c.name.toLowerCase()]=c);
