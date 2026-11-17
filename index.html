@@ -209,6 +209,9 @@ code.inl{background:rgba(0,0,0,.35);border-radius:5px;padding:1px 5px;font-size:
 .pjAi input{width:100%;font-weight:600}.pjAi small{display:block;color:var(--dim);margin:3px 0}.pjAi .mal{color:#ff8f8f}.pjAb{display:flex;flex-direction:column;gap:4px}.pjAb .tbtn{font-size:12px;padding:4px 8px}.pjCuenta{margin-left:auto;color:var(--dim);font-size:12px}
 .pjV{display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:8px 2px}.pjV small{color:var(--dim)}.pjPre{white-space:pre-wrap;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:10px;font:13px/1.5 Inter,system-ui}
 @media (max-width:700px){.pjKanban{grid-template-columns:1fr}.pjStats{grid-template-columns:repeat(2,1fr)}.pjA{grid-template-columns:48px 1fr}.pjAb{grid-column:1/-1;flex-direction:row}}
+.m3Rig{margin:8px 0;padding:8px 10px;border-radius:10px;font-size:14px;line-height:1.45}.m3Rig.si{background:rgba(126,226,168,.1);border-left:3px solid #7ee2a8}.m3Rig.no{background:rgba(255,178,31,.08);border-left:3px solid var(--amber)}
+.m3T{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}.m3T th{text-align:left;color:var(--dim);font-weight:600;padding:3px 6px;border-bottom:1px solid var(--line)}.m3T td{padding:3px 6px;border-bottom:1px solid rgba(255,255,255,.04)}.m3T td:first-child{color:var(--dim)}
+.m3P{margin-top:6px;font-size:13px}.m3P ul{margin:4px 0 0 18px;padding:0}.m3P li{margin:2px 0}.m3Ok{color:#7ee2a8;margin-top:6px;font-size:13px}
 /* ===== Marca Rocket Jam ===== */
 body{background:radial-gradient(1200px 600px at 80% -10%,rgba(255,90,31,.08),transparent 60%),var(--bg)}
 h1,h2,h3,.ctit,.brand,.shead,.sbrand span{font-family:Fredoka,Inter,system-ui,sans-serif}
@@ -1271,7 +1274,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v29d</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v30</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1436,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v29d · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v30 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -4401,6 +4404,113 @@ window.GAMEDEV_GUIA_EXTRA=PRUEBA_JUEGO_REGLA;
       if(v&&yo&&v!==yo){ if(trabajando()||Agente.running||GameStudio.running) return; try{ const r=await navigator.serviceWorker.getRegistration(); r&&await r.update(); }catch(e){}
         toast('Hay una versión nueva de Mor ('+v+'): actualizando…',3000); setTimeout(()=>location.reload(),2500); } }catch(e){} };
   setTimeout(mira,15000); setInterval(mira,5*60000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) mira(); }); })();
+
+/* =====================================================================
+   97. ANALIZAR Y OPTIMIZAR MODELOS 3D
+   Dice si está rigged (esqueleto y de qué tipo), sus animaciones, cuánto pesa,
+   si pisa el suelo… y lo optimiza para web o para móvil (glTF-Transform +
+   meshoptimizer, todo dentro del navegador).
+   ===================================================================== */
+const Modelo3D={
+  _lib:null, async lib(){ if(!this._lib) this._lib=await import(new URL('lib/gltf-opt.js',location.href).href); return this._lib; },
+  async io(){ const L=await this.lib(); const io=new L.WebIO().registerExtensions(L.ALL_EXTENSIONS); try{ const {MeshoptDecoder}=L; if(MeshoptDecoder){ await MeshoptDecoder.ready; io.registerDependencies({'meshopt.decoder':MeshoptDecoder}); } }catch(e){} return io; },
+  bytes(src){ if(src instanceof ArrayBuffer) return Promise.resolve(new Uint8Array(src)); if(src instanceof Uint8Array) return Promise.resolve(src);
+    if(src instanceof Blob) return src.arrayBuffer().then(b=>new Uint8Array(b)); const s=String(src); const b64=s.split(',')[1]||s; return Promise.resolve(Uint8Array.from(atob(b64),c=>c.charCodeAt(0))); },
+  // ---------- análisis
+  async analizar(src){ const L=await this.lib(), io=await this.io(), u8=await this.bytes(src); let doc;
+    try{ doc=await io.readBinary(u8); }catch(e){ if(/draco/i.test(e.message)) throw new Error('el modelo está comprimido con Draco: ábrelo en Vértice 3D y vuelve a exportarlo'); throw e; }
+    const R=doc.getRoot(); let tris=0, verts=0, prims=0, morphs=0;
+    for(const m of R.listMeshes()) for(const p of m.listPrimitives()){ prims++; const pos=p.getAttribute('POSITION'); const n=pos?pos.getCount():0; verts+=n; const idx=p.getIndices(); const mode=p.getMode();
+      if(mode===4||mode===undefined) tris+=Math.floor((idx?idx.getCount():n)/3); morphs+=p.listTargets().length; }
+    const skins=R.listSkins(), huesos=new Set(); skins.forEach(s=>s.listJoints().forEach(j=>huesos.add(j.getName()||j)));
+    const nombres=[...huesos].map(String);
+    const mixamo=nombres.some(n=>/mixamorig/i.test(n)), humanoide=mixamo||(['hip','spine','head','arm','leg'].filter(k=>nombres.some(n=>n.toLowerCase().includes(k))).length>=4);
+    const anims=R.listAnimations().map(a=>{ let d=0; a.listSamplers().forEach(s=>{ const t=s.getInput(); if(t){ const arr=t.getArray(); if(arr&&arr.length) d=Math.max(d,arr[arr.length-1]); } }); return {nombre:a.getName()||'sin nombre',dur:+d.toFixed(2)}; });
+    const texturas=R.listTextures().map(t=>{ const sz=t.getSize()||[0,0]; const img=t.getImage(); return {nombre:t.getName()||t.getURI()||'textura',w:sz[0],h:sz[1],kb:img?Math.round(img.byteLength/1024):0,mime:t.getMimeType()}; });
+    const sc=R.getDefaultScene()||R.listScenes()[0]; let caja=null; try{ caja=sc?L.getBounds(sc):null; }catch(e){}
+    const dims=caja?{ancho:caja.max[0]-caja.min[0],alto:caja.max[1]-caja.min[1],fondo:caja.max[2]-caja.min[2],minY:caja.min[1],cx:(caja.max[0]+caja.min[0])/2,cz:(caja.max[2]+caja.min[2])/2}:null;
+    return {kb:Math.round(u8.byteLength/1024),tris,verts,mallas:R.listMeshes().length,prims,materiales:R.listMaterials().length,texturas,huesos:huesos.size,skins:skins.length,mixamo,humanoide,anims,morphs,dims,extensiones:R.listExtensionsUsed().map(e=>e.extensionName)}; },
+  problemas(a,nivel='web'){ const lim=nivel==='movil'?{tris:30000,kb:4000,tex:1024,mats:8}:{tris:100000,kb:15000,tex:2048,mats:16}, P=[];
+    if(a.tris>lim.tris) P.push(`Demasiados triángulos para ${nivel==='movil'?'móvil':'web'}: ${a.tris.toLocaleString('es-ES')} (lo razonable es menos de ${lim.tris.toLocaleString('es-ES')}).`);
+    if(a.kb>lim.kb) P.push(`Pesa mucho: ${(a.kb/1024).toFixed(1)} MB (tardará en cargar).`);
+    const grandes=a.texturas.filter(t=>Math.max(t.w,t.h)>lim.tex); if(grandes.length) P.push(`${grandes.length} textura${grandes.length>1?'s':''} más grande${grandes.length>1?'s':''} de ${lim.tex} px (${grandes.map(t=>t.w+'×'+t.h).join(', ')}).`);
+    if(a.materiales>lim.mats) P.push(`Muchos materiales (${a.materiales}): cada uno es un dibujado más por frame.`);
+    if(a.dims){ if(Math.abs(a.dims.minY)>Math.max(0.02,a.dims.alto*0.03)) P.push(`No pisa el suelo: su punto más bajo está a ${a.dims.minY.toFixed(2)} del suelo (en el juego flotará o se hundirá).`);
+      if(a.huesos&&a.humanoide&&(a.dims.alto<0.5||a.dims.alto>3)) P.push(`Tamaño raro para una persona: mide ${a.dims.alto.toFixed(2)} (unidades), lo normal es 1,6-1,9 m. Puede venir en centímetros.`); }
+    return P; },
+  frase(a){ if(!a.skins) return a.morphs?`No está rigged (no tiene esqueleto), pero tiene ${a.morphs} formas de expresión (morph targets).`:'No está rigged: es un modelo estático, sin esqueleto. Si es un personaje humanoide, súbelo a Mixamo para ponerle esqueleto y animaciones.';
+    return `Sí, está rigged: ${a.mixamo?'esqueleto de Mixamo':a.humanoide?'esqueleto humanoide':'esqueleto'} con ${a.huesos} huesos`+(a.anims.length?` y ${a.anims.length} animación${a.anims.length>1?'es':''} (${a.anims.slice(0,6).map(x=>x.nombre+' '+x.dur+' s').join(', ')}${a.anims.length>6?'…':''}).`:', pero sin animaciones.'+(a.humanoide?' Puedes añadírselas en Mixamo.':'')); },
+  // ---------- optimizar
+  async optimizar(src,nivel='web',alSuelo=true){ const L=await this.lib(), io=await this.io(), u8=await this.bytes(src); const doc=await io.readBinary(u8); const a0=await this.analizar(u8);
+    await L.MeshoptSimplifier.ready; const objetivo=nivel==='movil'?20000:80000; const ratio=a0.tris>objetivo?Math.max(0.05,objetivo/a0.tris):1;
+    const pasos=[L.dedup(),L.prune(),L.weld()]; if(ratio<1) pasos.push(L.simplify({simplifier:L.MeshoptSimplifier,ratio,error:nivel==='movil'?0.01:0.005}));
+    if(a0.anims.length) pasos.push(L.resample()); if(alSuelo&&a0.dims&&Math.abs(a0.dims.minY)>0.001) pasos.push(L.center({pivot:'below'}));
+    await doc.transform(...pasos);
+    // texturas: reducir tamaño en el propio navegador
+    const max=nivel==='movil'?1024:2048;
+    for(const t of doc.getRoot().listTextures()){ const img=t.getImage(), sz=t.getSize(); if(!img||!sz||Math.max(sz[0],sz[1])<=max) continue;
+      try{ const bmp=await createImageBitmap(new Blob([img],{type:t.getMimeType()})); const k=max/Math.max(bmp.width,bmp.height); const cv=new OffscreenCanvas(Math.round(bmp.width*k),Math.round(bmp.height*k)); cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
+        const png=t.getMimeType()==='image/png'; const out=await cv.convertToBlob({type:png?'image/png':'image/jpeg',quality:.85}); t.setImage(new Uint8Array(await out.arrayBuffer())).setMimeType(png?'image/png':'image/jpeg'); }catch(e){} }
+    const glb=await io.writeBinary(doc); return {glb,antes:a0,despues:await this.analizar(glb),ratio}; },
+  // ---------- visor 3D (para ver antes/después y las animaciones)
+  visorHtml(){ return `<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#0b1622;overflow:hidden;font:12px Inter,system-ui;color:#e9edf6}#b{position:fixed;left:8px;right:8px;bottom:8px;display:flex;flex-wrap:wrap;gap:6px}#b button{background:#12324d;color:#e9edf6;border:1px solid #2f6a94;border-radius:12px;padding:4px 9px;cursor:pointer}#b button.on{background:#ff5a1f;border-color:#ff5a1f}</style>
+<script type="importmap">{"imports":{"three":"${LIB3D}three.module.min.js","three/addons/":"${LIB3D}addons/"}}<\/script></head><body><div id="b"></div><script type="module">
+import * as THREE from 'three'; import {OrbitControls} from 'three/addons/controls/OrbitControls.js'; import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+const R=new THREE.WebGLRenderer({antialias:true}); R.setPixelRatio(Math.min(devicePixelRatio,2)); R.setSize(innerWidth,innerHeight); document.body.appendChild(R.domElement);
+const S=new THREE.Scene(); S.add(new THREE.HemisphereLight(0xffffff,0x334455,1.5)); const D=new THREE.DirectionalLight(0xffffff,1.5); D.position.set(3,6,4); S.add(D); S.add(new THREE.GridHelper(10,20,0x2f6a94,0x18324a));
+const C=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.01,1000); const O=new OrbitControls(C,R.domElement); let mix=null; const clk=new THREE.Clock();
+addEventListener('resize',()=>{ R.setSize(innerWidth,innerHeight); C.aspect=innerWidth/innerHeight; C.updateProjectionMatrix(); });
+R.setAnimationLoop(()=>{ if(mix) mix.update(clk.getDelta()); R.render(S,C); });
+addEventListener('message',e=>{ if(!e.data||!e.data.glb) return; new GLTFLoader().parse(e.data.glb,'',g=>{ const o=g.scene; S.add(o); const bb=new THREE.Box3().setFromObject(o), sz=bb.getSize(new THREE.Vector3()), c=bb.getCenter(new THREE.Vector3()); const r=Math.max(sz.x,sz.y,sz.z)||1;
+  C.position.set(c.x+r*1.2,c.y+r*.6,c.z+r*1.6); O.target.copy(c); O.update(); C.near=r/100; C.far=r*100; C.updateProjectionMatrix();
+  if(g.animations.length){ mix=new THREE.AnimationMixer(o); const b=document.getElementById('b'); g.animations.forEach((a,i)=>{ const x=document.createElement('button'); x.textContent=a.name||('Animación '+(i+1)); x.onclick=()=>{ mix.stopAllAction(); mix.clipAction(a).play(); b.querySelectorAll('button').forEach(y=>y.classList.toggle('on',y===x)); }; b.appendChild(x); if(!i) x.click(); }); } },err=>document.body.insertAdjacentHTML('beforeend','<p style="padding:20px">No se puede ver: '+err.message+'</p>')); });
+parent.postMessage({visorListo:1},'*');
+<\/script></body></html>`; },
+  ver(glb,titulo){ const f=document.createElement('iframe'); f.style.cssText='width:100%;height:100%;border:0'; f.srcdoc=this.visorHtml(); Art.open(titulo||'Modelo 3D',{el:f});
+    const on=e=>{ if(e.source===f.contentWindow&&e.data&&e.data.visorListo){ removeEventListener('message',on); this.bytes(glb).then(u=>f.contentWindow.postMessage({glb:u.buffer.slice(u.byteOffset,u.byteOffset+u.byteLength)},'*')); } }; addEventListener('message',on); },
+  // ---------- tarjeta en el chat
+  fila:(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`,
+  tabla(a,b){ const f=(x,fn)=>fn(x); const n=v=>typeof v==='number'?v.toLocaleString('es-ES'):v;
+    const filas=[['Peso',x=>(x.kb/1024).toFixed(2)+' MB'],['Triángulos',x=>n(x.tris)],['Vértices',x=>n(x.verts)],['Mallas',x=>x.mallas],['Materiales',x=>x.materiales],['Texturas',x=>x.texturas.length?x.texturas.length+' ('+[...new Set(x.texturas.map(t=>t.w+'×'+t.h))].slice(0,3).join(', ')+')':'0'],['Huesos',x=>x.huesos||'—'],['Animaciones',x=>x.anims.length||'—'],['Tamaño',x=>x.dims?`${x.dims.ancho.toFixed(2)} × ${x.dims.alto.toFixed(2)} × ${x.dims.fondo.toFixed(2)}`:'?']];
+    return `<table class="m3T"><thead><tr><th></th><th>${b?'Antes':'Modelo'}</th>${b?'<th>Después</th>':''}</tr></thead><tbody>${filas.map(([k,fn])=>`<tr><td>${k}</td><td>${f(a,fn)}</td>${b?`<td>${f(b,fn)}</td>`:''}</tr>`).join('')}</tbody></table>`; },
+  async tarjeta(src,nombre,guardarComo){ let a; const u8=await this.bytes(src);
+    try{ Paso.set('m3','Analizando '+nombre+'…'); a=await this.analizar(u8); Paso.fin('m3','Modelo analizado: '+nombre); }catch(e){ Paso.fin('m3','No he podido leer el modelo: '+e.message); return; }
+    const pw=this.problemas(a,'web'), pm=this.problemas(a,'movil').filter(x=>!pw.includes(x));
+    const c=chatCard(`<div class="ctit">${esc(nombre)}</div><div class="m3Rig ${a.skins?'si':'no'}">${esc(this.frase(a))}</div>${this.tabla(a)}
+      ${pw.length?`<div class="m3P"><b>Problemas</b><ul>${pw.map(p=>'<li>'+esc(p)+'</li>').join('')}</ul></div>`:'<div class="m3Ok">Está bien para web.</div>'}
+      ${pm.length?`<div class="m3P"><b>Para móvil, además</b><ul>${pm.map(p=>'<li>'+esc(p)+'</li>').join('')}</ul></div>`:''}
+      <div class="row" style="flex-wrap:wrap;margin-top:8px"><button class="tbtn" data-a="ver">Ver en 3D</button><button class="tbtn on" data-a="web">Optimizar para web</button><button class="tbtn" data-a="movil">Optimizar para móvil</button>${!a.skins&&a.dims&&a.dims.alto>0?'<button class="tbtn" data-a="mx">Ponerle esqueleto (Mixamo)</button>':''}</div><div class="m3Res"></div>`);
+    const q=k=>c.querySelector(`[data-a=${k}]`);
+    q('ver').onclick=()=>this.ver(u8,nombre);
+    q('mx')&&(q('mx').onclick=()=>Mixamo.guia());
+    for(const nivel of ['web','movil']) q(nivel).onclick=async()=>{ const b=q(nivel); b.disabled=true; const t=b.textContent; b.textContent='Optimizando…';
+      try{ const r=await this.optimizar(u8,nivel); const ahorro=Math.round((1-r.despues.kb/Math.max(1,r.antes.kb))*100);
+        const box=c.querySelector('.m3Res'); box.innerHTML=`<div class="ctit" style="margin-top:10px">Optimizado para ${nivel==='movil'?'móvil':'web'} · ${ahorro>0?ahorro+' % menos de peso':'ya estaba optimizado'}</div>${this.tabla(r.antes,r.despues)}
+          <small>${r.ratio<1?'Malla simplificada al '+Math.round(r.ratio*100)+' % de triángulos. ':''}Se quitan duplicados y datos que no se usan${r.antes.anims.length?', se aligeran las animaciones':''}${r.antes.dims&&Math.abs(r.antes.dims.minY)>0.001?' y se apoya en el suelo':''}. ${r.despues.skins?'Sigue rigged ('+r.despues.huesos+' huesos).':''}</small>
+          ${this.problemas(r.despues,nivel).length?`<div class="m3P"><b>Aún</b><ul>${this.problemas(r.despues,nivel).map(p=>'<li>'+esc(p)+'</li>').join('')}</ul></div>`:''}
+          <div class="row" style="flex-wrap:wrap;margin-top:6px"><button class="tbtn" data-r="ver">Ver el resultado</button><button class="tbtn on" data-r="dl">Descargar GLB</button><button class="tbtn" data-r="g">Guardar en mis modelos</button></div>`;
+        const blob=new Blob([r.glb],{type:'model/gltf-binary'}), nom=SkChat.nombre({name:nombre})+'-'+nivel;
+        box.querySelector('[data-r=ver]').onclick=()=>this.ver(r.glb,nombre+' (optimizado)');
+        box.querySelector('[data-r=dl]').onclick=()=>{ const x=document.createElement('a'); x.href=URL.createObjectURL(blob); x.download=nom+'.glb'; x.click(); };
+        box.querySelector('[data-r=g]').onclick=async e=>{ await SkChat.guardar({name:nombre+' ('+(nivel==='movil'?'móvil':'web')+')',user:'Optimizado por Mor',lic:(guardarComo&&guardarComo.lic)||'Igual que el original',url:(guardarComo&&guardarComo.url)||''},blob); e.target.disabled=true; e.target.textContent='Guardado'; };
+      }catch(e){ toast('No he podido optimizarlo: '+e.message,6000); } b.disabled=false; b.textContent=t; };
+    return a; },
+  elegir(){ const i=document.createElement('input'); i.type='file'; i.accept='.glb,.gltf'; i.onchange=()=>{ const f=i.files[0]; if(f) this.tarjeta(f,f.name.replace(/\.(glb|gltf)$/i,'')); }; i.click(); }
+};
+// .glb soltado en el chat -> análisis
+document.addEventListener('drop',e=>{ const L=[...(e.dataTransfer&&e.dataTransfer.files||[])].filter(f=>/\.glb$/i.test(f.name)); if(L.length){ e.preventDefault(); e.stopImmediatePropagation(); L.forEach(f=>Modelo3D.tarjeta(f,f.name.replace(/\.glb$/i,''))); } },true);
+// al guardar un modelo de Sketchfab o Mixamo, decir enseguida si está rigged
+const _guardar97=SkChat.guardar.bind(SkChat);
+SkChat.guardar=async function(x,blob){ const P=await _guardar97(x,blob); try{ const a=await Modelo3D.analizar(blob); P.analisis={rigged:!!a.skins,huesos:a.huesos,anims:a.anims.map(z=>z.nombre),tris:a.tris,kb:a.kb}; await DB.put('projects',P); toast(x.name+': '+Modelo3D.frase(a).split(':')[0]+(a.tris?' · '+a.tris.toLocaleString('es-ES')+' triángulos':''),6000); }catch(e){} return P; };
+// en la ficha de un modelo guardado: analizar / optimizar
+const _ver97=Taller3D.ver.bind(Taller3D);
+Taller3D.ver=function(P){ const r=_ver97(P); const g=P.files&&P.files.find(f=>f.bin&&/\.glb$/.test(f.ruta)); if(g){ const c=chatCard(`<div class="row"><button class="tbtn" data-a="an">Analizar y optimizar</button></div>`); c.querySelector('[data-a=an]').onclick=()=>Modelo3D.tarjeta(g.data,P.nombre||'Modelo'); } return r; };
+const _apply97=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply97(acts); for(const a of acts){ const m=String(a).match(/^\s*(analizar_modelo|optimizar_modelo)\s*:?\s*(.*)$/i); if(!m) continue;
+  setTimeout(async()=>{ const n=m[2].trim().toLowerCase(); const L=(await DB.all('projects')).filter(p=>p.modelo&&p.files&&p.files.some(f=>f.bin&&/\.glb$/.test(f.ruta)));
+    const P=n?L.find(p=>(p.nombre||'').toLowerCase().includes(n)):null; if(P) Modelo3D.tarjeta(P.files.find(f=>f.bin&&/\.glb$/.test(f.ruta)).data,P.nombre); else Modelo3D.elegir(); },300); } return made; };
+const _sys97=systemPrompt; systemPrompt=function(extra){ return _sys97(extra)+`\n· MODELOS 3D: {{analizar_modelo: nombre}} analiza un modelo guardado (o deja elegir un .glb): dice si está RIGGED (esqueleto, cuántos huesos, si es de Mixamo, sus animaciones), triángulos, peso, texturas, si pisa el suelo, y lo OPTIMIZA para web o para móvil. Úsalo cuando pregunten si un modelo tiene esqueleto, si pesa mucho o cómo optimizarlo. «Rigged» = tiene esqueleto (huesos) para poder animarse.`; };
+CMDS.splice(4,0,['/modelo','Analizar u optimizar un modelo 3D (¿está rigged?)',r=>r?Agenda.apply(['analizar_modelo: '+r]):Modelo3D.elegir()]);
 
 /* =====================================================================
    15. DESPERTAR
