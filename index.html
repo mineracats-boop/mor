@@ -1272,7 +1272,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v31</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v32</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1436,7 +1436,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v31 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v32 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3265,7 +3265,7 @@ async function autoModelos(P){ if(!P.slots) return; const slots=P.slots.map(s=>(
   slots.forEach(s=>{ if(s.data&&!P.files.some(f=>f.bin&&f.ruta===s.ruta)) P.files.push({ruta:s.ruta,data:s.data,bin:true}); });
   if(cred.length){ P.creditos=(P.creditos||[]).concat(cred); P.files=P.files.filter(f=>f.ruta!=='CREDITOS.md').concat([{ruta:'CREDITOS.md',code:creditosMd(P.creditos)}]); }
   await DB.put('projects',P); Paso.fin('sk',`${cred.length} modelo(s) de Sketchfab puestos`); renderProjects(); if(cred.length) showGame(P); }
-const creditosMd=C=>`# Créditos de los modelos 3D\n\nModelos descargados de Sketchfab. Respeta su licencia (si es CC Attribution, pon estos créditos en el juego).\n\n${C.map(c=>`- **${c.nombre}** de ${c.autor||'?'} · ${c.licencia||'?'} · ${c.url}`).join('\n')}\n`;
+let creditosMd=C=>`# Créditos de los modelos 3D\n\nModelos descargados de Sketchfab. Respeta su licencia (si es CC Attribution, pon estos créditos en el juego).\n\n${C.map(c=>`- **${c.nombre}** de ${c.autor||'?'} · ${c.licencia||'?'} · ${c.url}`).join('\n')}\n`;
 
 /* =====================================================================
    60. BOTÓN DE PARAR (■ en el botón de enviar, como Claude o ChatGPT)
@@ -4508,6 +4508,53 @@ Agenda.apply=function(acts){ const made=_apply97(acts); for(const a of acts){ co
     const P=n?L.find(p=>(p.nombre||'').toLowerCase().includes(n)):null; if(P) Modelo3D.tarjeta(P.files.find(f=>f.bin&&/\.glb$/.test(f.ruta)).data,P.nombre); else Modelo3D.elegir(); },300); } return made; };
 const _sys97=systemPrompt; systemPrompt=function(extra){ return _sys97(extra)+`\n· MODELOS 3D: {{analizar_modelo: nombre}} analiza un modelo guardado (o deja elegir un .glb): dice si está RIGGED (esqueleto, cuántos huesos, si es de Mixamo, sus animaciones), triángulos, peso, texturas, si pisa el suelo, y lo OPTIMIZA para web o para móvil. Úsalo cuando pregunten si un modelo tiene esqueleto, si pesa mucho o cómo optimizarlo. «Rigged» = tiene esqueleto (huesos) para poder animarse.`; };
 CMDS.splice(4,0,['/modelo','Analizar u optimizar un modelo 3D (¿está rigged?)',r=>r?Agenda.apply(['analizar_modelo: '+r]):Modelo3D.elegir()]);
+
+/* =====================================================================
+   98. MODELOS AUTOMÁTICOS CON ESQUELETO
+   Para los personajes: busca en Sketchfab modelos animados, los descarga,
+   COMPRUEBA que de verdad tienen esqueleto (y qué animaciones traen),
+   se queda con el mejor, lo apoya en el suelo y, si pesa mucho, lo optimiza.
+   ===================================================================== */
+const ANIM_ES={idle:/idle|stand|breath|reposo|quieto/i,andar:/walk|andar|caminar/i,correr:/run|sprint|correr/i,saltar:/jump|saltar/i,atacar:/attack|punch|kick|slash|shoot|atacar/i,morir:/death|die|dying|morir/i};
+const SkAutoRig={
+  puntuar(a){ if(!a||!a.skins) return -1; const nombres=a.anims.map(x=>x.nombre).join(' ');
+    let p=10+Math.min(a.anims.length,8)*3; for(const re of Object.values(ANIM_ES)) if(re.test(nombres)) p+=4; if(a.humanoide) p+=6; if(a.mixamo) p+=2; if(a.tris>60000) p-=6; if(a.kb>12000) p-=4; return p; },
+  resumen(a){ return a.skins?`con esqueleto (${a.huesos} huesos${a.mixamo?', Mixamo':''})${a.anims.length?' y '+a.anims.length+' animación'+(a.anims.length>1?'es':'')+': '+a.anims.slice(0,6).map(x=>x.nombre).join(', '):' y sin animaciones'}`:'sin esqueleto'; },
+  async preparar(data,log,nombre){ // apoyar en el suelo y aligerar si hace falta (sin perder el esqueleto)
+    try{ const a=await Modelo3D.analizar(data); const pesa=a.tris>80000||a.kb>8000||a.texturas.some(t=>Math.max(t.w,t.h)>2048), flota=a.dims&&Math.abs(a.dims.minY)>Math.max(0.02,a.dims.alto*0.03);
+      if(!pesa&&!flota) return {data,a};
+      log(`Preparando «${nombre}»: ${pesa?'optimizando para web':''}${pesa&&flota?' y ':''}${flota?'apoyándolo en el suelo':''}…`);
+      const r=await Modelo3D.optimizar(data,'web',true); const d='data:model/gltf-binary;base64,'+await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]); fr.readAsDataURL(new Blob([r.glb])); });
+      return {data:d,a:r.despues}; }catch(e){ return {data,a:null}; } }
+};
+SkAuto.llenar=async function(slots,log){ const cred=[]; if(!Conn.get().skToken){ log('Sin token de Sketchfab: los modelos se quedan con formas (ponlo en Conectores)'); return cred; }
+  for(const s of slots.filter(s=>(s.tipo==='modelo'||s.tipo==='personaje')&&!s.data)){
+    const q=s.buscar||s.ruta.split('/').pop().replace('.glb',''), esPj=s.tipo==='personaje';
+    try{
+      if(!esPj){ log(`Buscando en Sketchfab: ${q}…`); const L=await this.buscar(q,false);
+        for(const m of L.slice(0,4)){ try{ log(`Descargando «${m.name}»…`); const raw=await this.bajar(m.uid); const p=await SkAutoRig.preparar(raw,log,m.name); s.data=p.data;
+            cred.push({ruta:s.ruta,nombre:m.name,autor:m.user&&(m.user.displayName||m.user.username),licencia:m.license&&m.license.label,url:m.viewerUrl||`https://sketchfab.com/3d-models/${m.uid}`}); break; }catch(e){ if(/token/.test(e.message)) throw e; } }
+        continue; }
+      // PERSONAJE: tiene que tener esqueleto. Probamos varios y nos quedamos con el mejor.
+      log(`Buscando personajes con esqueleto en Sketchfab: ${q}…`);
+      let L=await this.buscar(q,true); if(L.length<3) L=L.concat((await this.buscar(q+' rigged',false)).filter(x=>!L.some(y=>y.uid===x.uid)));
+      L=L.sort((a,b)=>(b.animationCount||0)-(a.animationCount||0)||this.ordenLic(a.license?.label||'')-this.ordenLic(b.license?.label||''));
+      let mejor=null, probados=0;
+      for(const m of L){ if(probados>=5) break; probados++;
+        try{ log(`Comprobando «${m.name}» (¿tiene esqueleto?)…`); const raw=await this.bajar(m.uid); const a=await Modelo3D.analizar(raw); const pt=SkAutoRig.puntuar(a);
+          log(`«${m.name}»: ${SkAutoRig.resumen(a)}`);
+          if(pt>0&&(!mejor||pt>mejor.pt)) mejor={m,raw,a,pt};
+          if(mejor&&mejor.pt>=30) break; }catch(e){ if(/token/.test(e.message)) throw e; } }
+      if(!mejor){ log(`No he encontrado ningún «${q}» con esqueleto en Sketchfab: este personaje queda pendiente (súbelo a Mixamo o busca otro nombre).`); s.pendiente='sin esqueleto'; continue; }
+      const p=await SkAutoRig.preparar(mejor.raw,log,mejor.m.name); s.data=p.data; s.info={rigged:true,huesos:mejor.a.huesos,anims:mejor.a.anims.map(x=>x.nombre)};
+      log(`Personaje elegido: «${mejor.m.name}», ${SkAutoRig.resumen(p.a||mejor.a)}`);
+      cred.push({ruta:s.ruta,nombre:mejor.m.name,autor:mejor.m.user&&(mejor.m.user.displayName||mejor.m.user.username),licencia:mejor.m.license&&mejor.m.license.label,url:mejor.m.viewerUrl||`https://sketchfab.com/3d-models/${mejor.m.uid}`,anims:s.info.anims});
+    }catch(e){ log('Sketchfab: '+e.message); if(/token/.test(e.message)) break; } }
+  return cred; };
+// que el juego sepa qué animaciones trae cada personaje (las usa por su nombre real)
+const _cred98=creditosMd;
+creditosMd=C=>_cred98(C)+(C.some(c=>c.anims&&c.anims.length)?`\n\n## Animaciones de cada personaje\n\n${C.filter(c=>c.anims&&c.anims.length).map(c=>`- ${c.ruta}: ${c.anims.join(', ')}`).join('\n')}\n`:'');
+const _sys98=systemPrompt; systemPrompt=function(extra){ return _sys98(extra)+`\n· Al crear juegos 3D, Mor busca SOLO personajes que de verdad tengan esqueleto (lo comprueba), con animaciones, los apoya en el suelo y los aligera; no hace falta pedirle los modelos.`; };
 
 /* =====================================================================
    15. DESPERTAR
