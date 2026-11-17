@@ -1,0 +1,176 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>JUEGO</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#000;touch-action:none;font-family:system-ui,sans-serif;user-select:none}canvas{display:block}
+#hud{position:fixed;top:10px;left:12px;color:#fff;font-weight:700;font-size:18px;text-shadow:0 2px 4px #000}
+#ui{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#fff;text-align:center;background:rgba(0,0,0,.55);z-index:5}
+#ui.oculto{display:none}button{font:inherit;font-size:20px;padding:12px 28px;border-radius:14px;border:0;background:#ffcc33;color:#222;cursor:pointer}
+#pausa{position:fixed;top:10px;right:10px;background:rgba(255,255,255,.2);color:#fff;font-size:18px;padding:6px 12px;z-index:4}
+#joy{position:fixed;left:24px;bottom:24px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.15);display:none;z-index:4}
+#knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.45)}
+.ab{position:fixed;right:24px;bottom:30px;width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:30px;display:none;align-items:center;justify-content:center;z-index:4}
+@media (pointer:coarse){#joy{display:block}.ab{display:flex}}</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+</head><body>
+<div id="hud">Puntos: <span id="puntos">0</span> · Récord: <span id="record">0</span></div>
+<div id="ui"><h1 id="titulo">JUEGO</h1><p id="texto">Cargando…</p><button id="bJugar" style="display:none">Jugar</button></div>
+<button id="pausa">II</button>
+<div id="joy"><div id="knob"></div></div>
+<div class="ab" id="bSaltar" data-k="Space">⤒</div>
+<!-- más botones táctiles: <div class="ab" data-k="KeyE" style="bottom:120px">✋</div> -->
+<script type="module">
+// ===================== CONFIGURACIÓN (cámbialo para cada juego) =====================
+// Plantilla 3D TERCERA PERSONA de Rocket Jam: personaje con esqueleto y animaciones, cámara detrás,
+// objetos que recoger, enemigos que persiguen, obstáculos y rondas cada vez más difíciles.
+const CONFIG={
+  titulo:'Aventura 3D', instrucciones:'Muévete con WASD o las flechas (joystick en el móvil), Espacio para saltar, Mayús para correr. Recoge todo y que no te pillen.',
+  vidas:3, velocidad:5.5, velocidadCorrer:9, salto:9,
+  objetosPorRonda:8, puntosObjeto:10, enemigosIniciales:2, enemigosMasPorRonda:1, velocidadEnemigo:3.2, visionEnemigo:14,
+  mundo:40,   // el jugador se mueve dentro de un cuadrado de este tamaño (metros)
+  obstaculos:10
+};
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+// ---------- ESCENA, LUCES, SOMBRAS ----------
+const R=new THREE.WebGLRenderer({antialias:true}); R.setPixelRatio(Math.min(devicePixelRatio,2)); R.shadowMap.enabled=true; R.shadowMap.type=THREE.PCFSoftShadowMap; R.toneMapping=THREE.ACESFilmicToneMapping; document.body.appendChild(R.domElement);
+const escena=new THREE.Scene(); escena.background=new THREE.Color(0x9fd3ff); escena.fog=new THREE.Fog(0x9fd3ff,40,170);
+const camara=new THREE.PerspectiveCamera(60,1,.1,600);
+escena.add(new THREE.HemisphereLight(0xffffff,0x557744,1.1));
+const sol=new THREE.DirectionalLight(0xffffff,2.2); sol.castShadow=true; sol.shadow.mapSize.set(2048,2048); Object.assign(sol.shadow.camera,{left:-50,right:50,top:50,bottom:-50,far:200}); sol.shadow.bias=-.0005; escena.add(sol,sol.target);
+// ---------- TEXTURAS (las crea Mor; si falta alguna se usa el color) ----------
+// pon aquí las texturas del juego:  nombre: 'textures/nombre.jpg'   (la de «suelo» se pone sola en el suelo)
+const TEXTURAS={};
+const cargadorTex=new THREE.TextureLoader();
+function textura(nombre,repetir=1){ const r=TEXTURAS[nombre]; if(!r) return null; const t=cargadorTex.load(r); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(repetir,repetir); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; return t; }
+const suelo=new THREE.Mesh(new THREE.PlaneGeometry(500,500),new THREE.MeshStandardMaterial({color:0x6aa84f,roughness:1})); suelo.rotation.x=-Math.PI/2; suelo.receiveShadow=true; escena.add(suelo);
+{ const ts=textura('suelo',90); if(ts){ suelo.material.map=ts; suelo.material.color.set(0xffffff); } }
+function ajustar(){ R.setSize(innerWidth,innerHeight); camara.aspect=innerWidth/innerHeight; camara.updateProjectionMatrix(); } addEventListener('resize',ajustar); ajustar();
+
+// ---------- MODELOS 3D (GLB o FBX; si falta el archivo se usa una forma de color) ----------
+// pon aquí TODOS los modelos del juego:  nombre: 'models/nombre.glb'
+const MODELOS={ jugador:'models/jugador.glb', enemigo:'models/enemigo.glb', objeto:'models/objeto.glb', obstaculo:'models/roca.glb' };
+const gltf=new GLTFLoader(), fbx=new FBXLoader(), cache={};
+function leer(ruta){ if(!ruta) return Promise.reject(new Error('sin ruta'));
+  if(!cache[ruta]) cache[ruta]=fetch(ruta).then(r=>{ if(!r.ok) throw new Error('no está '+ruta); return r.arrayBuffer(); }).then(ab=>{
+    const cab=new TextDecoder().decode(new Uint8Array(ab,0,Math.min(24,ab.byteLength)));
+    if(/Kaydara|FBX/.test(cab)){ const o=fbx.parse(ab,''); return {scene:o,animations:o.animations||[]}; }
+    return new Promise((ok,ko)=>gltf.parse(ab,'',g=>ok({scene:g.scene,animations:g.animations||[]}),ko)); });
+  return cache[ruta]; }
+// escala el modelo a la altura pedida, lo centra y lo apoya en el suelo (y=0)
+function caja(obj){ obj.updateMatrixWorld(true); const b=new THREE.Box3(); let piel=false;
+  obj.traverse(o=>{ if(o.isSkinnedMesh){ piel=true; o.skeleton&&o.skeleton.update(); o.computeBoundingBox(); b.union(o.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
+  if(!piel||b.isEmpty()) b.setFromObject(obj); return b; }
+function encajar(obj,altura){ const s=new THREE.Vector3(); caja(obj).getSize(s); obj.scale.multiplyScalar(altura/(s.y||1));
+  const b2=caja(obj), c=new THREE.Vector3(); b2.getCenter(c); obj.position.x-=c.x; obj.position.z-=c.z; obj.position.y-=b2.min.y;
+  obj.traverse(o=>{ if(o.isMesh){ o.castShadow=o.receiveShadow=true; } }); }
+// devuelve un Group listo para añadir a la escena (el modelo mira hacia +Z)
+async function cargarModelo(nombre,{altura=1,color=0xcccccc,forma='caja'}={}){
+  const g=new THREE.Group(); g.name=nombre; g.userData.anims=[];
+  try{ const d=await leer(MODELOS[nombre]); const m=SkeletonUtils.clone(d.scene); encajar(m,altura); g.add(m); g.userData.real=m; g.userData.anims=d.animations; }
+  catch(e){ const geo=forma==='capsula'?new THREE.CapsuleGeometry(altura*.22,altura*.56,6,16):forma==='esfera'?new THREE.SphereGeometry(altura/2,24,16):forma==='cilindro'?new THREE.CylinderGeometry(altura*.35,altura*.35,altura,20):new THREE.BoxGeometry(altura,altura,altura);
+    const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color,roughness:.7})); m.position.y=altura/2; m.castShadow=m.receiveShadow=true; g.add(m); }
+  return g; }
+// personaje animado: models/NOMBRE.glb y, opcionales, models/NOMBRE_quieto|andar|correr|saltar.glb (p. ej. de Mixamo, «In Place»)
+const SIN={quieto:['quieto','idle','stand','breath'],andar:['andar','walk'],correr:['correr','run','sprint'],saltar:['saltar','jump'],atacar:['atacar','attack','punch','slash'],morir:['morir','death','die']};
+async function cargarPersonaje(nombre,{altura=1.8,color=0x3366ff,anims=['quieto','andar','correr','saltar']}={}){
+  const g=await cargarModelo(nombre,{altura,color,forma:'capsula'}), clips={};
+  g.userData.anims.forEach(c=>clips[c.name.toLowerCase()]=c);
+  for(const a of anims){ try{ const d=await leer(MODELOS[nombre+'_'+a]); if(d.animations[0]) clips[a]=d.animations[0]; }catch(e){} }
+  const mixer=g.userData.real?new THREE.AnimationMixer(g.userData.real):null; let actual=null;
+  const buscar=n=>clips[n]||(Object.entries(clips).find(([k])=>(SIN[n]||[n]).some(s=>k.includes(s)))||[])[1];
+  g.userData.anim=(n,fundido=.2)=>{ if(!mixer) return; const c=buscar(n); if(!c) return; const acc=mixer.clipAction(c); if(acc===actual) return; acc.reset().fadeIn(fundido).play(); if(actual) actual.fadeOut(fundido); actual=acc; };
+  g.userData.mixer=mixer; g.userData.anim('quieto'); MIXERS.push(mixer); return g; }
+const MIXERS=[];
+
+// ---------- ENTRADA: teclado, joystick táctil, botones y arrastrar para girar la cámara ----------
+const K={}; addEventListener('keydown',e=>{ K[e.code]=true; if(['Space','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault(); }); addEventListener('keyup',e=>K[e.code]=false);
+document.querySelectorAll('.ab').forEach(b=>{ const k=b.dataset.k; b.addEventListener('pointerdown',e=>{ e.preventDefault(); K[k]=true; }); ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,()=>K[k]=false)); });
+const JOY={x:0,y:0}, joy=document.getElementById('joy'), knob=document.getElementById('knob'); let jid=null;
+function mover(e){ const r=joy.getBoundingClientRect(), dx=(e.clientX-r.left-r.width/2)/(r.width/2), dy=(e.clientY-r.top-r.height/2)/(r.height/2), l=Math.min(1,Math.hypot(dx,dy)), a=Math.atan2(dy,dx); JOY.x=Math.cos(a)*l; JOY.y=Math.sin(a)*l; knob.style.transform=`translate(${JOY.x*35}px,${JOY.y*35}px)`; }
+joy.addEventListener('pointerdown',e=>{ jid=e.pointerId; try{ joy.setPointerCapture(jid); }catch(e){} mover(e); }); joy.addEventListener('pointermove',e=>{ if(e.pointerId===jid) mover(e); });
+['pointerup','pointercancel'].forEach(t=>joy.addEventListener(t,()=>{ jid=null; JOY.x=JOY.y=0; knob.style.transform=''; }));
+const CAM={ang:0,dist:6,alto:2.6}; let arr=null;
+R.domElement.addEventListener('pointerdown',e=>{ arr={x:e.clientX,id:e.pointerId}; }); addEventListener('pointermove',e=>{ if(arr&&e.pointerId===arr.id){ CAM.ang-=(e.clientX-arr.x)*.008; arr.x=e.clientX; } }); addEventListener('pointerup',()=>arr=null);
+// dirección pedida (-1..1) en x (derecha) y z (atrás)
+function entrada(){ let x=(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0), z=(K.KeyS||K.ArrowDown?1:0)-(K.KeyW||K.ArrowUp?1:0); if(JOY.x||JOY.y){ x=JOY.x; z=JOY.y; } const l=Math.hypot(x,z); return l>1?{x:x/l,z:z/l}:{x,z}; }
+
+// ---------- FÍSICA SENCILLA: gravedad, suelo, obstáculos (cajas) ----------
+const GRAVEDAD=24, OBST=[];
+function obstaculo(obj){ obj.updateMatrixWorld(true); const o={obj,caja:new THREE.Box3().setFromObject(obj)}; OBST.push(o); return o; }
+// cuerpo = {obj, vel:Vector3, radio, alto, enSuelo}
+function moverCuerpo(c,dt){ const p=c.obj.position; c.vel.y-=GRAVEDAD*dt; p.x+=c.vel.x*dt; p.z+=c.vel.z*dt; p.y+=c.vel.y*dt; c.enSuelo=false;
+  if(p.y<=0){ p.y=0; c.vel.y=0; c.enSuelo=true; }
+  for(const o of OBST){ const b=o.caja, m=c.radio*.6, dentro=p.x>b.min.x-m&&p.x<b.max.x+m&&p.z>b.min.z-m&&p.z<b.max.z+m;
+    if(dentro&&c.vel.y<=0&&p.y>=b.max.y-.35&&p.y<=b.max.y+.05){ p.y=b.max.y; c.vel.y=0; c.enSuelo=true; continue; }   // aterriza encima
+    if(p.y>=b.max.y-.05||p.y+c.alto<=b.min.y) continue;                                                                 // pasa por encima/debajo
+    const cx=Math.max(b.min.x,Math.min(p.x,b.max.x)), cz=Math.max(b.min.z,Math.min(p.z,b.max.z)), dx=p.x-cx, dz=p.z-cz, d=Math.hypot(dx,dz);
+    if(d<c.radio){ if(d>1e-4){ p.x=cx+dx/d*c.radio; p.z=cz+dz/d*c.radio; } else p.x=b.max.x+c.radio; } } }
+const cerca=(a,b,dist)=>a.position.distanceTo(b.position)<dist;
+
+// ---------- SONIDO (WebAudio, sin archivos) ----------
+let AC=null; function sonido(f=440,dur=.12,tipo='square',vol=.12){ try{ AC=AC||new AudioContext(); const o=AC.createOscillator(), g=AC.createGain(); o.type=tipo; o.frequency.value=f; g.gain.setValueAtTime(vol,AC.currentTime); g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur); o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime+dur); }catch(e){} }
+
+// ---------- CÁMARA EN TERCERA PERSONA ----------
+function seguirCamara(obj,dt){ const t=obj.position, q=new THREE.Vector3(t.x+Math.sin(CAM.ang)*CAM.dist,t.y+CAM.alto,t.z+Math.cos(CAM.ang)*CAM.dist);
+  camara.position.lerp(q,1-Math.exp(-8*dt)); camara.lookAt(t.x,t.y+1.2,t.z); sol.position.set(t.x+25,t.y+45,t.z+18); sol.target.position.copy(t); }
+
+// ---------- JUGADOR ----------
+let jugador=null;
+function controlarJugador(dt){ const e=entrada(), corre=K.ShiftLeft||Math.hypot(JOY.x,JOY.y)>.9, v=corre?9:5;
+  const s=Math.sin(CAM.ang), c=Math.cos(CAM.ang), dx=e.x*c+e.z*s, dz=-e.x*s+e.z*c, mov=Math.hypot(dx,dz)>.05;
+  jugador.vel.x=dx*v; jugador.vel.z=dz*v;
+  if(mov){ const obj=Math.atan2(dx,dz); let d=obj-jugador.obj.rotation.y; d=Math.atan2(Math.sin(d),Math.cos(d)); jugador.obj.rotation.y+=d*Math.min(1,dt*12); }
+  if(K.Space&&jugador.enSuelo){ jugador.vel.y=9; sonido(520,.12); }
+  moverCuerpo(jugador,dt);
+  const a=jugador.obj.userData.anim; if(a) a(!jugador.enSuelo?'saltar':mov?(corre?'correr':'andar'):'quieto'); }
+
+// ---------- ESTADO Y PANTALLAS ----------
+let S=null, estado='cargando', RECORD=+(localStorage.getItem('record_JUEGO')||0);
+const $=id=>document.getElementById(id);
+function mostrarUI(t,txt,b){ $('titulo').textContent=t; $('texto').textContent=txt; $('bJugar').textContent=b; $('bJugar').style.display=''; $('ui').classList.remove('oculto'); }
+const OBJETOS=[], ENEMIGOS=[]; let MOLDE_OBJ=null, MOLDE_ENE=null;
+const alAzar=(m=CONFIG.mundo/2-2)=>new THREE.Vector3((Math.random()*2-1)*m,0,(Math.random()*2-1)*m);
+async function preparar(){   // crea el mundo y carga los modelos (una sola vez)
+  jugador={obj:await cargarPersonaje('jugador',{altura:1.8,color:0x3b82f6}),vel:new THREE.Vector3(),radio:.4,alto:1.8,enSuelo:true}; escena.add(jugador.obj);
+  for(let i=0;i<CONFIG.obstaculos;i++){ const o=await cargarModelo('obstaculo',{altura:1.2+Math.random()*1.5,color:0x8d8f99,forma:'caja'}); let p; do{ p=alAzar(); }while(p.length()<5); o.position.copy(p); o.rotation.y=Math.random()*6; escena.add(o); obstaculo(o); }
+  const lim=new THREE.Mesh(new THREE.BoxGeometry(CONFIG.mundo,0.3,CONFIG.mundo),new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:.15})); lim.position.y=.15; escena.add(lim); }
+async function nuevoObjeto(){ const o=await cargarModelo('objeto',{altura:.7,color:0xffd23f,forma:'esfera'}); o.position.copy(alAzar()); o.position.y=.4; escena.add(o); OBJETOS.push(o); }
+async function nuevoEnemigo(){ const e={obj:await cargarPersonaje('enemigo',{altura:1.8,color:0xe5534b}),vel:new THREE.Vector3(),radio:.45,alto:1.8,enSuelo:true,deambula:Math.random()*6};
+  let p; do{ p=alAzar(); }while(p.distanceTo(jugador.obj.position)<12); e.obj.position.copy(p); escena.add(e.obj); ENEMIGOS.push(e); }
+async function nuevaRonda(){ S.ronda++; for(const o of OBJETOS) escena.remove(o); OBJETOS.length=0; for(let i=0;i<CONFIG.objetosPorRonda;i++) await nuevoObjeto();
+  const quiero=CONFIG.enemigosIniciales+(S.ronda-1)*CONFIG.enemigosMasPorRonda; while(ENEMIGOS.length<quiero) await nuevoEnemigo(); S.calma=2.5; }
+function nuevaPartida(){ S={t:0,puntos:0,vidas:CONFIG.vidas,ronda:0,inv:0,calma:2.5}; jugador.obj.position.set(0,0,0); jugador.vel.set(0,0,0);
+  for(const e of ENEMIGOS) escena.remove(e.obj); ENEMIGOS.length=0; return nuevaRonda(); }
+async function empezar(){ await nuevaPartida(); estado='jugando'; $('ui').classList.add('oculto'); sonido(660,.15); }
+function finPartida(){ estado='fin'; if(S.puntos>RECORD){ RECORD=S.puntos; localStorage.setItem('record_JUEGO',RECORD); } sonido(140,.4,'sawtooth'); mostrarUI('¡Fin!','Puntos: '+Math.floor(S.puntos)+' · Récord: '+Math.floor(RECORD),'Otra vez'); }
+$('bJugar').onclick=()=>{ if(estado==='pausa'){ estado='jugando'; $('ui').classList.add('oculto'); } else empezar(); };
+$('pausa').onclick=()=>{ if(estado==='jugando'){ estado='pausa'; mostrarUI('Pausa','','Seguir'); } };
+addEventListener('keydown',e=>{ if(e.code==='Escape') $('pausa').onclick(); if((e.code==='Enter'||(e.code==='Space'&&estado!=='jugando'))&&estado!=='jugando'&&estado!=='cargando') $('bJugar').onclick(); });
+R.domElement.addEventListener('click',()=>{ if(estado==='menu'||estado==='fin') $('bJugar').onclick(); });
+
+// ---------- LÓGICA (solo datos) ----------
+function update(dt){ S.t+=dt; controlarJugador(dt); const p=jugador.obj.position, M=CONFIG.mundo/2-1;
+  p.x=Math.max(-M,Math.min(M,p.x)); p.z=Math.max(-M,Math.min(M,p.z));
+  for(let i=OBJETOS.length-1;i>=0;i--){ const o=OBJETOS[i]; o.rotation.y+=dt*2; o.position.y=.4+Math.sin(S.t*3+i)*.15;
+    if(o.position.distanceTo(new THREE.Vector3(p.x,.4,p.z))<1.1){ escena.remove(o); OBJETOS.splice(i,1); S.puntos+=CONFIG.puntosObjeto; sonido(880,.08,'triangle'); } }
+  if(!OBJETOS.length&&!S.cambiando){ S.cambiando=true; S.puntos+=50; sonido(660,.3,'triangle'); nuevaRonda().then(()=>S.cambiando=false); }
+  if(S.calma>0) S.calma-=dt; if(S.inv>0) S.inv-=dt;
+  for(const e of ENEMIGOS){ const d=new THREE.Vector3().subVectors(p,e.obj.position); d.y=0; const dist=d.length(); let mov=false;
+    if(S.calma<=0&&dist<CONFIG.visionEnemigo){ d.normalize(); e.vel.x=d.x*CONFIG.velocidadEnemigo; e.vel.z=d.z*CONFIG.velocidadEnemigo; mov=true; }
+    else { e.deambula+=(Math.random()-.5)*dt*2; e.vel.x=Math.sin(e.deambula)*1.2; e.vel.z=Math.cos(e.deambula)*1.2; mov=true; }
+    e.obj.rotation.y=Math.atan2(e.vel.x,e.vel.z); moverCuerpo(e,dt); const q=e.obj.position; q.x=Math.max(-M,Math.min(M,q.x)); q.z=Math.max(-M,Math.min(M,q.z));
+    const a=e.obj.userData.anim; if(a) a(dist<CONFIG.visionEnemigo&&S.calma<=0?'correr':'andar');
+    if(S.inv<=0&&S.calma<=0&&dist<1.1){ S.vidas--; S.inv=1.5; sonido(120,.3,'sawtooth'); jugador.vel.y=6; if(S.vidas<=0) return finPartida(); } }
+  $('puntos').textContent=Math.floor(S.puntos)+'  ·  Vidas: '+S.vidas+'  ·  Ronda '+S.ronda; $('record').textContent=Math.floor(RECORD); }
+
+// ---------- BUCLE (paso fijo) ----------
+const reloj=new THREE.Clock(), PASO=1/60; let acum=0;
+function bucle(){ const dt=Math.min(.1,reloj.getDelta());
+  if(estado==='jugando'){ acum+=dt; while(acum>=PASO){ update(PASO); acum-=PASO; if(estado!=='jugando') break; } }
+  MIXERS.forEach(m=>m&&m.update(dt)); if(jugador) seguirCamara(jugador.obj,dt); R.render(escena,camara);
+  const jp=jugador?jugador.obj.position:{x:0,y:0,z:0}; window.__juego={estado:estado==='menu'||estado==='cargando'?'inicio':estado,puntos:S?Math.floor(S.puntos):0,vidas:S?S.vidas:null,jugador:{x:jp.x,y:jp.z,z:jp.y},mundo:{ancho:12,alto:12}};
+  requestAnimationFrame(bucle); }
+requestAnimationFrame(bucle);
+preparar().then(async()=>{ await nuevaPartida(); estado='menu'; document.title=CONFIG.titulo; mostrarUI(CONFIG.titulo,CONFIG.instrucciones,'Jugar'); }).catch(e=>{ $('texto').textContent='Error al cargar: '+e.message; });
+</script></body></html>
