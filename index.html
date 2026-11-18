@@ -1274,7 +1274,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v45</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v46</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1438,7 +1438,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v45 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v46 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2489,7 +2489,7 @@ ${listaMod}`;
       P.creditos=P._cred; delete P._cred; P.files=(P.creditos&&P.creditos.length?[{ruta:'CREDITOS.md',code:creditosMd(P.creditos)}]:[]).concat([{ruta:'index.html',code:html},{ruta:'README.md',code:`# ${g.titulo}\n\n${g.resumen}\n\n## Controles\n${g.controles}\n\n## Mecánicas\n${(g.mecanicas||[]).map(m=>'- '+m).join('\n')}\n\nHecho por M.O.R.\n`}].concat(assets.map(a=>({ruta:a.ruta,data:a.data,bin:true}))));
       P.lineas=html.split('\n').length; P.estado='listo'; const faltan=slots.filter(a=>!a.data&&a.tipo!=='animacion').length; await DB.put('projects',P);
       ban.style.display='none'; const ult=(P.pruebas||[]).slice(-1)[0]; this.running=false; renderProjects(); Sfx.play('risa'); squash(.35);
-      logChat('m',`[Juego creado: ${g.titulo}, ${P.lineas} líneas, ${assets.length} imágenes]`);
+      logChat('m',`[Juego creado: ${g.titulo}, ${P.lineas} líneas, ${assets.length} imágenes${P.sinAdaptar?'. OJO: es la plantilla base sin adaptar, los cerebros no pudieron cambiarla':''}]`);
       showSub(`¡Juego «${g.titulo}» terminado! ${P.lineas} líneas y ${assets.length} imágenes.${faltan?' Faltan '+faltan+' imágenes o modelos: ponlos en Proyectos → Imágenes y modelos.':''}`); showGame(P);
       localSay(`¡Juego terminado! ${g.titulo}. ${ult&&ult.probs.length?'Quedan '+ult.probs.length+' detalles que no pude arreglar solo; pídeme cambios.':'Ha pasado todas las pruebas.'} ${faltan?(es3d?'Faltan '+faltan+' modelos: el juego usa formas de colores hasta que los pongas (botón Imágenes y modelos). ':'Faltan '+faltan+' imágenes: el juego usa colores hasta que pongas las tuyas (botón Imágenes). '):''}Pulsa Jugar.`,'feliz');
     }catch(e){ ban.style.display='none'; this.running=false; P.estado='error: '+e.message; await DB.put('projects',P); localSay('Mor atascarse haciendo el juego: '+e.message,'triste'); }
@@ -3933,6 +3933,8 @@ const Agente={running:false, espera:null,
           c.querySelector('.agOk').onclick=go; c.querySelector('.agResp').onkeydown=e=>{ if(e.key==='Enter') go(); };
           await DB.put('projects',P); this.running=false; setEmotion('neutral'); return; }
         if(x.accion==='terminar'){
+          if(!Object.keys(est.cambios).length&&!/^(revisa|mira|comprueba|explica|analiza|dime)\b/i.test(tarea.trim())&&(est.sinCambio=(est.sinCambio||0)+1)<=3){ this.log(c,'Dice que ha terminado pero no ha cambiado nada: le obligo a hacerlo','mal');
+            est.hist.push({a:'terminar (RECHAZADO)',o:'RECHAZADO: no has cambiado NINGÚN archivo y la tarea pide cambios. No digas que está hecho. Haz ahora los cambios de verdad con «editar» (copiando el texto exacto que hay) o «crear» para archivos nuevos.'}); continue; }
           if((est.editado||!est.probado)&&est.avisos<2&&Object.keys(est.cambios).length){ est.avisos++; this.log(c,'Antes de terminar, lo pruebo…'); const o=await this.ejecutar(P,{accion:'probar'},est);
             if(est.errs.length){ this.log(c,est.errs.length+' error(es) al probar: sigo corrigiendo','mal'); est.hist.push({a:'probar (automático antes de terminar)',o:o+'\nHay errores: corrígelos antes de terminar.'}); continue; } }
           fin=x.mensaje||'Hecho.'; break; }
@@ -3945,6 +3947,7 @@ const Agente={running:false, espera:null,
       }
     }finally{ this.running=false; setEmotion('neutral'); }
     if(PARAR.on){ this.log(c,'Parado. Los cambios hechos hasta aquí están guardados (puedes deshacerlos).','mal'); }
+    if(fin&&!Object.keys(est.cambios).length&&!/^(revisa|mira|comprueba|explica|analiza|dime)\b/i.test(tarea.trim())) fin='No he conseguido cambiar nada del código: los cerebros que quedan con cupo no han sabido hacer los cambios. El juego sigue como estaba. Pídemelo otra vez cuando se renueve el cupo (9:00).';
     if(fin) this.pintaPlan(c,est.plan,est.plan.length+1);
     P.at=Date.now(); await DB.put('projects',P); try{ renderProjects(); }catch(e){}
     this.final(c,P,fin||(PARAR.on?'Parado por ti.':'He llegado al límite de pasos sin terminar del todo. Revisa lo hecho y dime cómo sigo.'),antes);
