@@ -1336,5 +1336,62 @@ C.start=evLog.length;renderCourse();
   send({listo:true});
 })();
 </script>
+<script>
+/* ===== Puente 2 con M.O.R.: Mor maneja Vértice (crear, mover, materiales, modificadores, luces, animación) ===== */
+(function(){ if(window.parent===window) return;
+  const send=m=>parent.postMessage(Object.assign({__app:'vertice'},m),'*'); const D=Math.PI/180;
+  const TIPOS={cubo:'cube',caja:'cube',cube:'cube',esfera:'uvsphere',sphere:'uvsphere',uvsphere:'uvsphere',icoesfera:'ico',ico:'ico',cilindro:'cylinder',cylinder:'cylinder',cono:'cone',cone:'cone',toroide:'torus',toro:'torus',torus:'torus',plano:'plane',plane:'plane',circulo:'circle',circle:'circle',rejilla:'grid',grid:'grid'};
+  const LUZ={sol:'SUN',sun:'SUN',puntual:'POINT',point:'POINT',foco:'SPOT',spot:'SPOT'};
+  const buscar=n=>{ const L=objs(); return L.find(o=>o.name===n)||L.find(o=>o.name.toLowerCase()===String(n||'').toLowerCase()); };
+  const dims=o=>{ const g=o.userData.base; g.computeBoundingBox(); const s=new THREE.Vector3(); g.boundingBox.getSize(s); return s.toArray(); };
+  const r2=v=>+(+v).toFixed(3);
+  function mods(L){ return (L||[]).map(m=>{ const t=String(m.tipo||m.type||'').toLowerCase();
+    if(/sub/.test(t)) return {type:'SUBSURF',on:true,levels:Math.max(1,Math.min(3,m.niveles||m.levels||1))};
+    if(/espejo|mirror/.test(t)) return {type:'MIRROR',on:true,axes:(m.ejes||m.axes||[true,false,false]).map(Boolean)};
+    if(/matriz|array/.test(t)) return {type:'ARRAY',on:true,count:Math.max(1,Math.min(50,m.n||m.count||3)),rel:m.desplazamiento||m.rel||[1,0,0],cst:m.fijo||[0,0,0],merge:true};
+    if(/ruido|displace|desplaz/.test(t)) return {type:'DISPLACE',on:true,strength:m.fuerza??.2,scale:m.escala??2};
+    return null; }).filter(Boolean); }
+  function aplicar(o,x){
+    if(x.pos) o.position.fromArray(x.pos.map(Number));
+    if(x.rot) o.rotation.set(x.rot[0]*D,x.rot[1]*D,x.rot[2]*D);
+    if(x.esc) o.scale.fromArray(x.esc.map(Number));
+    if(x.tam&&o.userData.kind==='MESH'){ const b=dims(o); o.scale.set(...x.tam.map((v,i)=>b[i]>1e-6?v/b[i]:1)); }
+    if(x.nombre_nuevo) o.name=uniqueName(x.nombre_nuevo);
+    if(o.userData.kind==='MESH'){ const m=o.userData.mat;
+      if(x.color) m.color=x.color; if(x.metal!=null) m.metal=+x.metal; if(x.rugosidad!=null) m.rough=+x.rugosidad; if(x.emision) m.emis=x.emision; if(x.fuerza_emision!=null) m.emisStr=+x.fuerza_emision; if(x.alfa!=null) m.alpha=+x.alfa;
+      applyMat(o); if(x.suave!=null) o.userData.smooth=!!x.suave; if(x.mods) o.userData.mods=mods(x.mods); if(x.suave!=null||x.mods) rebuild(o); applyShadingTo(o); }
+    if(o.userData.kind==='LIGHT'){ const L=o.userData.light; if(x.color) L.color=x.color; if(x.potencia!=null) L.power=+x.potencia; buildLight(o); applyShadingTo(o); }
+    if(x.mirar&&(o.userData.kind==='CAMERA'||o.userData.kind==='LIGHT')){ o.up.set(0,0,1); o.lookAt(new THREE.Vector3(...x.mirar)); if(o.userData.kind==='CAMERA') o.rotateX(0); }
+  }
+  function op(x){ const t=String(x.op||'').toLowerCase();
+    if(t==='nuevo'){ emptyScene(); objs().filter(o=>o.userData.kind!=='MESH'&&x.vacio).forEach(o=>root.remove(o)); return 'Escena nueva'; }
+    if(t==='añadir'||t==='anadir'){ const tipo=String(x.tipo||'cubo').toLowerCase();
+      if(LUZ[tipo]){ const o=addLight(LUZ[tipo]); if(x.nombre) o.name=uniqueName(x.nombre); aplicar(o,x); return 'Luz '+o.name; }
+      if(/c[aá]mara|camera/.test(tipo)){ const o=addCamera(); if(x.nombre) o.name=uniqueName(x.nombre); aplicar(o,x); return 'Cámara '+o.name; }
+      if(/vac[ií]o|empty/.test(tipo)){ const o=addEmpty(); if(x.nombre) o.name=uniqueName(x.nombre); aplicar(o,x); return 'Vacío '+o.name; }
+      const p=TIPOS[tipo]; if(!p) throw new Error('Tipo desconocido: '+x.tipo+'. Hay: cubo, esfera, icoesfera, cilindro, cono, toroide, plano, círculo, rejilla, luz sol/puntual/foco, cámara, vacío');
+      const o=addPrim(p); if(x.nombre) o.name=uniqueName(x.nombre); aplicar(o,x); return 'Añadido '+o.name; }
+    if(t==='editar'){ const o=buscar(x.nombre); if(!o) throw new Error('No existe '+x.nombre); aplicar(o,x); return 'Cambiado '+o.name; }
+    if(t==='borrar'){ const L=(x.nombres||[x.nombre]).map(buscar).filter(Boolean); if(!L.length) throw new Error('No existe '+x.nombre); S.sel=new Set(L); deleteSel(); return 'Borrados '+L.length; }
+    if(t==='duplicar'){ const o=buscar(x.nombre); if(!o) throw new Error('No existe '+x.nombre); const d=ser(o); d.name=uniqueName(x.nuevo||o.name); const c=deser(d); root.add(c); aplicar(c,x); S.sel=new Set([c]); S.active=c; updateAllSel(); return 'Copia '+c.name; }
+    if(t==='unir'){ const L=(x.nombres||[]).map(buscar).filter(Boolean); if(L.length<2) throw new Error('Hacen falta 2 o más objetos que existan'); S.sel=new Set(L); S.active=L[0]; joinSel(); if(x.nombre) L[0].name=uniqueName(x.nombre); return 'Unidos en '+L[0].name; }
+    if(t==='suave'){ const L=(x.nombres||[x.nombre]).map(buscar).filter(Boolean); L.forEach(o=>{ if(o.userData.kind==='MESH'){ o.userData.smooth=x.valor!==false; rebuild(o); } }); return 'Sombreado '+(x.valor!==false?'suave':'plano'); }
+    if(t==='clave'){ const o=buscar(x.nombre); if(!o) throw new Error('No existe '+x.nombre); aplicar(o,x); const f=Math.round(x.frame||1); o.userData.keys[f]={p:o.position.toArray(),r:[o.rotation.x,o.rotation.y,o.rotation.z],s:o.scale.toArray()}; try{ drawTimeline(); }catch(e){} return 'Clave en el fotograma '+f; }
+    if(t==='frame'){ setFrame(Math.round(x.frame||1)); return 'Fotograma '+x.frame; }
+    if(t==='sombreado'){ const m={solido:'SOLID',solid:'SOLID',material:'MATERIAL',render:'RENDERED',renderizado:'RENDERED',alambre:'WIRE',wire:'WIRE'}[String(x.modo||'material').toLowerCase()]||'MATERIAL'; S.shading=m; applyShading(); return 'Vista '+m; }
+    if(t==='mundo'){ if(x.color) S.world.color=x.color; if(x.fuerza!=null) S.world.strength=+x.fuerza; applyShading(); return 'Mundo cambiado'; }
+    if(t==='encuadrar'){ frameObjects(x.nombre?[buscar(x.nombre)].filter(Boolean):objs().filter(o=>o.userData.kind==='MESH')); try{ controls.update(); }catch(e){} return 'Encuadrado'; }
+    if(t==='vista'){ const v={frente:'front',front:'front',derecha:'right',right:'right',arriba:'top',top:'top'}[String(x.dir||'').toLowerCase()]; if(v&&typeof viewAxis==='function'){ viewAxis({front:'1',right:'3',top:'7'}[v]); } return 'Vista '+(v||'actual'); }
+    if(t==='seleccionar'){ const o=buscar(x.nombre); selectObj(o||null); return o?'Seleccionado '+o.name:'Nada seleccionado'; }
+    throw new Error('Orden desconocida: '+x.op);
+  }
+  const estado=()=>({modo:S.mode,sombreado:S.shading,fotograma:S.frame,objetos:objs().slice(0,80).map(o=>{ const d={nombre:o.name,tipo:o.userData.kind,pos:o.position.toArray().map(r2),rot:[o.rotation.x,o.rotation.y,o.rotation.z].map(v=>r2(v/D)),esc:o.scale.toArray().map(r2)};
+      if(o.userData.kind==='MESH'){ const b=dims(o); d.tam=b.map((v,i)=>r2(v*o.scale.getComponent(i))); d.color=o.userData.mat.color; if(o.userData.mods.length) d.mods=o.userData.mods.map(m=>m.type); if(Object.keys(o.userData.keys||{}).length) d.claves=Object.keys(o.userData.keys).map(Number); } return d; })});
+  window.addEventListener('message',e=>{ const d=e.data||{}; if(!d.__mor) return; const ok=x=>send(Object.assign({id:d.id},x));
+    if(d.cmd==='ops'){ if(S.mode==='EDIT') setMode('OBJECT',true); const res=[]; for(const x of (d.ops||[]).slice(0,60)){ try{ res.push('✓ '+op(x)); }catch(err){ res.push('✗ '+(x.op||'?')+': '+err.message); } }
+      try{ pushUndo(); refreshUI(); }catch(e){} if(!res.some(r=>/Encuadrado/.test(r))&&(d.ops||[]).some(x=>/a[ñn]adir/.test(x.op||''))){ try{ frameObjects(objs().filter(o=>o.userData.kind==='MESH')); controls.update(); }catch(e){} } ok({res,estado:estado()}); }
+    else if(d.cmd==='estado'){ ok({estado:estado()}); } });
+})();
+</script>
 </body>
 </html>

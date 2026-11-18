@@ -6619,6 +6619,7 @@ function gltfSkinned(json, bufs){
     ji:readAcc(prim.attributes.JOINTS_0), jw:readAcc(prim.attributes.WEIGHTS_0),
     idx:readAcc(prim.indices), inv:readAcc(skin.inverseBindMatrices), bones:[], clips:[]
   };
+  if (prim.attributes.COLOR_0 !== undefined && json.accessors[prim.attributes.COLOR_0].type === 'VEC3' && json.accessors[prim.attributes.COLOR_0].componentType === 5126) out.c = readAcc(prim.attributes.COLOR_0);
   if (!out.ji || !out.jw) return null;
   const orden = {}; skin.joints.forEach((n, i) => orden[n] = i);
   skin.joints.forEach((ni, i) => {
@@ -6652,8 +6653,9 @@ function buildSkinned(model){
   g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sk.jw, 4));
   if (sk.idx) g.setIndex(sk.idx);
   if (!sk.n) g.computeVertexNormals();
-  const mat = new THREE.MeshStandardMaterial({ color:new THREE.Color(model.color || '#c2ccdd'),
-    roughness:.72, metalness:.05, skinning:true });
+  if (sk.c) g.setAttribute('color', new THREE.Float32BufferAttribute(sk.c, 3));
+  const mat = new THREE.MeshStandardMaterial({ color:new THREE.Color(sk.c ? '#ffffff' : (model.color || '#c2ccdd')),
+    roughness:.72, metalness:.05, skinning:true, vertexColors:!!sk.c });
   const mesh = new THREE.SkinnedMesh(g, mat);
   mesh.castShadow = true; mesh.receiveShadow = true;
   const bones = sk.bones.map(b => {
@@ -6669,7 +6671,8 @@ function buildSkinned(model){
   const grupo = new THREE.Group();
   raiz.forEach(b => grupo.add(b));
   grupo.add(mesh);
-  mesh.bind(esq);
+  // si el archivo trae las matrices de enlace, se respetan (antes se recalculaban y los modelos importados salían deformados)
+  if (sk.inv && sk.inv.length) mesh.bind(esq, new THREE.Matrix4()); else mesh.bind(esq);
   grupo.userData.skinned = true;
   grupo.userData.mixer = new THREE.AnimationMixer(grupo);
   grupo.userData.clips = {};
@@ -8059,12 +8062,64 @@ function extDialog(p){
     try{
       if(d.cmd==='importar'){ dar(new Blob([b64(d.data)]),d.name||'modelo.glb','scene'); ok({hecho:true}); }
       else if(d.cmd==='juego'){ pillar=r=>ok(r); try{ exportGame(); }catch(err){ pillar=null; ok({error:err.message}); } setTimeout(()=>{ if(pillar){ pillar=null; ok({error:'No se pudo exportar el juego'}); } },8000); }
-      else if(d.cmd==='ver'){ const c=[...document.querySelectorAll('canvas')].sort((a,b)=>b.width*b.height-a.width*a.height)[0]; let img=null; try{ img=c&&c.toDataURL('image/jpeg',.7); }catch(e){} ok({img,estado:estado()}); }
+      else if(d.cmd==='ver'){ let img=null; try{ renderer.render(scene,activeCam); img=renderer.domElement.toDataURL('image/jpeg',.7); }catch(e){ const c=[...document.querySelectorAll('canvas')].sort((a,b)=>b.width*b.height-a.width*a.height)[0]; try{ img=c&&c.toDataURL('image/jpeg',.7); }catch(e2){} } ok({img,estado:estado()}); }
       else if(d.cmd==='restaurar'){ dar(new Blob([d.json]),'copia-mor.json','scene'); ok({hecho:true}); }
     }catch(err){ ok({error:String(err&&err.message||err)}); } });
   // copia de seguridad automática (como mucho cada 60 s, solo si cambia)
   let ultima='', t=0; setInterval(()=>{ try{ const s=JSON.stringify(P); if(s!==ultima&&Date.now()-t>60000){ ultima=s; t=Date.now(); send({copia:s,nombre:(P.name||'Juego')+' · '+(P.objects||[]).length+' objetos'}); } }catch(e){} },15000);
   send({listo:true});
+})();
+</script>
+<script>
+/* ===== Puente 2 con M.O.R.: Mor maneja ULTIMATE3D (escena, mecánicas, mundo, modelos, jugar) ===== */
+(function(){ if(window.parent===window) return;
+  const send=m=>parent.postMessage(Object.assign({__app:'ultimate'},m),'*'); const D=Math.PI/180;
+  const GEO={cubo:'box',caja:'box',box:'box',esfera:'sphere',sphere:'sphere',cilindro:'cyl',cyl:'cyl',cono:'cone',cone:'cone',toro:'torus',torus:'torus',plano:'plane',plane:'plane',capsula:'capsule',cápsula:'capsule',capsule:'capsule',rampa:'wedge',wedge:'wedge',escalera:'stairs',stairs:'stairs',terreno:'terrain',terrain:'terrain',luz:'light',light:'light',inicio:'spawn',spawn:'spawn',grupo:'group',group:'group'};
+  const PRE={muro:'wall',wall:'wall',columna:'pillar',pillar:'pillar',plataforma:'ramp',ramp:'ramp',arbol:'tree',árbol:'tree',tree:'tree',casa:'house',house:'house',moneda:'coin',coin:'coin',jugador:'player',player:'player',enemigo:'enemy',enemy:'enemy',meta:'goal',goal:'goal'};
+  const buscar=n=>P.objects.find(o=>o.name===n)||P.objects.find(o=>String(o.name).toLowerCase()===String(n||'').toLowerCase());
+  const rehacer=o=>{ if(meshes[o.id]){ root.remove(meshes[o.id]); disposeDeep(meshes[o.id]); } const m=buildObject(o); meshes[o.id]=m; root.add(m); };
+  const mec=(id,p)=>{ const B=BEHAVIORS.find(b=>b.id===id)||BEHAVIORS.find(b=>String(b.name).toLowerCase()===String(id).toLowerCase()); if(!B) throw new Error('Mecánica desconocida: '+id); const q={}; (B.params||[]).forEach(x=>q[x.k]=x.d); return {id:B.id,p:Object.assign(q,p||{})}; };
+  function aplicar(o,x){
+    if(x.pos) o.pos=x.pos.map(Number); if(x.rot) o.rot=x.rot.map(Number); if(x.tam) o.scl=x.tam.map(Number); if(x.esc) o.scl=x.esc.map(Number);
+    if(x.nombre_nuevo) o.name=x.nombre_nuevo; if(x.color) o.color=x.color; if(x.etiqueta!=null) o.tag=x.etiqueta;
+    o.mat=o.mat||{}; if(x.metal!=null) o.mat.metal=+x.metal; if(x.rugosidad!=null) o.mat.rough=+x.rugosidad; if(x.opacidad!=null) o.mat.opacity=+x.opacidad; if(x.emision!=null) o.mat.emissive=+x.emision;
+    if(x.potencia!=null){ o.params=o.params||{}; o.params.power=+x.potencia; } if(x.alcance!=null){ o.params=o.params||{}; o.params.dist=+x.alcance; }
+    if(x.parametros) o.params=Object.assign(o.params||{},x.parametros);
+    if(x.mecanicas) o.behaviors=x.mecanicas.map(m=>typeof m==='string'?mec(m):mec(m.id,m.p||m.parametros));
+    if(x.visible!=null) o.visible=!!x.visible;
+    rehacer(o); }
+  function op(x){ const t=String(x.op||'').toLowerCase();
+    if(t==='nuevo'){ if(playing) stopGame(); P={name:x.nombre||'Mi juego',version:VERSION,objects:[],models:P.models||[],sounds:P.sounds||[],world:Object.assign({},DEFAULT_WORLD)}; curModelId=null; ensureModel(); rebuildAll(); applyWorld(); select(null); return 'Proyecto nuevo'; }
+    if(t==='mundo'){ const w=P.world; const m={cielo:'sky',niebla:'fog',distancia_niebla:'fogDist',suelo:'ground',color_suelo:'groundColor',tam_suelo:'groundSize',ambiente:'ambient',color_sol:'sunColor',sol:'sunPower',gravedad:'gravity',sombras:'shadows',mensaje:'startMsg'};
+      for(const [k,v] of Object.entries(x)) if(m[k]) w[m[k]]=v; if(x.nombre) P.name=x.nombre; applyWorld(); return 'Mundo cambiado'; }
+    if(t==='añadir'||t==='anadir'){ const tipo=String(x.tipo||'cubo').toLowerCase(); let o;
+      if(tipo.startsWith('modelo')){ const n=String(x.modelo||tipo.split(':')[1]||'').trim(); const M=(P.models||[]).find(m=>m.name===n)||(P.models||[]).find(m=>String(m.name).toLowerCase().includes(n.toLowerCase())); if(!M) throw new Error('No hay ningún modelo «'+n+'». Modelos: '+(P.models||[]).map(m=>m.name).join(', '));
+        o=defaultObj('box'); o.type='model'; o.model=M.id; o.geo='model'; o.name=M.name; o.pos=[0,0,0]; o.scl=[1,1,1]; }
+      else if(PRE[tipo]){ const k=PRE[tipo], pr=PRESETS[k]; o=defaultObj(pr.geo); o.name=pr.name; o.scl=pr.scl.slice(); o.pos=pr.pos.slice(); o.color=pr.color; if(pr.mat) Object.assign(o.mat,pr.mat); if(pr.behaviors) o.behaviors=JSON.parse(JSON.stringify(pr.behaviors)); if(k==='player') o.tag='player'; if(k==='enemy') o.tag='enemy'; }
+      else if(GEO[tipo]){ o=defaultObj(GEO[tipo]); o.name=NAMES[GEO[tipo]]||tipo; if(x.luz) o.light=x.luz==='foco'?'spot':'point'; }
+      else throw new Error('Tipo desconocido: '+x.tipo);
+      if(x.nombre) o.name=x.nombre; const same=P.objects.filter(y=>y.name===o.name).length; if(same) o.name+=' '+(same+1);
+      P.objects.push(o); aplicar(o,x); return 'Añadido '+o.name; }
+    if(t==='editar'){ const o=buscar(x.nombre); if(!o) throw new Error('No existe '+x.nombre); aplicar(o,x); return 'Cambiado '+o.name; }
+    if(t==='borrar'){ const L=(x.nombres||[x.nombre]).map(buscar).filter(Boolean); if(!L.length) throw new Error('No existe '+x.nombre); L.forEach(o=>{ if(meshes[o.id]){ root.remove(meshes[o.id]); disposeDeep(meshes[o.id]); delete meshes[o.id]; } P.objects.splice(P.objects.indexOf(o),1); }); return 'Borrados '+L.length; }
+    if(t==='duplicar'){ const o=buscar(x.nombre); if(!o) throw new Error('No existe '+x.nombre); const c=JSON.parse(JSON.stringify(o)); c.id=uid(); c.name=x.nuevo||o.name+' copia'; P.objects.push(c); aplicar(c,x); return 'Copia '+c.name; }
+    if(t==='repetir'){ const o=buscar(x.nombre); if(!o) throw new Error('No existe '+x.nombre); const n=Math.max(1,Math.min(60,x.n||3)), dp=x.paso||[2,0,0]; for(let i=1;i<=n;i++){ const c=JSON.parse(JSON.stringify(o)); c.id=uid(); c.name=o.name+' '+(i+1); c.pos=o.pos.map((v,k)=>+(v+dp[k]*i).toFixed(3)); P.objects.push(c); rehacer(c); } return n+' copias de '+o.name; }
+    if(t==='mecanica'){ const o=buscar(x.nombre); if(!o) throw new Error('No existe '+x.nombre); const b=mec(x.id,x.parametros||x.p); o.behaviors=(o.behaviors||[]).filter(y=>y.id!==b.id); o.behaviors.push(b); rehacer(o); return 'Mecánica '+b.id+' en '+o.name; }
+    if(t==='quitar_mecanica'){ const o=buscar(x.nombre); if(!o) throw new Error('No existe '+x.nombre); o.behaviors=(o.behaviors||[]).filter(y=>y.id!==x.id); rehacer(o); return 'Quitada '+x.id; }
+    if(t==='jugar'){ if(mode!=='scene') setMode('scene'); startGame(); return 'Jugando'; }
+    if(t==='parar'){ stopGame(); return 'Parado'; }
+    if(t==='encuadrar'){ const o=x.nombre&&buscar(x.nombre); if(o&&meshes[o.id]){ orbit.target.copy(meshes[o.id].position); updateEditorCam(); } return 'Encuadrado'; }
+    throw new Error('Orden desconocida: '+x.op);
+  }
+  const r2=v=>+(+v).toFixed(2);
+  const estado=()=>({proyecto:P.name,jugando:playing,mundo:P.world,modelos:(P.models||[]).map(m=>m.name+(m.skin?' (con esqueleto: '+(m.skin.clips||[]).map(c=>c.name).join(', ')+')':'')),
+    objetos:P.objects.slice(0,120).map(o=>({nombre:o.name,tipo:o.type==='model'?'modelo':o.geo,pos:(o.pos||[]).map(r2),tam:(o.scl||[]).map(r2),rot:(o.rot||[]).map(r2),color:o.color,etiqueta:o.tag||undefined,mecanicas:(o.behaviors||[]).map(b=>b.id)}))});
+  window.addEventListener('message',e=>{ const d=e.data||{}; if(!d.__mor) return; const ok=x=>send(Object.assign({id:d.id},x));
+    if(d.cmd==='ops'){ if(mode!=='scene') try{ setMode('scene'); }catch(e){} const res=[]; for(const x of (d.ops||[]).slice(0,80)){ try{ res.push('✓ '+op(x)); }catch(err){ res.push('✗ '+(x.op||'?')+': '+err.message); } }
+      try{ renderTree(); renderModelLib(); select(null); markDirty(); }catch(e){} ok({res,estado:estado()}); }
+    else if(d.cmd==='estado'){ ok({estado:estado()}); }
+    else if(d.cmd==='catalogo'){ ok({mecanicas:BEHAVIORS.map(b=>({id:b.id,nombre:b.name,cat:b.cat,desc:b.desc,parametros:(b.params||[]).map(p=>p.k+'='+p.d+' ('+p.l+')')}))}); }
+    else if(d.cmd==='ultimoModelo'){ const m=(P.models||[])[P.models.length-1]; ok({nombre:m&&m.name,esqueleto:!!(m&&m.skin)}); } });
 })();
 </script>
 </body>

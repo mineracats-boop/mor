@@ -1272,7 +1272,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v37</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v38</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1436,7 +1436,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v37 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v38 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3655,7 +3655,7 @@ const Apps={
     return new Promise((res,rej)=>{ const to=setTimeout(()=>{ delete this.pend[id]; rej(new Error('la app no contesta')); },ms); this.pend[id]=d=>{ clearTimeout(to); d.error?rej(new Error(d.error)):res(d); };
       this.frames[k].contentWindow.postMessage(Object.assign({__mor:1,id,cmd},extra),'*'); }); },
   // modelo de Mor -> app
-  async enviar(k,dataUrl,nombre){ k=this.clave(k)||k; this.abrir(k); const b64=String(dataUrl).split(',')[1]||dataUrl;
+  async enviar(k,dataUrl,nombre){ k=this.clave(k)||k; this.abrir(k); if(k==='ultimate'){ try{ const nz=await AnimAuto.poner(dataUrl,{normalizar:'una'}); if(!nz.error&&nz.data) dataUrl=nz.data; }catch(e){} } const b64=String(dataUrl).split(',')[1]||dataUrl;
     try{ await this.pedir(k,'importar',{data:b64,name:(nombre||'modelo').replace(/[^\p{L}\p{N}\- ]+/gu,'_')+'.glb'}); toast('Modelo enviado a '+this.L[k].nombre); }catch(e){ toast(e.message,5000); } },
   // Vértice -> tus modelos de Mor
   async aMor(){ try{ const r=await this.pedir('vertice','exportar'); const nombre=prompt('Nombre del modelo','Modelo de Vértice')||'Modelo de Vértice';
@@ -4682,8 +4682,9 @@ const AnimAuto={
       addEventListener('message',e=>{ const d=e.data||{}; if(!d.__aa) return; if(d.listo){ clearTimeout(t); ok(); return; } const p=this.pend[d.id]; if(p){ delete this.pend[d.id]; p(d); } });
       const f=document.createElement('iframe'); f.style.cssText='position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity:0;pointer-events:none';
       f.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><script type="importmap">{"imports":{"three":"${LIB3D}three.module.min.js","three/addons/":"${LIB3D}addons/"}}<\/script></head><body><script type="module">
-import {animar} from '${LIBA}'; import {riggear} from '${LIBR}';
+import {animar,normalizar,paraUnaMalla} from '${LIBA}'; import {riggear} from '${LIBR}';
 addEventListener('message',async e=>{ const d=e.data||{}; if(!d.__aa||d.listo) return;
+  if(d.normalizar){ try{ const g=d.normalizar==='una'?await paraUnaMalla(d.glb):await normalizar(d.glb); parent.postMessage({__aa:1,id:d.id,glb:g,clips:[],nuevas:[]},'*'); }catch(err){ parent.postMessage({__aa:1,id:d.id,error:String(err&&err.message||err)},'*'); } return; }
   try{ let glb=d.glb, rig=null; if(d.rig){ const x=await riggear(glb); glb=x.glb; rig={huesos:x.huesos,altura:x.altura,pose:x.pose,mira:x.mira}; }
     const r=await animar({glb,quiero:d.quiero,color:d.color,lib:'${UAL}',forzar:d.forzar}); if(rig&&!r.error&&!r.nuevas.length) r.glb=glb; parent.postMessage(Object.assign({__aa:1,id:d.id,rig},r),'*'); }
   catch(err){ parent.postMessage({__aa:1,id:d.id,error:String(err&&err.message||err)},'*'); } });
@@ -4692,9 +4693,9 @@ parent.postMessage({__aa:1,listo:true},'*');
       document.body.appendChild(f); this.frame=f; });
     return this.listo; },
   // src: dataURL / ArrayBuffer / Blob del personaje, o null = maniquí animado de Rocket Jam
-  async poner(src,{quiero=ANIM_BASICAS,color=null,forzar=false,rig=false}={}){ await this.abrir();
+  async poner(src,{quiero=ANIM_BASICAS,color=null,forzar=false,rig=false,normalizar=false}={}){ await this.abrir();
     const glb=src?(await Modelo3D.bytes(src)).slice().buffer:null, id=++this.n;
-    const r=await new Promise(ok=>{ this.pend[id]=ok; this.frame.contentWindow.postMessage({__aa:1,id,glb,quiero,color,forzar,rig},'*'); });
+    const r=await new Promise(ok=>{ this.pend[id]=ok; this.frame.contentWindow.postMessage({__aa:1,id,glb,quiero,color,forzar,rig,normalizar},'*'); });
     if(r.error) return r;
     const data=r.glb?'data:model/gltf-binary;base64,'+await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]); fr.readAsDataURL(new Blob([r.glb])); }):null;
     return {data,glb:r.glb,clips:r.clips||[],nuevas:r.nuevas||[],maniqui:!!r.maniqui,rig:r.rig||null}; },
@@ -4934,7 +4935,7 @@ HERRAMIENTAS (una acción por paso, con sus campos):
 - memoria_leer {ruta}: lee un archivo de la memoria del humano (la lista está abajo). memoria_guardar {ruta, contenido}: SOLO si el humano pide expresamente que recuerdes algo.
 - skill {nombre}: carga las instrucciones de una skill de la lista cuando la tarea encaja con ella.
 - subagentes {trabajos:[{titulo, instrucciones}]}: hasta 4 ayudantes a la vez; cada uno puede buscar, leer webs y ejecutar JavaScript, y te devuelve un texto. Dales instrucciones completas: no ven tu conversación.
-- funcion_mor {etiqueta}: usa una función propia de Mor escribiendo su etiqueta sin llaves, por ejemplo "juego: descripción | 3D", "biblioteca: espada", "recordar: 2026-12-01 10:00 | texto", "agente: proyecto | cambio", "animar_modelo: nombre", "proyecto: nombre".
+- funcion_mor {etiqueta}: usa una función propia de Mor escribiendo su etiqueta sin llaves, por ejemplo "juego: descripción | 3D", "biblioteca: espada", "recordar: 2026-12-01 10:00 | texto", "agente: proyecto | cambio", "animar_modelo: nombre", "proyecto: nombre", "estudio: vertice | qué modelar" o "estudio: ultimate | qué escena o nivel montar" (Mor lo hace dentro de la app y te devuelve el resultado).
 - terminar {respuesta}
 
 Nunca inventes datos, fuentes ni resultados de herramientas. Si algo no se puede, dilo claro.`;
@@ -5035,6 +5036,91 @@ CMDS.splice(1,0,['/trabajo','Modo agente: una tarea de varios pasos (investigar,
   add('sx2','Datos y cálculos','calcula, presupuesto, excel, tabla, csv, datos, estadística, gráfico, coste, precio, rentabilidad',`- Pon los datos en un archivo .csv y haz TODAS las cuentas con ejecutar_python (pandas) o ejecutar_js.\n- Si piden gráfico, hazlo con matplotlib, guárdalo como .svg en la carpeta y explícalo en una frase.\n- Entrega la tabla final en .csv (se abre en Excel) y un resumen con las 3 cifras clave.`);
   add('sx3','Documentos para compartir','documento, carta, propuesta, plan, guía, manual, contrato, acta, email largo, presentación',`- Escribe el documento completo en un archivo .md con títulos claros; si es para imprimir o enviar, haz además una versión .html con estilos sencillos de Rocket Jam (fondo blanco, títulos azul #2f8fd8, letra limpia), lista para imprimir en PDF desde el navegador.\n- Sin relleno: frases cortas, datos concretos, y lo que falte confírmalo preguntando.`);
   saveMem(); })();
+
+/* =====================================================================
+   103. MOR MANEJA VÉRTICE 3D Y ULTIMATE3D
+   Mor abre la app, mira la pantalla, da órdenes (crear, mover, materiales,
+   modificadores, mecánicas, mundo, modelos, animación), comprueba el
+   resultado con una captura nueva y sigue hasta terminar.
+   ===================================================================== */
+const MANUAL_V=`VÉRTICE 3D (editor estilo Blender). Z es ARRIBA (como Blender), X derecha, Y fondo. Unidades en metros. El suelo es z=0.
+ÓRDENES (lista "ops", se ejecutan en orden):
+- {op:"nuevo"} vacía la escena.
+- {op:"añadir", tipo, nombre, pos:[x,y,z], rot:[gradosX,gradosY,gradosZ], tam:[ancho,fondo,alto en metros], color:"#rrggbb", metal:0-1, rugosidad:0-1, emision:"#rrggbb", alfa:0-1, suave:true/false, mods:[…]}
+  tipos: cubo, esfera, icoesfera, cilindro, cono, toroide, plano, círculo, rejilla, sol, puntual, foco, cámara, vacío. Con "tam" das el tamaño real (mejor que escalar).
+  mods: {tipo:"subdivision", niveles:1-3} (redondea), {tipo:"espejo", ejes:[true,false,false]} (simetría en X), {tipo:"matriz", n:5, desplazamiento:[1.2,0,0]} (copias en fila), {tipo:"ruido", fuerza:0.2, escala:2} (rocas, terreno).
+- {op:"editar", nombre, …mismos campos, nombre_nuevo}  · {op:"borrar", nombre | nombres:[…]}  · {op:"duplicar", nombre, nuevo, pos, …}
+- {op:"unir", nombres:[…], nombre} junta varias piezas en una malla · {op:"suave", nombres:[…], valor:true}
+- Luces y cámara: añadir con tipo sol/puntual/foco/cámara, pos y mirar:[x,y,z]; color y potencia.
+- Animación: {op:"clave", nombre, frame:1, pos, rot, tam} guarda la pose en ese fotograma; pon varias claves (frame 1, 24, 48…) para animar.
+- Vista: {op:"sombreado", modo:"material"} (para VER los colores; ponlo siempre al final), {op:"encuadrar"}, {op:"mundo", color:"#rrggbb"}.
+CONSEJOS: piensa el objeto por partes (base, cuerpo, detalles), con tamaños reales; apoya todo en z=0; usa simetría con espejo; redondea con subdivision; nombres claros por pieza.`;
+const MANUAL_U=`ULTIMATE3D (motor de juegos estilo Unreal). Y es ARRIBA, el suelo es y=0. Unidades en metros. Un cubo de tam [1,1,1] mide 1 m; la cápsula mide 0,7 × 1,4 m.
+ÓRDENES (lista "ops", en orden):
+- {op:"nuevo", nombre} proyecto vacío (conserva los modelos importados).
+- {op:"mundo", cielo:"#rrggbb", niebla:true, distancia_niebla:170, suelo:true, color_suelo:"#rrggbb", tam_suelo:120, ambiente:0.55, color_sol:"#rrggbb", sol:1.15, gravedad:24, mensaje:"texto al empezar", nombre:"título del juego"}
+- {op:"añadir", tipo, nombre, pos:[x,y,z], rot:[grados], tam:[x,y,z], color, metal, rugosidad, opacidad, emision:0-1, etiqueta, mecanicas:[{id, parametros:"{\"points\":10}"}]}
+  tipos de forma: cubo, esfera, cilindro, cono, toro, plano, cápsula, rampa, escalera, terreno, luz (potencia, alcance), inicio (punto de salida del jugador), grupo.
+  tipos preparados (ya traen sus mecánicas): jugador, enemigo, moneda, meta, muro, columna, plataforma, árbol, casa.
+  modelos importados: tipo "modelo:NOMBRE" (ver lista de modelos del estado).
+- {op:"editar", nombre, …} · {op:"borrar", nombre | nombres} · {op:"duplicar", nombre, nuevo, pos} · {op:"repetir", nombre, n:5, paso:[3,0,0]} (copias en fila)
+- {op:"mecanica", nombre, id, parametros:"{\"speed\":5}"} (parámetros como texto JSON) añade o cambia una mecánica · {op:"quitar_mecanica", nombre, id}
+- {op:"jugar"} prueba el juego · {op:"parar"} vuelve al editor. Prueba SIEMPRE antes de terminar (jugar, mirar la captura, parar).
+- {op:"traer_modelo", busqueda:"knight"} trae un modelo 3D profesional de la biblioteca de Mor (personajes con esqueleto ya animados) para usarlo luego con tipo "modelo:NOMBRE".
+REGLAS DE UN JUEGO QUE FUNCIONA: un jugador (jugador o un objeto con una mecánica de control: playerFPS, playerTP, playerTop, playerPlat, vehicle) y un inicio; suelo o plataformas donde pisar; un objetivo (meta con winZone, monedas con scoreGoal, enemigos…); que todo esté al alcance y apoyado en el suelo.`;
+const OP_SCHEMA={type:'OBJECT',properties:{pensamiento:{type:'STRING'},ops:{type:'ARRAY',items:{type:'OBJECT',properties:{op:{type:'STRING'},tipo:{type:'STRING'},nombre:{type:'STRING'},nombres:{type:'ARRAY',items:{type:'STRING'}},nuevo:{type:'STRING'},nombre_nuevo:{type:'STRING'},
+  pos:{type:'ARRAY',items:{type:'NUMBER'}},rot:{type:'ARRAY',items:{type:'NUMBER'}},tam:{type:'ARRAY',items:{type:'NUMBER'}},paso:{type:'ARRAY',items:{type:'NUMBER'}},mirar:{type:'ARRAY',items:{type:'NUMBER'}},
+  color:{type:'STRING'},emision:{type:'STRING'},metal:{type:'NUMBER'},rugosidad:{type:'NUMBER'},alfa:{type:'NUMBER'},opacidad:{type:'NUMBER'},potencia:{type:'NUMBER'},alcance:{type:'NUMBER'},suave:{type:'BOOLEAN'},valor:{type:'BOOLEAN'},
+  n:{type:'INTEGER'},frame:{type:'INTEGER'},modo:{type:'STRING'},id:{type:'STRING'},etiqueta:{type:'STRING'},busqueda:{type:'STRING'},mensaje:{type:'STRING'},cielo:{type:'STRING'},color_suelo:{type:'STRING'},suelo:{type:'BOOLEAN'},niebla:{type:'BOOLEAN'},ambiente:{type:'NUMBER'},sol:{type:'NUMBER'},gravedad:{type:'NUMBER'},
+  mods:{type:'ARRAY',items:{type:'OBJECT',properties:{tipo:{type:'STRING'},niveles:{type:'INTEGER'},ejes:{type:'ARRAY',items:{type:'BOOLEAN'}},n:{type:'INTEGER'},desplazamiento:{type:'ARRAY',items:{type:'NUMBER'}},fuerza:{type:'NUMBER'},escala:{type:'NUMBER'}}}},
+  mecanicas:{type:'ARRAY',items:{type:'OBJECT',properties:{id:{type:'STRING'},parametros:{type:'STRING'}},required:['id']}},
+  parametros:{type:'STRING'}},required:['op']}},
+  terminado:{type:'BOOLEAN'},mensaje:{type:'STRING'}},required:['pensamiento','ops','terminado']};
+Apps.operando=false;
+Apps.operar=async function(k,tarea,{silencioso=false}={}){ k=this.clave(k)||k; if(!this.L[k]) throw new Error('No conozco esa app'); if(this.operando) throw new Error('Ya estoy manejando una app');
+  this.operando=true; const A=this.L[k]; this.abrir(k);
+  const c=chatCard(`<div class="ctit">Mor maneja ${esc(A.nombre)}</div><small>${esc(String(tarea).slice(0,200))}</small><div class="opPasos" style="display:flex;flex-direction:column;gap:3px;margin-top:8px;font-size:12px"></div><div class="opFin"></div><div class="row"><button class="tbtn" data-stop>Parar</button></div>`);
+  let parar=false; c.querySelector('[data-stop]').onclick=()=>{ parar=true; };
+  const paso=(t,tipo)=>{ const d=document.createElement('div'); d.style.cssText='border-left:2px solid '+(tipo==='mal'?'#ff8fa3':tipo==='ok'?'#7fd88f':'rgba(127,216,255,.4)')+';padding-left:6px'; d.textContent=t; c.querySelector('.opPasos').appendChild(d); showSub(t); };
+  let mec=''; if(k==='ultimate'){ try{ const r=await this.pedir(k,'catalogo',{},10000); mec='\nMECÁNICAS (id: nombre — qué hace · parámetros):\n'+r.mecanicas.map(m=>`${m.id}: ${m.nombre} — ${m.desc}${m.parametros.length?' · '+m.parametros.join(', '):''}`).join('\n'); }catch(e){} }
+  const H=[]; let fin=null;
+  try{ for(let i=0;i<14&&!parar;i++){
+      let v; try{ v=await this.pedir(k,'ver',{},10000); }catch(e){ v={}; } let est; try{ est=(await this.pedir(k,'estado',{},10000)).estado; }catch(e){ est=v.estado; }
+      const parts=[]; if(v.img) parts.push({inline_data:{mime_type:'image/jpeg',data:v.img.split(',')[1]}});
+      parts.push({text:`TAREA: ${tarea}\n\nESTADO ACTUAL DE ${A.nombre} (la captura es lo que se ve ahora):\n${JSON.stringify(est).slice(0,9000)}\n\nLO HECHO:\n${H.map((h,j)=>`[${j+1}] ${h.p}\n${h.r.join('\n')}`).join('\n\n').slice(-7000)||'(nada todavía)'}\n\n${i>=11?'Te quedan muy pocas rondas: termina.\n':''}Da la siguiente tanda de órdenes (hasta 30) o terminado=true si la captura ya muestra la tarea bien hecha y probada. Siguiente (JSON):`});
+      let x; try{ x=JSON.parse((await gemini({systemInstruction:{parts:[{text:`Eres M.O.R., la IA de Rocket Jam, manejando ${A.nombre} por dentro con órdenes. Trabajas como un profesional: primero lo grande, luego los detalles; después de cada tanda MIRAS la captura y corriges lo que no esté bien (piezas flotando, tamaños raros, colores que no se ven, cosas que se atraviesan). No terminas sin haberlo comprobado en la captura. Escribes en español, sin emojis.\n\n${k==='vertice'?MANUAL_V:MANUAL_U}${mec}`}]},contents:[{role:'user',parts}],generationConfig:{temperature:.3,maxOutputTokens:16384,responseMimeType:'application/json',responseSchema:OP_SCHEMA}},MODELOS_LISTOS,120000)).replace(/^```(json)?|```$/g,'').trim()); }
+      catch(e){ paso('No he podido pensar esta ronda ('+e.message+'). Reintento…','mal'); await sleep(1500); continue; }
+      if(x.pensamiento) paso(serio?serio(x.pensamiento):x.pensamiento);
+      if(x.terminado&&(!x.ops||!x.ops.length)){ fin=x.mensaje||'Hecho.'; break; }
+      // órdenes que resuelve Mor (traer modelos de la biblioteca)
+      const R=[], ops=[];
+      for(const o of (x.ops||[])){ if(String(o.op).toLowerCase()==='traer_modelo'){ try{ const it=(await Biblioteca.buscar(o.busqueda||o.nombre||'',{max:1}))[0]; if(!it) throw new Error('nada en la biblioteca');
+            let data=await Biblioteca.obtener(it); if(it.huesos&&!it.anims){ const a=await AnimAuto.poner(data); if(!a.error) data=a.data; }
+            if(k==='ultimate'){ const nz=await AnimAuto.poner(data,{normalizar:'una'}); if(!nz.error&&nz.data) data=nz.data; }
+            await this.pedir(k,'importar',{data:String(data).split(',')[1],name:it.nombre+'.glb'},30000); await sleep(1500);
+            let nom=it.nombre; if(k==='ultimate'){ try{ nom=(await this.pedir(k,'ultimoModelo',{},5000)).nombre||nom; }catch(e){} }
+            R.push(`✓ Modelo «${nom}» importado${k==='ultimate'?': úsalo con tipo "modelo:'+nom+'"':''}`); }catch(e){ R.push('✗ traer_modelo: '+e.message); } }
+        else { const J=s=>{ if(typeof s!=='string') return s; try{ return JSON.parse(s); }catch(e){ return undefined; } };
+          if(o.parametros!==undefined) o.parametros=J(o.parametros); if(o.mecanicas) o.mecanicas=o.mecanicas.map(q=>({id:q.id,p:J(q.parametros)||{}})); ops.push(o); } }
+      if(ops.length){ paso(`Ronda ${i+1}: ${ops.length} órdenes`); try{ const r=await this.pedir(k,'ops',{ops},30000); R.push(...r.res); }catch(e){ R.push('✗ '+e.message); } }
+      const malos=R.filter(r=>r.startsWith('✗')); if(malos.length) paso(malos.length+' órdenes fallidas: '+malos[0].slice(2,120),'mal');
+      if(ops.some(o=>o.op==='jugar')) await sleep(2500);
+      H.push({p:(x.pensamiento||'').slice(0,300),r:R.map(s=>s.slice(0,200))});
+      if(x.terminado){ fin=x.mensaje||'Hecho.'; break; } }
+    if(k==='ultimate'){ try{ const e=(await this.pedir(k,'estado',{},5000)).estado; if(e.jugando) await this.pedir(k,'ops',{ops:[{op:'parar'}]},5000); }catch(e){} }
+    if(!fin) fin=parar?'He parado. Lo hecho se queda en la app (y en sus copias de seguridad).':'He hecho lo que he podido en las rondas que tenía; míralo y dime qué cambio.';
+    paso('Terminado','ok'); c.querySelector('.opFin').innerHTML=`<div style="margin-top:8px">${esc(fin)}</div><div class="row"><button class="tbtn on" data-ver>Ver la app</button></div>`;
+    c.querySelector('[data-ver]').onclick=()=>this.abrir(k); if(!silencioso) localSay(fin.slice(0,240),'contento'); return fin;
+  }catch(e){ paso('Error: '+e.message,'mal'); throw e; }
+  finally{ this.operando=false; const b=c.querySelector('[data-stop]'); if(b) b.remove(); } };
+// etiqueta para el chat y para el modo agente
+const _apply103=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply103(acts); for(const a of acts){ const m=String(a).match(/^\s*estudio\s*:?\s*([^|]+)\|([\s\S]+)$/i); if(m) setTimeout(()=>Apps.operar(m[1].trim(),m[2].trim()).catch(e=>toast(e.message,6000)),200); } return made; };
+const _herr103=Trabajo.herramienta.bind(Trabajo);
+Trabajo.herramienta=async function(x,P,ctx){ const m=x.accion==='funcion_mor'&&String(x.etiqueta||'').match(/^\s*\{?\{?\s*estudio\s*:?\s*([^|]+)\|([\s\S]+?)\}?\}?$/i);
+  if(m){ try{ return 'Resultado en la app: '+await Apps.operar(m[1].trim(),m[2].trim(),{silencioso:true}); }catch(e){ return 'ERROR: '+e.message; } } return _herr103(x,P,ctx); };
+const _sys103=systemPrompt; systemPrompt=function(extra){ return _sys103(extra)+`\n· MANEJAR VÉRTICE 3D O ULTIMATE3D: si te pide hacer algo DENTRO de sus apps (modelar algo en Vértice, montar una escena o un nivel en ULTIMATE3D, poner mecánicas, cambiar colores, animar un objeto), pon {{estudio: vertice | tarea detallada}} o {{estudio: ultimate | tarea detallada}}. Mor abre la app y lo hace él, mirando la pantalla y comprobándolo.`; };
+CMDS.splice(2,0,['/vertice','Que Mor haga algo dentro de Vértice 3D',r=>r?Apps.operar('vertice',r).catch(e=>toast(e.message)):Apps.abrir('vertice')],['/ultimate','Que Mor haga algo dentro de ULTIMATE3D',r=>r?Apps.operar('ultimate',r).catch(e=>toast(e.message)):Apps.abrir('ultimate')]);
 
 /* =====================================================================
    15. DESPERTAR
