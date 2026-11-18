@@ -785,7 +785,9 @@ const wakeAudio=()=>{ try{ if(AC&&AC.state!=='running') AC.resume(); if('speechS
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) wakeAudio(); });
 // espera con tope: si algo se queda colgado, la voz sigue con la siguiente frase
 const withTimeout=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(r,ms))]);
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// esperas con un temporizador en un worker: en segundo plano el navegador no lo frena (los setTimeout normales sí)
+const Reloj=(()=>{ try{ const w=new Worker(URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data.id),e.data.ms)'],{type:'text/javascript'}))); let n=0; const P={}; w.onmessage=e=>{ const f=P[e.data]; delete P[e.data]; f&&f(); }; return ms=>new Promise(r=>{ const id=++n; P[id]=r; w.postMessage({id,ms}); }); }catch(e){ return ms=>new Promise(r=>setTimeout(r,ms)); } })();
+const sleep=ms=>Reloj(ms);
 const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',gemFails:0,warned:false,an:null,buf:null,cur:null,curText:'',lastSpoken:{t:'',at:0},q:[],acc:'',budget:VOZ_MAX,playing:false,gen:0,
   // ¿lo que ha oído el micro es su propia voz? (para no hacerse caso a sí mismo)
   isEcho(t){ const hw=words(t); if(!hw.length) return false; const ref=norm(this.curText+' '+(this.recent||[]).filter(x=>Date.now()-x.at<15000).map(x=>x.t).join(' ')+' '+(this.q||[]).map(x=>x.text).join(' '));
@@ -1272,7 +1274,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v38</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v39</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1436,7 +1438,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v38 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v39 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3294,7 +3296,7 @@ window.fetch=function(u,o={}){ const url=String(u&&u.url||u);
   if(PARAR.on) return Promise.reject(new DOMException('Parado por ti','AbortError'));
   const ac=new AbortController(); if(o.signal){ if(o.signal.aborted) ac.abort(); else o.signal.addEventListener('abort',()=>ac.abort()); }
   PARAR.ctrls.add(ac); const p=_fetch60(u,Object.assign({},o,{signal:ac.signal})); p.then(()=>{},()=>{}).finally(()=>{}); return p; };
-const trabajando=()=>busy||!!(GameStudio.running||Taller3D.running||Dev.running||Projects.running||(typeof Agente!=='undefined'&&Agente.running));
+const trabajando=()=>busy||!!(GameStudio.running||Taller3D.running||Dev.running||Projects.running||(typeof Agente!=='undefined'&&Agente.running)||(typeof Trabajo!=='undefined'&&Trabajo.activos>0)||(typeof Apps!=='undefined'&&Apps.operando));
 function botonEnviar(){ const w=trabajando(), b=$('bSend'); b.disabled=false; b.classList.toggle('stop',w); b.textContent=w?'■':'OK'; b.title=w?'Parar':'Enviar'; }
 setInterval(botonEnviar,300);
 document.querySelector('.main .bottom').addEventListener('click',e=>{ if(e.target.closest('#bSend')&&trabajando()){ e.stopImmediatePropagation(); e.preventDefault(); PARAR.parar(); } },true);
@@ -3650,7 +3652,7 @@ const Apps={
   minimizar(){ $('appWin').classList.remove('open'); if(this.cur){ $('appChip').textContent=this.L[this.cur].ic+' Volver a '+this.L[this.cur].nombre; $('appChip').style.display=''; } },
   cerrar(){ if(this.cur&&!confirm('¿Cerrar '+this.L[this.cur].nombre+'? Lo que no esté guardado se recupera desde Copias.')) return;
     const f=this.frames[this.cur]; if(f) f.remove(); delete this.frames[this.cur]; delete this.listo[this.cur]; this.cur=null; $('appWin').classList.remove('open'); $('appChip').style.display='none'; $('appGuia').style.display='none'; },
-  async esperar(k,ms=20000){ const t=Date.now(); while(!this.listo[k]){ if(Date.now()-t>ms) throw new Error(this.L[k].nombre+' no arranca'); await new Promise(r=>setTimeout(r,200)); } },
+  async esperar(k,ms=20000){ const t=Date.now(); while(!this.listo[k]){ if(Date.now()-t>ms) throw new Error(this.L[k].nombre+' no arranca'); await sleep(200); } },
   async pedir(k,cmd,extra={},ms=20000){ if(!this.frames[k]) this.abrir(k); await this.esperar(k); const id='m'+(++this.n);
     return new Promise((res,rej)=>{ const to=setTimeout(()=>{ delete this.pend[id]; rej(new Error('la app no contesta')); },ms); this.pend[id]=d=>{ clearTimeout(to); d.error?rej(new Error(d.error)):res(d); };
       this.frames[k].contentWindow.postMessage(Object.assign({__mor:1,id,cmd},extra),'*'); }); },
@@ -4988,16 +4990,18 @@ FUENTES CONSULTADAS: ${ctx.fuentes.slice(0,15).join(', ')||'(ninguna)'}
 
 Mira: ¿responde a TODO lo que pidió? ¿hay datos que parecen inventados o sin fuente? ¿cuentas que no cuadran? ¿archivos incompletos, con huecos tipo "aquí va…" o errores? ¿falta algo importante? Si está bien, bien=true y problemas vacío. Si no, problemas concretos y accionables (máximo 5).`,
       {type:'OBJECT',properties:{bien:{type:'BOOLEAN'},problemas:{type:'ARRAY',items:{type:'STRING'}}},required:['bien','problemas']},[],MODELOS_CODIGO); }catch(e){ return {bien:true,problemas:[]}; } },
-  async run(tarea){ if(this.activos>=2) return toast('Ya hay dos trabajos en marcha: espera a que acabe uno.');
+  async run(tarea,rec){ if(this.activos>=2) return toast('Ya hay dos trabajos en marcha: espera a que acabe uno.');
     this.activos++; PARAR.on=false; Life.touch(); setEmotion('concentrado');
     const titulo=String(tarea).replace(/\s+/g,' ').slice(0,60)+(String(tarea).length>60?'…':'');
-    const P={id:'tb'+Date.now(),nombre:titulo,desc:tarea,files:[],at:Date.now(),trabajo:true,estado:'trabajando'}; await DB.put('projects',P);
+    const P=rec||{id:'tb'+Date.now(),nombre:titulo,desc:tarea,files:[],at:Date.now(),trabajo:true,estado:'trabajando'}; P.estado='trabajando'; await DB.put('projects',P);
     const c=this.tarjeta(titulo); let parar=false; c.querySelector('[data-stop]').onclick=()=>{ parar=true; PARAR.on=true; this.paso(c,'Parando…','mal'); };
-    const ctx={P,c,tarea,archivos:new Set(),fuentes:[]}, H=[]; let T=[], revisado=0, fin=null;
+    const R0=P.tb||{}; const ctx={P,c,tarea,archivos:new Set(R0.archivos||[]),fuentes:R0.fuentes||[]}, H=R0.H||[]; let T=R0.T||[], revisado=R0.revisado||0, fin=null;
+    if(rec){ this.pinta(c,T); this.paso(c,'Continúo donde lo dejé (paso '+((R0.paso||0)+1)+')','ok'); }
     const skills=Skills.list().filter(s=>s.on!==false).map(s=>`- ${s.n}: ${s.cuando||'siempre'}`).join('\n');
     const sys=TB_REGLAS+`\n\nHOY: ${new Date().toLocaleString('es-ES',{dateStyle:'full',timeStyle:'short'})}\n\nMEMORIA DEL HUMANO (archivos; léelos con memoria_leer si te hacen falta):\n${MemFS.lista()}\n\nPERFIL:\n${MemFS.leer('/perfil.md')||'(vacío)'}\n\nPREFERENCIAS (síguelas):\n${MemFS.leer('/preferencias.md')||'(ninguna)'}\n\nSKILLS DISPONIBLES:\n${skills||'(ninguna)'}\n\nSOBRE EL ESTUDIO:\n${estudioRJ()}`;
     const MAX=40;
-    try{ for(let i=0;i<MAX&&!parar;i++){
+    try{ for(let i=R0.paso||0;i<MAX&&!parar;i++){
+        P.tb={H:H.slice(-40),T,revisado,archivos:[...ctx.archivos],fuentes:ctx.fuentes.slice(-30),paso:i}; P.at=Date.now(); await DB.put('projects',P);
         const hist=H.map((h,j)=>{ const viejo=j<H.length-10; return `[${j+1}] ${h.a}\n${viejo?String(h.o).slice(0,300)+(String(h.o).length>300?'…':''):h.o}`; }).join('\n\n');
         const prompt=`TAREA DEL HUMANO:\n${tarea}\n\nTUS TAREAS:\n${T.map(t=>`[${t.estado}] ${t.t}`).join('\n')||'(aún no hay: créalas en este paso)'}\n\nARCHIVOS DE LA TAREA: ${P.files.map(f=>f.ruta).join(', ')||'(ninguno)'}\n\nLO HECHO:\n${hist||'(nada todavía)'}\n\n${i>=MAX-5?'Te quedan muy pocos pasos: termina ya con lo que tengas y di qué falta.\n':''}Siguiente acción (JSON):`;
         let x; try{ x=JSON.parse((await gemini({systemInstruction:{parts:[{text:sys}]},contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:.2,maxOutputTokens:32768,responseMimeType:'application/json',responseSchema:TB_SCHEMA}},MODELOS_CODIGO,150000)).replace(/^```(json)?|```$/g,'').trim()); }
@@ -5013,7 +5017,7 @@ Mira: ¿responde a TODO lo que pidió? ¿hay datos que parecen inventados o sin 
         if(x.accion==='leer_web'&&x.url&&!/^ERROR/.test(o)) ctx.fuentes.push(x.url);
         H.push({a:this.resumen(x)+(x.pensamiento?' — '+String(x.pensamiento).slice(0,160):''),o:String(o).slice(0,7000)}); }
       if(!fin) fin=parar?'He parado. Lo que llevaba hecho está en los archivos de la tarea.':'Se me han acabado los pasos sin terminar del todo. Lo hecho está en los archivos de la tarea.';
-      P.estado='listo'; P.respuesta=fin; P.at=Date.now(); await DB.put('projects',P); this.entregar(c,fin,P,ctx);
+      P.estado='listo'; P.respuesta=fin; P.at=Date.now(); delete P.tb; await DB.put('projects',P); this.entregar(c,fin,P,ctx);
       logChat('m',`[Modo agente terminado: ${titulo}] ${fin.slice(0,400)}`); MEM.history.push({r:'m',t:fin.slice(0,1500)}); saveMem(); try{ renderProjects(); }catch(e){}
       localSay(fin.split(/\n/)[0].replace(/[#*_`>\[\]]/g,'').slice(0,240),'contento');
     }catch(e){ this.paso(c,'Error: '+e.message,'mal'); P.estado='error'; await DB.put('projects',P); }
@@ -5121,6 +5125,29 @@ Trabajo.herramienta=async function(x,P,ctx){ const m=x.accion==='funcion_mor'&&S
   if(m){ try{ return 'Resultado en la app: '+await Apps.operar(m[1].trim(),m[2].trim(),{silencioso:true}); }catch(e){ return 'ERROR: '+e.message; } } return _herr103(x,P,ctx); };
 const _sys103=systemPrompt; systemPrompt=function(extra){ return _sys103(extra)+`\n· MANEJAR VÉRTICE 3D O ULTIMATE3D: si te pide hacer algo DENTRO de sus apps (modelar algo en Vértice, montar una escena o un nivel en ULTIMATE3D, poner mecánicas, cambiar colores, animar un objeto), pon {{estudio: vertice | tarea detallada}} o {{estudio: ultimate | tarea detallada}}. Mor abre la app y lo hace él, mirando la pantalla y comprobándolo.`; };
 CMDS.splice(2,0,['/vertice','Que Mor haga algo dentro de Vértice 3D',r=>r?Apps.operar('vertice',r).catch(e=>toast(e.message)):Apps.abrir('vertice')],['/ultimate','Que Mor haga algo dentro de ULTIMATE3D',r=>r?Apps.operar('ultimate',r).catch(e=>toast(e.message)):Apps.abrir('ultimate')]);
+
+/* =====================================================================
+   104. SOLO HABLA SI LE HABLAS · SIGUE TRABAJANDO AUNQUE TE VAYAS
+   - La voz y los sonidos solo salen como respuesta a lo que acabas de
+     decir (o en modo conversación). Todo lo demás es texto en silencio.
+   - Mientras trabaja: pantalla encendida, esperas que el navegador no frena
+     y, si cierras la app, el modo agente sigue donde lo dejó al volver.
+   ===================================================================== */
+let ultimaPalabra=0; const hablaPermitido=()=>busy||(Date.now()-ultimaPalabra<15000)||(typeof Live!=='undefined'&&Live.on);
+const _send104=send; send=function(text,opts){ if(text) ultimaPalabra=Date.now(); return _send104.apply(this,arguments); };
+const _say104=localSay; localSay=async function(text,emo='neutral',sfx){ if(hablaPermitido()) return _say104(text,emo,sfx); Life.touch(); try{ setEmotion(emo,4500); }catch(e){} showSub(text); };
+const _sfx104=Sfx.play.bind(Sfx); Sfx.play=function(n){ if(hablaPermitido()) return _sfx104(n); };
+// pantalla encendida mientras trabaja (si la app está a la vista)
+const Despierto={n:0,lock:null,
+  async pedir(){ try{ if(this.n>0&&!document.hidden&&!this.lock&&navigator.wakeLock){ this.lock=await navigator.wakeLock.request('screen'); this.lock.addEventListener('release',()=>{ this.lock=null; }); } }catch(e){} },
+  mas(){ this.n++; this.pedir(); }, menos(){ this.n=Math.max(0,this.n-1); if(!this.n&&this.lock){ try{ this.lock.release(); }catch(e){} this.lock=null; } } };
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) Despierto.pedir(); });
+const despierto=(obj,met)=>{ const f=obj[met]; if(typeof f!=='function') return; obj[met]=async function(){ Despierto.mas(); try{ return await f.apply(this,arguments); }finally{ Despierto.menos(); } }; };
+[[Trabajo,'run'],[Apps,'operar'],[GameStudio,'create'],[Agente,'run'],[Taller3D,'create'],[Taller3D,'modify']].forEach(([o,m])=>despierto(o,m));
+// al abrir Mor: retomar en silencio los trabajos que se quedaron a medias (de las últimas 48 h)
+(async()=>{ for(let k=0;k<60&&$('login').style.display!=='none';k++) await sleep(2000);
+  await sleep(3000); const L=(await DB.all('projects')).filter(p=>p.trabajo&&p.estado==='trabajando'&&p.tb&&Date.now()-p.at<48*3600e3).sort((a,b)=>a.at-b.at).slice(0,2);
+  for(const P of L) Trabajo.run(P.desc,P); })();
 
 /* =====================================================================
    15. DESPERTAR
