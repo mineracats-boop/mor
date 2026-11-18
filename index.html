@@ -1274,7 +1274,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v43</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v44</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1438,7 +1438,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v43 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v44 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -5521,6 +5521,30 @@ setInterval(()=>{ if(!busy||!Cola.desde) return; const ahora=Date.now(), s=Math.
       _showSub108('Ese cerebro se ha quedado colgado. Lo intento con otro.',t); setTimeout(()=>send(t,Object.assign({},o,{reintento:true})),500); }
     else { _showSub108('No me llega respuesta de ningún cerebro ahora mismo'+(window._lastErr?' ('+window._lastErr+')':'')+'. Mira la barra de uso; puedes volver a pedírmelo o trabajar a mano en Vértice 3D o ULTIMATE3D.',t||'');
       Cola.reintentos=0; if(Cola.L.length){ const [t2,o2]=Cola.L.shift(); setTimeout(()=>send(t2,o2),800); } } } },1000);
+
+/* cambios a un juego: si en este chat se está trabajando un juego y le pides añadir o cambiar algo,
+   va directo al agente de código (antes el cerebro a veces no ponía ninguna acción y no pasaba nada) */
+const CAMBIO_RE=/\b(a[ñn]ade|a[ñn]adir|a[ñn]ádele|pon|ponle|ponme|mete|m[eé]tele|cambia|c[aá]mbiale|arregla|corrige|mejora|quita|qu[ií]tale|haz que|hazlo|convi[eé]rtelo|usa|coge|sustituye|ampl[ií]a)\b/i;
+async function proyectoDelChat(){ const H=(await DB.all('chats')).filter(c=>c.cid===Convs.cur).slice(-40).reverse();
+  for(const h of H){ const m=String(h.t||'').match(/\[(?:Juego creado|Agente de código en|Proyecto creado|Proyecto)\s*:?\s*([^,:\]]+)/i); if(m){ const P=await proyectoPorNombre(m[1].trim()); if(P) return P; } }
+  return null; }
+const _apply108=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const u=Cola.texto||''; Cola.huboAccion=acts.some(a=>/^\s*[a-z_]+\s*:/i.test(a));
+  if(u&&CAMBIO_RE.test(u)&&!acts.some(a=>/^\s*(juego|agente|trabajo|estudio|proyecto|app)\s*:/i.test(a))){
+    Cola.pendienteAgente=u; }
+  return _apply108(acts); };
+const _stream108=geminiStream; geminiStream=async function(body,onText){ const r=await _stream108(body,t=>{ Cola.raw+=t; onText(t); }); return r; };
+const _send108b=send;
+send=async function(text,opts={}){ opts=opts||{}; if(text&&!opts.event&&!busy){ Cola.raw=''; Cola.pendienteAgente=null; Cola.huboAccion=false; }
+  const r=await _send108b(text,opts);
+  if(text&&!opts.event&&Cola.actual===null){
+    const visible=String(Cola.raw||'').replace(/\{\{[^{}]*\}\}/g,'').replace(/\[[^\]\n]{1,20}\]/g,'').trim();
+    let P=null; if(Cola.pendienteAgente||(!visible&&CAMBIO_RE.test(text))) P=await proyectoDelChat();
+    if(P&&!Agente.running){ Cola.pendienteAgente=null; if(!visible) logChat('m','Me pongo con ello en '+P.nombre+'.'); showSub('Me pongo con ello en '+P.nombre+': el agente de código va paso a paso y lo prueba.'); setTimeout(()=>Agente.run(P.id,text),300); }
+    else if(P&&Agente.running){ showSub('El agente de código sigue con lo anterior. Cuando termine, pídemelo otra vez o pulsa «Pedir otro cambio».',text); }
+    else if(!visible&&!Cola.huboAccion){ const m='No me ha llegado respuesta del cerebro'+(Cola.cerebro?' ('+Cola.cerebro+')':'')+(window._lastErr?': '+window._lastErr:'')+'. Vuelve a pedírmelo; si sigue igual, mira la barra de uso.';
+      showSub(m,text); toast(m,6000); } }
+  return r; };
 /* micrófono: solo en el modo conversación (no se enciende solo al abrir Mor) */
 if(MEM.listen&&!document.body.classList.contains('vozFull')){ MEM.listen=false; saveMem(); }
 const _modoVoz108=modoVoz; modoVoz=function(on){ _modoVoz108(on); if(!on&&Ears.on&&!(typeof Live!=='undefined'&&Live.on)) Ears.stop(); };
@@ -5544,12 +5568,12 @@ $('gate').onclick=async()=>{
   const gapH=MEM.lastSeen? (Date.now()-MEM.lastSeen)/3600000 : null;
   const ex=upcomingExams().filter(e=>daysTo(e.fecha)<=7);
   const h=new Date().getHours(), momento=h<7?'madrugada':h<13?'mañana':h<21?'tarde':'noche';
-  const hoy=new Date().toDateString(), brief=MEM.firstMet && MEM.lastBrief!==hoy && h>=5 && h<14;
+  const hoy=new Date().toDateString(), brief=false; /* v44: no habla al abrirse: solo si le hablas */
   setTimeout(async()=>{
     if(brief){ MEM.lastBrief=hoy; saveMem();
       const w=await Weather.get(); const recHoy=Agenda.upcoming().filter(r=>new Date(r.when).toDateString()===hoy);
       return send(null,{image:null,event:`BUENOS DÍAS: es la primera vez que te abre hoy. Hazle un resumen de buenos días breve y profesional (máximo 4 frases), sin preguntas personales, en este orden: saludo con su nombre; ${w?'el tiempo de hoy ('+w+')':''}; recordatorios de hoy: ${recHoy.length?recHoy.map(r=>pad2(new Date(r.when).getHours())+':'+pad2(new Date(r.when).getMinutes())+' '+r.t).join('; '):'ninguno'}; tareas pendientes: ${Agenda.pending().length?Agenda.pending().slice(0,4).map(x=>x.t).join('; '):'ninguna'}; . Si algo no hay, sáltalo.`}); }
-    send(null,{event: MEM.firstMet
+    if(MEM.firstMet) return; send(null,{event: MEM.firstMet
       ? `EL USUARIO TE ACABA DE DESPERTAR. Es por la ${momento}. ${gapH<1?'Os habéis visto hace un rato.':gapH<20?'Hace unas '+Math.round(gapH)+' horas que no os veíais.':'Hace '+Math.round(gapH/24)+' días que no te abre.'} Salúdale por su nombre en una sola frase, como un compañero de trabajo. Si hay recordatorios o tareas para hoy, nómbralos. No hagas preguntas personales ni de relleno.`
       : 'TE ACABAN DE DESPERTAR POR PRIMERA VEZ. No conoces a nadie todavía.', image:null}); },1500);
 };
