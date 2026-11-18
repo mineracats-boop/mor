@@ -1,0 +1,37 @@
+name: Mor trabaja
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 'Trabajo'
+        required: true
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: trabajo-${{ github.event.inputs.id }}
+  cancel-in-progress: false
+jobs:
+  trabajar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Herramientas de Python
+        run: pip install --quiet pandas numpy matplotlib openpyxl requests
+      - name: Mor trabaja
+        env:
+          ID: ${{ github.event.inputs.id }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          git config user.name "Mor nube"
+          git config user.email "mor@rocketjam.local"
+          node agente.mjs "$ID"

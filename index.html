@@ -1274,7 +1274,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v39</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v40</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1438,7 +1438,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v39 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v40 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -5148,6 +5148,110 @@ const despierto=(obj,met)=>{ const f=obj[met]; if(typeof f!=='function') return;
 (async()=>{ for(let k=0;k<60&&$('login').style.display!=='none';k++) await sleep(2000);
   await sleep(3000); const L=(await DB.all('projects')).filter(p=>p.trabajo&&p.estado==='trabajando'&&p.tb&&Date.now()-p.at<48*3600e3).sort((a,b)=>a.at-b.at).slice(0,2);
   for(const P of L) Trabajo.run(P.desc,P); })();
+
+/* =====================================================================
+   105. MOR EN LA NUBE (trabaja con el móvil apagado, como Claude)
+   El modo agente se ejecuta en un ordenador de GitHub Actions del repo
+   privado del estudio. Mor manda la tarea, el ordenador trabaja y guarda
+   el avance en cada paso, y Mor lo enseña (en silencio) cuando lo abres.
+   ===================================================================== */
+const Nube={
+  cfg(){ const c=Conn.get(); return {repo:c.nubeRepo||((c.ghUser||'mineracats-boop')+'/mor-nube'),token:c.nubeToken||'',on:c.nubeOn!==false}; },
+  ok(){ const c=this.cfg(); return !!(c.token&&c.repo&&c.on&&MEM.nubeLista); },
+  async api(path,opt={}){ const c=this.cfg(); const r=await fetch('https://api.github.com/repos/'+c.repo+path,Object.assign({},opt,{headers:Object.assign({Accept:'application/vnd.github+json',Authorization:'Bearer '+c.token,'X-GitHub-Api-Version':'2022-11-28'},opt.headers||{})}));
+    if(!r.ok){ let m=''; try{ m=(await r.json()).message; }catch(e){} const e=new Error(`GitHub ${r.status}${m?': '+m:''}`); e.status=r.status; throw e; } return r.status===204?null:(opt.raw?r.text():r.json()); },
+  b64(s){ return btoa(unescape(encodeURIComponent(s))); },
+  async poner(ruta,texto,msg){ let sha; try{ sha=(await this.api('/contents/'+ruta)).sha; }catch(e){ if(e.status!==404) throw e; }
+    return this.api('/contents/'+ruta,{method:'PUT',body:JSON.stringify({message:msg||('Mor: '+ruta),content:this.b64(texto),sha})}); },
+  async leer(ruta){ return this.api('/contents/'+ruta,{raw:true,headers:{Accept:'application/vnd.github.raw'}}); },
+  // ---------- preparar el repo (una vez) ----------
+  async preparar(log=()=>{}){ const c=this.cfg(); if(!c.token) throw new Error('Falta el token');
+    log('Comprobando el repositorio…'); const R=await this.api(''); if(!R.private) throw new Error('El repositorio '+c.repo+' es público: para la nube de Mor tiene que ser privado');
+    log('Subiendo el programa de la nube…'); const [ag,yml]=await Promise.all(['lib/nube/agente.mjs','lib/nube/trabajo.yml'].map(u=>fetch(u,{cache:'no-cache'}).then(r=>r.text())));
+    await this.poner('agente.mjs',ag,'Mor: programa de la nube'); await this.poner('.github/workflows/trabajo.yml',yml,'Mor: ordenador de la nube');
+    await this.poner('README.md',`# Mor nube\n\nAquí trabaja el modo agente de M.O.R. (Rocket Jam) cuando el móvil está apagado.\n\n- Cada trabajo está en \`trabajos/ID/\`: \`tarea.json\` (lo que pediste), \`estado.json\` (cómo va) y \`archivos/\` (lo que entrega).\n- Lo ejecuta GitHub Actions (\`.github/workflows/trabajo.yml\`). Necesita el secreto \`GEMINI_API_KEY\`.\n`,'Mor: léeme');
+    let secreto=null; try{ await this.api('/actions/secrets/GEMINI_API_KEY'); secreto=true; }catch(e){ secreto=e.status===404?false:null; }
+    MEM.nubeLista=true; saveMem(); return {secreto}; },
+  // ---------- lanzar un trabajo ----------
+  async lanzar(tarea){ const id='t'+Date.now().toString(36), F=MemFS.todo();
+    const memoria={}; for(const [r,f] of Object.entries(F)) memoria[r]=String(f.t||'').slice(0,4000);
+    const skills=Skills.list().filter(s=>s.on!==false).map(s=>({n:s.n,instr:String(s.instr||'').slice(0,4000)}));
+    const contexto=`HOY: ${new Date().toLocaleString('es-ES',{dateStyle:'full',timeStyle:'short'})}\n\nMEMORIA DEL HUMANO (archivos; léelos con memoria_leer si te hacen falta):\n${MemFS.lista()}\n\nPERFIL:\n${MemFS.leer('/perfil.md')||'(vacío)'}\n\nPREFERENCIAS (síguelas):\n${MemFS.leer('/preferencias.md')||'(ninguna)'}\n\nSKILLS DISPONIBLES:\n${skills.map(s=>'- '+s.n).join('\n')||'(ninguna)'}\n\nSOBRE EL ESTUDIO:\n${estudioRJ()}`;
+    const T={tarea,creado:Date.now(),reglas:TB_REGLAS,schema:TB_SCHEMA,memoria,skills,contexto,modelos:MODELOS_CODIGO.filter(m=>/^gemini/.test(m))};
+    const rec={id,tarea,at:Date.now(),estado:'enviando'}; (MEM.nube=MEM.nube||[]).push(rec); saveMem();
+    const c=this.tarjeta(rec);
+    try{ await this.poner(`trabajos/${id}/tarea.json`,JSON.stringify(T),'Mor: tarea nueva');
+      await this.api('/actions/workflows/trabajo.yml/dispatches',{method:'POST',body:JSON.stringify({ref:R_RAMA,inputs:{id}})});
+      rec.estado='en cola'; saveMem(); this.pinta(c,rec,{log:[{t:'Enviado al ordenador de la nube. Puedes cerrar Mor: sigue trabajando.'}]}); this.vigilar(); }
+    catch(e){ rec.estado='error'; rec.error=e.message; saveMem(); this.pinta(c,rec,{estado:'error',respuesta:'No he podido mandarlo a la nube: '+e.message+'. Lo hago aquí, en el móvil.'}); Trabajo._local(tarea); }
+    return id; },
+  // ---------- tarjetas ----------
+  cards:{},
+  tarjeta(rec){ if(this.cards[rec.id]&&document.body.contains(this.cards[rec.id])) return this.cards[rec.id];
+    const c=chatCard(`<div class="ctit">Modo agente en la nube · ${esc(String(rec.tarea).slice(0,60))}</div><small class="nbEst">${esc(rec.estado)}</small><div class="tbTareas" style="margin:6px 0"></div>
+      <details class="tbLog"><summary style="cursor:pointer;font-size:12px;opacity:.8">Lo que va haciendo</summary><div class="tbPasos" style="display:flex;flex-direction:column;gap:3px;margin-top:6px;font-size:12px"></div></details><div class="tbFin"></div>`);
+    this.cards[rec.id]=c; return c; },
+  pinta(c,rec,S){ const est={'en cola':'Esperando un ordenador libre…',enviando:'Enviando…',trabajando:'Trabajando en la nube',pregunta:'Esperando tu respuesta',listo:'Terminado',error:'Error',pausado:'Pausado'}[S.estado||rec.estado]||rec.estado;
+    c.querySelector('.nbEst').textContent=est+(S.paso?` · paso ${S.paso}`:'')+(S.vivo?' · '+new Date(S.vivo).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}):'');
+    if(S.T) Trabajo.pinta(c,S.T);
+    if(S.log){ c.querySelector('.tbPasos').innerHTML=S.log.slice(-40).map(l=>`<div style="opacity:.85;border-left:2px solid rgba(127,216,255,.4);padding-left:6px">${esc(l.t)}</div>`).join(''); }
+    const fin=c.querySelector('.tbFin');
+    if(S.estado==='pregunta'&&S.pregunta&&!fin.querySelector('.nbPreg')){ const ops=S.pregunta.opciones||[];
+      fin.innerHTML=`<div class="nbPreg" style="margin-top:8px;border:1px solid rgba(255,200,90,.45);border-radius:10px;padding:8px"><b>${esc(S.pregunta.texto)}</b><div class="row" style="flex-wrap:wrap;margin-top:6px">${ops.map((o,i)=>`<button class="tbtn on" data-o="${i}">${esc(o)}</button>`).join('')}</div><div class="row"><input class="tbResp" placeholder="Otra respuesta…" style="flex:1"><button class="tbtn" data-x>Enviar</button></div></div>`;
+      const env=v=>{ fin.innerHTML='<small>Respuesta enviada: sigue trabajando en la nube.</small>'; this.responder(rec,v); };
+      fin.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>env(ops[+b.dataset.o])); fin.querySelector('[data-x]').onclick=()=>{ const v=fin.querySelector('.tbResp').value.trim(); if(v) env(v); }; }
+    if((S.estado==='listo'||S.estado==='error')&&S.respuesta&&!fin.querySelector('.nbOk')){ fin.innerHTML='<div class="nbOk"></div>'; this.entregar(c,rec,S); } },
+  async entregar(c,rec,S){ let arch=[]; try{ arch=(await this.api(`/contents/trabajos/${rec.id}/archivos`)).filter(f=>f.type==='file'&&!f.name.startsWith('.mor_tmp')); }catch(e){}
+    const P={files:[]}; Trabajo.entregar(c,S.respuesta,P,{});
+    if(arch.length){ const box=document.createElement('div'); box.style.cssText='margin-top:8px;display:flex;flex-direction:column;gap:4px';
+      box.innerHTML=arch.map((f,i)=>`<div class="row" style="margin:0;align-items:center"><b style="flex:1;font-size:13px">${esc(f.name)}</b><button class="tbtn" data-ve="${i}">Ver</button><button class="tbtn on" data-dl="${i}">Descargar</button></div>`).join(''); c.querySelector('.tbFin').appendChild(box);
+      const bajar=async f=>{ const r=await fetch(`https://api.github.com/repos/${this.cfg().repo}/contents/${f.path}`,{headers:{Authorization:'Bearer '+this.cfg().token,Accept:'application/vnd.github.raw'}}); return r.blob(); };
+      box.querySelectorAll('[data-dl]').forEach(b=>b.onclick=async()=>{ const f=arch[+b.dataset.dl]; const a=document.createElement('a'); a.href=URL.createObjectURL(await bajar(f)); a.download=f.name; a.click(); });
+      box.querySelectorAll('[data-ve]').forEach(b=>b.onclick=async()=>{ const f=arch[+b.dataset.ve]; const bl=await bajar(f); if(/\.html?$/i.test(f.name)) return window.open(URL.createObjectURL(new Blob([bl],{type:'text/html'})),'_blank'); if(/\.(png|jpe?g|svg|gif|webp)$/i.test(f.name)) return window.open(URL.createObjectURL(bl),'_blank'); chatCard(`<div class="ctit">${esc(f.name)}</div><pre style="white-space:pre-wrap;max-height:60vh;overflow:auto;font-size:12px">${esc(await bl.text())}</pre>`); }); }
+    // lo que solo se puede hacer en el móvil, una vez
+    if(!rec.aplicado){ rec.aplicado=true; saveMem();
+      for(const m of S.memoria||[]) try{ MemFS.escribir(m.ruta,((MemFS.leer(MemFS.ruta(m.ruta))||'')+'\n'+m.contenido).trim()); }catch(e){}
+      if((S.acciones||[]).length){ Agenda.apply(S.acciones); }
+      logChat('m',`[Modo agente en la nube terminado: ${String(rec.tarea).slice(0,60)}] ${String(S.respuesta).slice(0,400)}`); } },
+  async responder(rec,v){ try{ const T=JSON.parse(await this.leer(`trabajos/${rec.id}/tarea.json`)); T.respuesta=v; T.respuestaN=(T.respuestaN||0)+1;
+      await this.poner(`trabajos/${rec.id}/tarea.json`,JSON.stringify(T),'Mor: respuesta'); await this.api('/actions/workflows/trabajo.yml/dispatches',{method:'POST',body:JSON.stringify({ref:R_RAMA,inputs:{id:rec.id}})});
+      rec.estado='en cola'; saveMem(); this.vigilar(); }catch(e){ toast('No he podido mandar la respuesta: '+e.message,6000); } },
+  // ---------- mirar cómo van (solo con la app abierta; en silencio) ----------
+  timer:null,
+  async mirar(){ const L=(MEM.nube||[]).filter(r=>!['listo','error'].includes(r.estado)||!r.visto);
+    for(const rec of L){ let S=null; try{ S=JSON.parse(await this.leer(`trabajos/${rec.id}/estado.json`)); }catch(e){ if(e.status!==404) continue; }
+      if(!S){ if(Date.now()-rec.at>4*60000){ try{ const runs=(await this.api('/actions/runs?event=workflow_dispatch&per_page=10')).workflow_runs||[]; const fallo=runs.find(r=>r.conclusion==='failure'&&new Date(r.created_at).getTime()>=rec.at-60000);
+            if(fallo){ rec.estado='error'; S={estado:'error',respuesta:`El ordenador de la nube ha fallado antes de empezar. Lo más probable: falta el secreto GEMINI_API_KEY en el repositorio. Registro: ${fallo.html_url}`}; } }catch(e){} }
+        if(!S) continue; }
+      rec.estado=S.estado; if(['listo','error'].includes(S.estado)) rec.visto=true; saveMem(); this.pinta(this.tarjeta(rec),rec,S); }
+    if(!(MEM.nube||[]).some(r=>!['listo','error'].includes(r.estado))){ clearInterval(this.timer); this.timer=null; } },
+  vigilar(){ if(!this.timer) this.timer=setInterval(()=>{ if(!document.hidden) this.mirar(); },20000); setTimeout(()=>this.mirar(),3000); },
+  // ---------- pantalla para conectarla ----------
+  conectar(){ const c=this.cfg(); const [own,rep]=c.repo.split('/');
+    const k=chatCard(`<div class="ctit">Conectar el ordenador en la nube de Mor</div><small>Así el modo agente sigue trabajando con el móvil apagado o la app cerrada. Es gratis (2.000 minutos al mes) y se hace una vez.</small>
+      <ol style="margin:8px 0 6px 18px;padding:0;line-height:1.6;font-size:13px">
+        <li><a href="https://github.com/new?name=${encodeURIComponent(rep)}&visibility=private&description=${encodeURIComponent('Ordenador en la nube de M.O.R.')}" target="_blank" rel="noopener">Crea el repositorio privado «${esc(rep)}»</a> (marca «Add a README file»).</li>
+        <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Crea un token</a> «Fine-grained»: Repository access → Only select repositories → ${esc(rep)}. Permisos: <b>Contents</b>, <b>Actions</b> y <b>Workflows</b> en «Read and write» (y <b>Secrets</b> en «Read-only» para que Mor compruebe la clave). Cópialo.</li>
+        <li><a href="https://github.com/${encodeURIComponent(own)}/${encodeURIComponent(rep)}/settings/secrets/actions/new" target="_blank" rel="noopener">Añade el secreto</a> con nombre <b>GEMINI_API_KEY</b> y como valor tu clave de Gemini.</li>
+        <li>Pega aquí el token (se guarda solo en tu Mor, nunca en el código):</li></ol>
+      <div class="row"><input class="nbRepo" value="${esc(c.repo)}" style="flex:1" placeholder="usuario/mor-nube"></div>
+      <div class="row"><input class="nbTok" type="password" placeholder="Token de GitHub (github_pat_…)" style="flex:1" autocomplete="off"><button class="tbtn on" data-ok>Conectar</button></div><div class="nbMsg" style="font-size:12px;margin-top:6px"></div>`);
+    const msg=t=>k.querySelector('.nbMsg').textContent=t;
+    k.querySelector('[data-ok]').onclick=async()=>{ const tok=k.querySelector('.nbTok').value.trim(), repo=k.querySelector('.nbRepo').value.trim(); if(!tok) return msg('Pega el token.');
+      const C=Conn.get(); C.nubeToken=tok; C.nubeRepo=repo; C.nubeOn=true; Conn.set(C);
+      try{ const r=await this.preparar(msg); msg(r.secreto===false?'Conectado, pero falta el secreto GEMINI_API_KEY (paso 3): sin él no puede pensar.':'Listo: el modo agente trabajará en la nube. Puedes cerrar Mor mientras trabaja.'); k.querySelector('.nbTok').value=''; }
+      catch(e){ MEM.nubeLista=false; saveMem(); msg('No se ha podido: '+e.message+(e.status===404?' (¿existe el repositorio y el token tiene acceso a él?)':e.status===403?' (al token le faltan permisos: Contents, Actions y Workflows en lectura y escritura)':'')); } }; }
+};
+const R_RAMA='main';
+// el modo agente va a la nube cuando está conectada
+Trabajo._local=Trabajo.run.bind(Trabajo);
+Trabajo.run=function(tarea,rec){ if(!rec&&Nube.ok()) return Nube.lanzar(tarea); return Trabajo._local(tarea,rec); };
+const _apply105=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply105(acts); for(const a of acts){ if(/^\s*nube\s*$/i.test(String(a))) setTimeout(()=>Nube.conectar(),200); } return made; };
+CMDS.splice(1,0,['/nube','Conectar o ver el ordenador en la nube de Mor (trabaja con el móvil apagado)',()=>Nube.conectar()]);
+// al abrir Mor: ver cómo van los trabajos de la nube (sin hablar)
+(async()=>{ for(let k=0;k<60&&$('login').style.display!=='none';k++) await sleep(2000); if((MEM.nube||[]).some(r=>!['listo','error'].includes(r.estado))&&Nube.cfg().token) Nube.vigilar(); })();
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&(MEM.nube||[]).some(r=>!['listo','error'].includes(r.estado))) Nube.mirar(); });
 
 /* =====================================================================
    15. DESPERTAR
