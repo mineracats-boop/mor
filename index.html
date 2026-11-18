@@ -1274,7 +1274,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v44</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v45</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1438,7 +1438,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v44 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v45 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -4650,6 +4650,17 @@ JUEGO:\n${texto}\n\nPLANTILLAS:\n${ops.map(k=>`- ${k}: ${PLANTILLAS_INFO[k].nomb
   async adaptar(id,P,g,spec,assets,log){ const info=PLANTILLAS_INFO[id];
     log(`Mor parte de la plantilla probada «${info.nombre}»…`);
     let base=await this.cargar(id); base=base.replace(/<title>[^<]*<\/title>/i,`<title>${String(g.titulo||'Juego').replace(/[<&]/g,'')}</title>`);
+    if(id==='tercera3d'){ /* v45: los modelos y texturas que ya tiene el proyecto se meten solos en la plantilla */
+      const st=r=>r.split('/').pop().replace(/\.[^.]+$/,'').replace(/[^\w]/g,'_'); const M={}, T={};
+      assets.filter(a=>/^models\/.*\.(glb|fbx)$/i.test(a.ruta)&&!/_(quieto|andar|correr|saltar|atacar|golpe|morir|bailar)\.(glb|fbx)$/i.test(a.ruta)).forEach(a=>M[st(a.ruta)]=a.ruta);
+      assets.filter(a=>/\.(jpe?g|png|webp)$/i.test(a.ruta)).forEach(a=>T[st(a.ruta)]=a.ruta);
+      const elige=re=>Object.keys(M).find(k=>re.test(k));
+      const MOD=Object.assign({jugador:'models/jugador.glb',enemigo:'models/enemigo.glb',objeto:'models/objeto.glb',obstaculo:'models/roca.glb'},M);
+      const en=elige(/enem|polic|zomb|monst|guard|malo|bandid/i), ob=elige(/edific|casa|torre|muro/i)||elige(/roca|arbol|árbol|caja/i)||elige(/coche/i), ok=elige(/moneda|objeto|gema|item|coin|estrella|tesoro/i);
+      if(en) MOD.enemigo=M[en]; if(ob) MOD.obstaculo=M[ob]; if(ok) MOD.objeto=M[ok];
+      if(!T.suelo){ const s2=Object.keys(T).find(k=>/suelo|asfalt|road|calle|cesped|hierba|grass|ground|floor/i.test(k)); if(s2) T.suelo=T[s2]; }
+      base=base.replace(/const MODELOS=\{[^\n]*\};/,'const MODELOS='+JSON.stringify(MOD)+';').replace('const TEXTURAS={};','const TEXTURAS='+JSON.stringify(T)+';'); }
+    for(let i=0;i<240&&Agente.running;i++){ if(i===0) log('Espero a que el agente de código termine lo que está haciendo…'); await sleep(5000); }
     P.nombre=g.titulo; P.plantilla=id; P.estado='adaptando';
     P.files=[{ruta:'index.html',code:base}].concat(assets.map(a=>({ruta:a.ruta,data:a.data,bin:true}))); await DB.put('projects',P);
     const imgs=assets.filter(a=>!/\.glb$|\.fbx$/i.test(a.ruta)).map(a=>a.ruta), mods=assets.filter(a=>/\.glb$|\.fbx$/i.test(a.ruta)).map(a=>a.ruta);
@@ -4663,7 +4674,9 @@ JUEGO:\n${texto}\n\nPLANTILLAS:\n${ops.map(k=>`- ${k}: ${PLANTILLAS_INFO[k].nomb
 
 ESPECIFICACIÓN DEL JUEGO:\n${spec}`);
     const R=(await DB.all('projects')).find(x=>x.id===P.id); if(R&&R.versiones) P.versiones=R.versiones;
-    const idx=R&&R.files.find(f=>/index\.html$/.test(f.ruta)); return idx&&idx.code&&idx.code.length>500?idx.code:base; }
+    const idx=R&&R.files.find(f=>/index\.html$/.test(f.ruta)); const out=idx&&idx.code&&idx.code.length>500?idx.code:base;
+    if(out===base){ P.sinAdaptar=true; log('AVISO: el agente no ha podido adaptar la plantilla (cerebros agotados u ocupados). Te doy la plantilla con tus modelos puestos; pídeme los cambios cuando haya cupo.'); }
+    return out; }
 };
 window.Plantillas=Plantillas;
 
@@ -5529,17 +5542,17 @@ async function proyectoDelChat(){ const H=(await DB.all('chats')).filter(c=>c.ci
   for(const h of H){ const m=String(h.t||'').match(/\[(?:Juego creado|Agente de código en|Proyecto creado|Proyecto)\s*:?\s*([^,:\]]+)/i); if(m){ const P=await proyectoPorNombre(m[1].trim()); if(P) return P; } }
   return null; }
 const _apply108=Agenda.apply.bind(Agenda);
-Agenda.apply=function(acts){ const u=Cola.texto||''; Cola.huboAccion=acts.some(a=>/^\s*[a-z_]+\s*:/i.test(a));
+Agenda.apply=function(acts){ const u=Cola.texto||''; Cola.huboAccion=acts.some(a=>/^\s*[a-z_]+\s*:/i.test(a)); Cola.fuerte=acts.some(a=>/^\s*(juego|agente|trabajo|estudio|proyecto|app)\s*:/i.test(a));
   if(u&&CAMBIO_RE.test(u)&&!acts.some(a=>/^\s*(juego|agente|trabajo|estudio|proyecto|app)\s*:/i.test(a))){
     Cola.pendienteAgente=u; }
   return _apply108(acts); };
 const _stream108=geminiStream; geminiStream=async function(body,onText){ const r=await _stream108(body,t=>{ Cola.raw+=t; onText(t); }); return r; };
 const _send108b=send;
-send=async function(text,opts={}){ opts=opts||{}; if(text&&!opts.event&&!busy){ Cola.raw=''; Cola.pendienteAgente=null; Cola.huboAccion=false; }
+send=async function(text,opts={}){ opts=opts||{}; if(text&&!opts.event&&!busy){ Cola.raw=''; Cola.pendienteAgente=null; Cola.huboAccion=false; Cola.fuerte=false; }
   const r=await _send108b(text,opts);
   if(text&&!opts.event&&Cola.actual===null){
     const visible=String(Cola.raw||'').replace(/\{\{[^{}]*\}\}/g,'').replace(/\[[^\]\n]{1,20}\]/g,'').trim();
-    let P=null; if(Cola.pendienteAgente||(!visible&&CAMBIO_RE.test(text))) P=await proyectoDelChat();
+    let P=null; if(!Cola.fuerte&&(Cola.pendienteAgente||(!visible&&CAMBIO_RE.test(text)))) P=await proyectoDelChat();
     if(P&&!Agente.running){ Cola.pendienteAgente=null; if(!visible) logChat('m','Me pongo con ello en '+P.nombre+'.'); showSub('Me pongo con ello en '+P.nombre+': el agente de código va paso a paso y lo prueba.'); setTimeout(()=>Agente.run(P.id,text),300); }
     else if(P&&Agente.running){ showSub('El agente de código sigue con lo anterior. Cuando termine, pídemelo otra vez o pulsa «Pedir otro cambio».',text); }
     else if(!visible&&!Cola.huboAccion){ const m='No me ha llegado respuesta del cerebro'+(Cola.cerebro?' ('+Cola.cerebro+')':'')+(window._lastErr?': '+window._lastErr:'')+'. Vuelve a pedírmelo; si sigue igual, mira la barra de uso.';
