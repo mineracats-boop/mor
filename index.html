@@ -1274,7 +1274,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v40</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v41</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1438,7 +1438,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v40 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v41 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2387,9 +2387,9 @@ async function cropMark(blob){ try{ const im=await createImageBitmap(blob); cons
 async function genAsset(a){
   const w=Math.min(1024,a.ancho||(a.tipo==='fondo'?1024:512)), h=Math.min(1024,a.alto||(a.tipo==='fondo'?576:512));
   const extra=a.tipo==='sprite'||a.tipo==='icono'?', single object centered, full body, plain pure white background, no shadow, game sprite, clean edges':a.tipo==='textura'?', seamless tileable texture, top-down':', game background, no characters, no text';
-  const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(a.descripcion_en_ingles+extra)+`?width=${w}&height=${h}&nologo=true&seed=${Math.floor(Math.random()*1e6)}`;
+  const url=Pol.urlImagen(a.descripcion_en_ingles+extra,{w,h});
   let r=null; for(let i=0;i<4;i++){ const w8=_lastImg+6000-Date.now(); if(w8>0) await sleep(w8); _lastImg=Date.now();
-    r=await withTimeout(fetch(url+'&i='+i),70000).catch(()=>null); if(r&&r.ok) break; await sleep(8000*(i+1)); }
+    r=await withTimeout(fetch(url+'&i='+i,{headers:Pol.cab()}),70000).catch(()=>null); if(r&&r.ok) break; await sleep(8000*(i+1)); }
   if(!r||!r.ok) throw new Error('imagen');
   const b0=await r.blob(); const b=await cropMark(b0); let data=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b); });
   if(a.tipo==='sprite'||a.tipo==='icono') data=await spriteFromImage(data);
@@ -5252,6 +5252,159 @@ CMDS.splice(1,0,['/nube','Conectar o ver el ordenador en la nube de Mor (trabaja
 // al abrir Mor: ver cómo van los trabajos de la nube (sin hablar)
 (async()=>{ for(let k=0;k<60&&$('login').style.display!=='none';k++) await sleep(2000); if((MEM.nube||[]).some(r=>!['listo','error'].includes(r.estado))&&Nube.cfg().token) Nube.vigilar(); })();
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&(MEM.nube||[]).some(r=>!['listo','error'].includes(r.estado))) Nube.mirar(); });
+
+/* =====================================================================
+   106. IMÁGENES, VÍDEOS CON IA Y MONTADOR DE VÍDEOS
+   - Imágenes: Pollinations nuevo (gen.pollinations.ai) con tu clave gratuita
+     y modelo a elegir; sin clave, el servicio antiguo de siempre.
+   - Vídeo con IA: Pollinations (grok-video) y, de respaldo, Wan/LTX en
+     Hugging Face (cupo diario gratuito de tu cuenta).
+   - Montador: tráileres y vídeos con tus imágenes, textos, la voz de Mor
+     y música, hechos en el propio navegador (gratis y sin límite).
+   ===================================================================== */
+const Pol={
+  base:'https://gen.pollinations.ai',
+  key(){ return Conn.get().polKey||''; },
+  modelo(){ return Conn.get().polModelo||'flux'; },
+  urlImagen(prompt,{w=1024,h=1024,modelo,ref,seed}={}){ const k=this.key(); seed=seed??Math.floor(Math.random()*1e6);
+    if(!k) return 'https://image.pollinations.ai/prompt/'+encodeURIComponent(String(prompt).slice(0,900))+`?width=${w}&height=${h}&nologo=true&seed=${seed}`;
+    return this.base+'/image/'+encodeURIComponent(String(prompt).slice(0,1500))+`?model=${encodeURIComponent(modelo||this.modelo())}&width=${w}&height=${h}&nologo=true&seed=${seed}`+(ref?'&image='+encodeURIComponent(ref):''); },
+  cab(){ const k=this.key(); return k?{Authorization:'Bearer '+k}:{}; },
+  async imagen(prompt,op={}){ const r=await withTimeout(fetch(this.urlImagen(prompt,op),{headers:this.cab()}),op.ms||90000); if(!r||!r.ok){ let m=''; try{ m=(await r.text()).slice(0,160); }catch(e){} throw new Error('no se pudo dibujar'+(r?' ('+r.status+(m?': '+m:'')+')':'')); } return r.blob(); },
+  async modelos(tipo='image'){ try{ const r=await fetch(this.base+'/'+(tipo==='video'?'image':tipo)+'/models'); const j=await r.json(); return (Array.isArray(j)?j:j.data||[]).map(m=>typeof m==='string'?{name:m}:m); }catch(e){ return []; } },
+  async video(prompt,{modelo='grok-video',seg=6,formato='16:9',ref}={}){ if(!this.key()) throw new Error('Para vídeo con Pollinations hace falta tu clave (/medios)');
+    const q=`?model=${encodeURIComponent(modelo)}&duration=${seg}&aspectRatio=${encodeURIComponent(formato)}&nologo=true`+(ref?'&image='+encodeURIComponent(ref):'');
+    let ult='';
+    for(const ruta of ['/video/','/image/']){ const r=await withTimeout(fetch(this.base+ruta+encodeURIComponent(String(prompt).slice(0,1500))+q,{headers:this.cab()}),300000);
+      if(r&&r.ok){ const b=await r.blob(); if(/video|octet/.test(b.type)||b.size>200000) return b; ult='no ha devuelto un vídeo'; continue; }
+      ult=r?r.status+' '+(await r.text().catch(()=>'')).slice(0,160):'sin respuesta'; if(r&&r.status!==404) break; }
+    throw new Error('Pollinations: '+ult); }
+};
+// el chat y los juegos usan el proveedor nuevo cuando hay clave
+makeImage=async function(prompt){ const b=await Pol.imagen(prompt,{w:1024,h:1024,ms:90000});
+  const data=await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b); });
+  const x={id:'im'+Date.now(),name:'imagen-mor-'+Date.now()+'.jpg',img:data,prompt,at:Date.now()}; await DB.put('files',x); return x; };
+
+/* ---------- vídeo con IA en Hugging Face (Gradio, cupo gratuito diario) ---------- */
+const HFVideo={
+  espacios(){ const c=Conn.get().hfEspacios; return (c?String(c).split(/[\s,]+/):['Wan-AI/Wan2.2-TI2V-5B','Lightricks/ltx-video-distilled']).filter(Boolean); },
+  token(){ try{ const C=Conn.get(); return C.pv_hf_key||C.hfKey||(JSON.parse(localStorage.getItem('mor_claves')||'{}').hf)||''; }catch(e){ return ''; } },
+  lib:null,
+  async cliente(){ if(!this.lib) this.lib=await import('https://cdn.jsdelivr.net/npm/@gradio/client@1/dist/index.min.js'); return this.lib; },
+  async generar(prompt,{imagen=null,log=()=>{}}={}){ const {Client,handle_file}=await this.cliente(); let ult='';
+    for(const sp of this.espacios()){ try{ log('Conectando con '+sp+'…'); const c=await Client.connect(sp,this.token()?{hf_token:this.token()}:{});
+        const api=await c.view_api(); const eps=Object.entries(api.named_endpoints||{});
+        const ep=eps.find(([n,e])=>(e.returns||[]).some(r=>/video/i.test(r.component||r.type&&r.type.type||''))&&(e.parameters||[]).some(p=>/prompt|text/i.test(p.label||p.parameter_name||'')));
+        if(!ep) throw new Error('no encuentro cómo pedirle un vídeo');
+        const args={}; for(const p of ep[1].parameters||[]){ const n=p.parameter_name||p.label, lab=String(p.label||n);
+          if(/negative/i.test(lab)) { if(p.parameter_has_default) args[n]=p.parameter_default; continue; }
+          if(/prompt|text/i.test(lab)&&!args.__p){ args[n]=prompt; args.__p=1; continue; }
+          if(/image/i.test(p.component||'')||/image/i.test(lab)){ if(imagen) args[n]=handle_file(imagen); else if(p.parameter_has_default) args[n]=p.parameter_default; else args[n]=null; continue; }
+          if(p.parameter_has_default) args[n]=p.parameter_default; }
+        delete args.__p; log('Generando el vídeo en '+sp+' (tarda unos minutos)…');
+        const r=await c.predict(ep[0],args); const v=(r.data||[]).flat(3).find(x=>x&&(x.url||x.video&&x.video.url));
+        const url=v&&(v.url||v.video.url); if(!url) throw new Error('no ha devuelto un vídeo');
+        const b=await (await fetch(url)).blob(); return {blob:b,espacio:sp}; }
+      catch(e){ ult=sp+': '+(e.message||e); log('No ha funcionado '+sp+': '+(e.message||e)); } }
+    throw new Error(ult||'ningún espacio de Hugging Face responde'); }
+};
+
+/* ---------- montador de vídeos (canvas + audio, en el navegador) ---------- */
+const Montador={
+  async img(src){ return await new Promise((ok,ko)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>ok(i); i.onerror=()=>ko(new Error('no se pudo cargar una imagen')); i.src=typeof src==='string'?src:URL.createObjectURL(src); }); },
+  async narrar(texto,ac){ if(!texto) return null;
+    try{ if(Voice.piperState!=='ready'){ try{ await Voice.loadPiper(); }catch(e){} for(let k=0;k<40&&Voice.piperState==='loading';k++) await sleep(500); }
+      if(Voice.piperState==='ready'){ const w=await Voice.piper.predict(texto); return await ac.decodeAudioData(await w.arrayBuffer()); } }catch(e){}
+    try{ await Voice.gtts(texto); const VG=vozGemini(); const hit=await Cache.get('gem|'+VG+'|'+texto); if(hit){ const bin=Uint8Array.from(atob(hit.b64),c=>c.charCodeAt(0)); const n=bin.length>>1, buf=ac.createBuffer(1,n,hit.rate), d=buf.getChannelData(0), dv=new DataView(bin.buffer); for(let i=0;i<n;i++) d[i]=dv.getInt16(i*2,true)/32768; return buf; } }catch(e){}
+    return null; },
+  // escenas: [{img, texto, voz, seg, mov}]  ·  op: {titulo, cierre, musica (Blob), formato '16:9'|'9:16'|'1:1', alto}
+  async montar(escenas,op={},log=()=>{}){
+    const fmt=op.formato||'16:9', H=op.alto||720, W=fmt==='9:16'?Math.round(H*9/16):fmt==='1:1'?H:Math.round(H*16/9);
+    const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d');
+    const ac=new (window.AudioContext||window.webkitAudioContext)(); const dest=ac.createMediaStreamDestination();
+    log('Preparando imágenes y voz…');
+    const E=[]; for(const [i,e] of escenas.entries()){ const im=e.img?await this.img(e.img):null; const voz=await this.narrar(e.voz,ac);
+      const seg=Math.max(e.seg||0,voz?voz.duration+.8:0,2.5); E.push({...e,im,voz,seg}); log(`Escena ${i+1}/${escenas.length} lista`); }
+    if(op.titulo) E.unshift({titulo:op.titulo,seg:2.6}); if(op.cierre) E.push({titulo:op.cierre,seg:2.6,cierre:true});
+    let musica=null; if(op.musica){ try{ musica=await ac.decodeAudioData(await op.musica.arrayBuffer()); }catch(e){} }
+    const total=E.reduce((s,e)=>s+e.seg,0);
+    const tipo=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm'].find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t))||'video/webm';
+    const st=new MediaStream([...cv.captureStream(30).getVideoTracks(),...dest.stream.getAudioTracks()]); const rec=new MediaRecorder(st,{mimeType:tipo,videoBitsPerSecond:5e6}); const trozos=[];
+    rec.ondataavailable=e=>e.data.size&&trozos.push(e.data); const fin=new Promise(r=>rec.onstop=r);
+    // audio: voces en su escena y música de fondo más baja cuando habla Mor
+    const t0=ac.currentTime+.25; let t=t0; const gm=ac.createGain(); gm.connect(dest); gm.connect(ac.destination); gm.gain.value=0;
+    if(musica){ const s=ac.createBufferSource(); s.buffer=musica; s.loop=true; s.connect(gm); s.start(t0); gm.gain.setValueAtTime(.55,t0); }
+    for(const e of E){ if(e.voz){ const s=ac.createBufferSource(); s.buffer=e.voz; const gv=ac.createGain(); gv.gain.value=1; s.connect(gv); gv.connect(dest); gv.connect(ac.destination); s.start(t+.3); if(musica){ gm.gain.setTargetAtTime(.18,t+.2,.15); gm.gain.setTargetAtTime(.55,t+.3+e.voz.duration,.3); } } t+=e.seg; }
+    if(musica){ gm.gain.setTargetAtTime(0,t0+total-1.2,.4); }
+    const dibujar=(e,p,alfa=1)=>{ g.globalAlpha=alfa;
+      if(e.titulo){ g.fillStyle='#0b1622'; g.fillRect(0,0,W,H); g.fillStyle='#ffffff'; g.textAlign='center'; g.textBaseline='middle'; g.font=`700 ${Math.round(H*.075)}px system-ui,sans-serif`;
+        const L=String(e.titulo).split('\n'); L.forEach((l,i)=>g.fillText(l,W/2,H/2+(i-(L.length-1)/2)*H*.1)); g.globalAlpha=1; return; }
+      g.fillStyle='#000'; g.fillRect(0,0,W,H);
+      if(e.im){ const iw=e.im.naturalWidth, ih=e.im.naturalHeight, base=Math.max(W/iw,H/ih); const mov=e.mov||'zoom';
+        let z=1, dx=0, dy=0; if(mov==='zoom'||mov==='zoom-in') z=1+.12*p; else if(mov==='zoom-out') z=1.12-.12*p; else if(mov==='pan-izq'){ z=1.12; dx=(.5-p)*.1*W; } else if(mov==='pan-der'){ z=1.12; dx=(p-.5)*.1*W; } else if(mov==='quieto') z=1;
+        const s=base*z, w=iw*s, h=ih*s; g.drawImage(e.im,(W-w)/2+dx,(H-h)/2+dy,w,h); }
+      if(e.texto){ const fs=Math.round(H*.05); g.font=`600 ${fs}px system-ui,sans-serif`; g.textAlign='center'; g.textBaseline='alphabetic';
+        const pal=String(e.texto).split(' '), L=[]; let l=''; for(const w of pal){ if(g.measureText(l+' '+w).width>W*.86&&l){ L.push(l); l=w; } else l=(l?l+' ':'')+w; } L.push(l);
+        const y0=H-fs*1.2*L.length-H*.06; g.fillStyle='rgba(0,0,0,.55)'; g.fillRect(0,y0-fs,W,fs*1.2*L.length+fs*.9); g.fillStyle='#fff'; L.forEach((x,i)=>g.fillText(x,W/2,y0+i*fs*1.2+fs*.15)); }
+      g.globalAlpha=1; };
+    log('Grabando el vídeo ('+Math.round(total)+' s)…'); rec.start(250); const ini=performance.now()/1000+.25;
+    while(true){ const tt=performance.now()/1000-ini; if(tt>=total) break; let acc=0, k=0; while(k<E.length-1&&tt>=acc+E[k].seg){ acc+=E[k].seg; k++; }
+      const e=E[k], p=Math.max(0,Math.min(1,(tt-acc)/e.seg)); dibujar(e,p); const cruce=.45, falta=acc+e.seg-tt;
+      if(falta<cruce&&E[k+1]) dibujar(E[k+1],0,1-falta/cruce); if(tt<.4) { g.fillStyle=`rgba(0,0,0,${1-tt/.4})`; g.fillRect(0,0,W,H); }
+      await sleep(1000/30); }
+    rec.stop(); await fin; st.getTracks().forEach(x=>x.stop()); ac.close();
+    return new Blob(trozos,{type:tipo.split(';')[0]}); },
+  // el guion lo escribe Mor; las imágenes que falten las dibuja
+  async desdePeticion(pet,{imagenes=[],musica=null,formato='16:9'}={},log=()=>{}){
+    const plan=await geminiJSON(`Eres el editor de vídeo de Rocket Jam. Escribe el guion de un vídeo corto: «${pet}». ${imagenes.length?`Hay ${imagenes.length} imágenes del usuario (úsalas por su número, 1..${imagenes.length}, en el orden que mejor cuente la historia).`:'No hay imágenes: describe en inglés cada imagen que hay que generar.'}
+4-10 escenas de 2-6 segundos. "voz" es lo que narra Mor (frases cortas, en español) y puede ir vacía; "texto" es el rótulo en pantalla (corto) y puede ir vacío. "mov": zoom-in, zoom-out, pan-izq, pan-der o quieto. Sin emojis.`,
+      {type:'OBJECT',properties:{titulo:{type:'STRING'},cierre:{type:'STRING'},escenas:{type:'ARRAY',items:{type:'OBJECT',properties:{imagen:{type:'INTEGER'},dibujar_en_ingles:{type:'STRING'},texto:{type:'STRING'},voz:{type:'STRING'},seg:{type:'NUMBER'},mov:{type:'STRING'}}}}},required:['escenas']});
+    const E=[]; for(const [i,s] of (plan.escenas||[]).slice(0,12).entries()){ let img=null;
+      if(s.imagen&&imagenes[s.imagen-1]) img=imagenes[s.imagen-1];
+      else if(s.dibujar_en_ingles){ log(`Dibujando la escena ${i+1}…`); try{ const [w,h]=formato==='9:16'?[720,1280]:formato==='1:1'?[1024,1024]:[1280,720]; img=await Pol.imagen(s.dibujar_en_ingles+', cinematic, high quality',{w,h}); }catch(e){ log('No se pudo dibujar la escena '+(i+1)); } }
+      E.push({img,texto:s.texto,voz:s.voz,seg:s.seg||4,mov:s.mov}); }
+    return {blob:await this.montar(E,{titulo:plan.titulo,cierre:plan.cierre||'Rocket Jam',musica,formato},log),plan}; }
+};
+
+/* ---------- tarjetas ---------- */
+const Medios={
+  ver(blob,titulo){ const url=URL.createObjectURL(blob), ext=/mp4/.test(blob.type)?'mp4':'webm';
+    const c=chatCard(`<div class="ctit">${esc(titulo)}</div><video src="${url}" controls playsinline style="width:100%;max-height:60vh;border-radius:10px;background:#000"></video><div class="row"><button class="tbtn on" data-dl>Descargar ${ext.toUpperCase()}</button><button class="tbtn" data-g>Guardar en Mor</button></div>`);
+    c.querySelector('[data-dl]').onclick=()=>{ const a=document.createElement('a'); a.href=url; a.download=titulo.replace(/[^\p{L}\p{N}]+/gu,'-').toLowerCase()+'.'+ext; a.click(); };
+    c.querySelector('[data-g]').onclick=async e=>{ const data=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); await DB.put('files',{id:'vd'+Date.now(),name:titulo+'.'+ext,video:data,at:Date.now()}); e.target.textContent='Guardado'; e.target.disabled=true; }; },
+  async elegirArchivos(accept,multiple=true){ return await new Promise(r=>{ const i=document.createElement('input'); i.type='file'; i.accept=accept; i.multiple=multiple; i.onchange=()=>r([...i.files]); i.click(); }); },
+  config(){ const C=Conn.get(); const c=chatCard(`<div class="ctit">Imágenes y vídeo de Mor</div><small>Con tu clave gratuita de Pollinations Mor dibuja con mejores modelos y puede hacer vídeos. Sácala en <a href="https://enter.pollinations.ai" target="_blank" rel="noopener">enter.pollinations.ai</a> (entra con GitHub o Google y crea una clave). Se guarda solo en tu Mor.</small>
+      <div class="row"><input class="mdKey" type="password" placeholder="${C.polKey?'Clave guardada (pega otra para cambiarla)':'Clave de Pollinations (sk_… o pk_…)'}" style="flex:1" autocomplete="off"></div>
+      <div class="row"><label style="flex:1">Modelo de imagen <select class="mdMod" style="width:100%"><option value="${esc(Pol.modelo())}">${esc(Pol.modelo())}</option></select></label></div>
+      <div class="row"><input class="mdHF" value="${esc(HFVideo.espacios().join(', '))}" style="flex:1" title="Espacios de Hugging Face para vídeo"></div>
+      <div class="row"><button class="tbtn on" data-ok>Guardar</button></div><div class="mdMsg" style="font-size:12px;margin-top:6px"></div>`);
+    Pol.modelos('image').then(L=>{ const s=c.querySelector('.mdMod'); const n=L.map(m=>m.name||m.id).filter(Boolean); if(n.length) s.innerHTML=n.map(x=>`<option ${x===Pol.modelo()?'selected':''}>${esc(x)}</option>`).join(''); });
+    c.querySelector('[data-ok]').onclick=()=>{ const k=c.querySelector('.mdKey').value.trim(); const o={polModelo:c.querySelector('.mdMod').value,hfEspacios:c.querySelector('.mdHF').value}; if(k) o.polKey=k; Conn.set(o); c.querySelector('.mdKey').value=''; c.querySelector('.mdMsg').textContent='Guardado.'+(Pol.key()?' Ya dibujo con '+Pol.modelo()+'.':' Sin clave sigo con el servicio antiguo.'); }; },
+  async videoIA(pet){ const c=chatCard(`<div class="ctit">Vídeo con IA</div><small>${esc(pet)}</small><div class="mdLog" style="font-size:12px;margin-top:6px"></div>`); const log=t=>{ c.querySelector('.mdLog').textContent=t; showSub(t); };
+    Paso.set('vid','Haciendo el vídeo…'); Despierto.mas();
+    try{ const en=await gemini({contents:[{role:'user',parts:[{text:'Traduce al inglés como prompt para un generador de vídeo (una frase rica en detalles visuales y de movimiento de cámara, sin nada más): '+pet}]}],generationConfig:{temperature:.4}},MODELOS_LISTOS,20000).catch(()=>pet);
+      let blob=null, de='';
+      if(Pol.key()){ try{ log('Generando con Pollinations (grok-video)…'); blob=await Pol.video(en.trim(),{}); de='Pollinations'; }catch(e){ log(e.message+' · pruebo en Hugging Face…'); } }
+      if(!blob){ const r=await HFVideo.generar(en.trim(),{log}); blob=r.blob; de=r.espacio; }
+      Paso.fin('vid','Vídeo listo'); c.querySelector('.mdLog').textContent='Hecho con '+de+'.'; this.ver(blob,'Vídeo · '+pet.slice(0,50)); }
+    catch(e){ Paso.fin('vid','No he podido hacer el vídeo'); log('No he podido: '+e.message+'. Los vídeos con IA gratis tienen un cupo diario pequeño: prueba más tarde o haz un montaje (no tiene límite).'); }
+    finally{ Despierto.menos(); } },
+  async montaje(pet){ const c=chatCard(`<div class="ctit">Montaje de vídeo</div><small>${esc(pet)}</small><small>Elige imágenes (o ninguna y las dibujo) y, si quieres, una música.</small>
+      <div class="row" style="flex-wrap:wrap"><button class="tbtn" data-i>Elegir imágenes</button><button class="tbtn" data-m>Elegir música</button><select class="mdF"><option value="16:9">Horizontal 16:9</option><option value="9:16">Vertical 9:16 (TikTok, Shorts)</option><option value="1:1">Cuadrado</option></select><button class="tbtn on" data-go>Hacer el vídeo</button></div><div class="mdSel" style="font-size:12px"></div><div class="mdLog" style="font-size:12px;margin-top:6px"></div>`);
+    let imgs=[], mus=null; const sel=()=>c.querySelector('.mdSel').textContent=`${imgs.length} imágenes${mus?' · música: '+mus.name:''}`; const log=t=>{ c.querySelector('.mdLog').textContent=t; showSub(t); };
+    c.querySelector('[data-i]').onclick=async()=>{ imgs=await this.elegirArchivos('image/*'); sel(); }; c.querySelector('[data-m]').onclick=async()=>{ mus=(await this.elegirArchivos('audio/*',false))[0]||null; sel(); };
+    c.querySelector('[data-go]').onclick=async e=>{ e.target.disabled=true; Paso.set('mont','Montando el vídeo…'); Despierto.mas();
+      try{ const r=await Montador.desdePeticion(pet,{imagenes:imgs,musica:mus,formato:c.querySelector('.mdF').value},log); Paso.fin('mont','Vídeo montado'); log('Hecho: '+(r.plan.escenas||[]).length+' escenas.'); this.ver(r.blob,r.plan.titulo||'Montaje de Mor'); }
+      catch(err){ Paso.fin('mont','No he podido montarlo'); log('No he podido: '+err.message); }
+      finally{ e.target.disabled=false; Despierto.menos(); } }; }
+};
+const _apply106=Agenda.apply.bind(Agenda);
+Agenda.apply=function(acts){ const made=_apply106(acts); for(const a of acts){ const s=String(a); let m;
+    if((m=s.match(/^\s*video_ia\s*:?\s*([\s\S]+)$/i))) setTimeout(()=>Medios.videoIA(m[1].trim()),200);
+    else if((m=s.match(/^\s*montaje\s*:?\s*([\s\S]*)$/i))) setTimeout(()=>Medios.montaje(m[1].trim()||'Vídeo de Rocket Jam'),200);
+    else if(/^\s*medios\s*$/i.test(s)) setTimeout(()=>Medios.config(),200); } return made; };
+const _sys106=systemPrompt; systemPrompt=function(extra){ return _sys106(extra)+`\n· VÍDEOS: {{video_ia: lo que debe salir en el vídeo}} genera un clip corto con IA (cupo gratis pequeño al día). {{montaje: de qué va el vídeo}} monta un vídeo con imágenes (suyas o dibujadas), rótulos, tu voz y música: para tráileres, anuncios y vídeos de los juegos; no tiene límite. {{medios}} abre la configuración (clave de Pollinations y modelo de imagen).`; };
+CMDS.splice(3,0,['/video','Vídeo corto con IA',r=>r?Medios.videoIA(r):toast('Escribe qué quieres en el vídeo')],['/montaje','Montar un vídeo con imágenes, voz y música',r=>Medios.montaje(r||'Vídeo de Rocket Jam')],['/medios','Clave de Pollinations y modelo de imagen',()=>Medios.config()]);
 
 /* =====================================================================
    15. DESPERTAR
