@@ -1274,7 +1274,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v42</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v43</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1438,7 +1438,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v42 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v43 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -5423,13 +5423,13 @@ const Uso={
   resumen(){ const d=this.datos(), m=this.principal(), x=d.m[m]||{n:0}, lim=this.lim(m);
     const total=Object.values(d.m).reduce((s,v)=>s+v.n,0), tok=Object.values(d.m).reduce((s,v)=>s+v.tok,0);
     const vivos=MODELOS_CODIGO.filter(k=>!agotado(k)).length;
-    return {m,usados:x.n,lim,total,tok,vivos,todos:MODELOS_CODIGO.length,frac:lim?Math.min(1,x.n/lim):(agotado(m)?1:null)}; },
+    return {m,usados:x.n,hoy:Object.values(d.m||{}).reduce((a,v)=>a+(v.n||0),0),lim,total,tok,vivos,todos:MODELOS_CODIGO.length,frac:lim?Math.min(1,x.n/lim):(agotado(m)?1:null)}; },
   pintar(){ const el=$('usoBar'); if(!el) return; const r=this.resumen();
     const pct=r.frac==null?Math.round(100*(1-r.vivos/r.todos)):Math.round(r.frac*100);
     el.querySelector('i').style.width=Math.max(2,100-pct)+'%'; el.querySelector('i').style.background=pct>85?'#ff6b6b':pct>60?'#ffc35a':'#4fd18b';
     const quedan=r.lim?Math.max(0,r.lim-r.usados):null;
     const movil=innerWidth<600; el.firstElementChild.style.flexBasis=movil?'56px':'120px';
-    el.querySelector('small').textContent=movil?(quedan!=null?`${quedan}/${r.lim}`:`${r.usados} hoy`)+` · ${r.vivos}/${r.todos}`:`Gemini: ${quedan!=null?'quedan '+quedan+' de '+r.lim+' (modelo principal)':r.usados+' peticiones hoy'} · ${r.vivos}/${r.todos} modelos con cupo · ${(r.tok/1000).toFixed(0)}k tokens`; },
+    el.querySelector('small').textContent=movil?(quedan!=null?`${quedan}/${r.lim}`:`${r.hoy} hoy`)+` · ${r.vivos}/${r.todos}`:`Gemini: ${quedan!=null?'quedan '+quedan+' de '+r.lim+' (modelo principal)':r.hoy+' peticiones hoy'} · ${r.vivos}/${r.todos} modelos con cupo · ${(r.tok/1000).toFixed(0)}k tokens`; },
   tarjeta(){ const d=this.datos(); const fila=(m)=>{ const x=d.m[m]||{n:0,tok:0}, lim=this.lim(m), ag=agotado(m);
       return `<div class="row" style="margin:2px 0;align-items:center;gap:8px"><span style="flex:1;font-size:12px">${esc(m)}</span><span style="width:90px;height:6px;border-radius:3px;background:rgba(127,216,255,.15);overflow:hidden"><i style="display:block;height:100%;width:${lim?Math.max(2,100-Math.min(100,x.n*100/lim)):ag?2:100}%;background:${ag?'#ff6b6b':'#4fd18b'}"></i></span><small style="width:150px;text-align:right">${ag?'agotado hasta las 9:00':lim?`quedan ${Math.max(0,lim-x.n)} de ${lim}`:x.n+' hoy (límite aún sin saber)'}</small></div>`; };
     const otros=Object.entries(d.otros||{});
@@ -5488,6 +5488,43 @@ Apps.operar=async function(k,tarea,op={}){ k=this.clave(k)||k; const A=this.L[k]
   setTimeout(()=>{ const c=[...document.querySelectorAll('.opPasos')].pop(); if(c){ obs.observe(c,{childList:true}); const card=c.parentElement; if(!card.querySelector('[data-directo]')){ const b=document.createElement('button'); b.className='tbtn on'; b.dataset.directo=1; b.textContent='Ver en directo'; b.onclick=()=>this.abrir(k); card.querySelector('.row')?.prepend(b); } }
     const p=$('appMorParar'); if(p) p.onclick=()=>{ const s=[...document.querySelectorAll('.opPasos')].pop()?.parentElement?.querySelector('[data-stop]'); if(s) s.click(); aviso.style.display='none'; }; },300);
   try{ return await _operar107(k,tarea,op); } finally{ obs.disconnect(); aviso.style.display='none'; } };
+
+/* =====================================================================
+   108. NUNCA SE QUEDA SIN CONTESTAR
+   - Si le escribes mientras está ocupado, no se pierde: lo apunta y lo hace
+     al terminar.
+   - Mientras piensa, se ve cuánto lleva y qué cerebro está probando.
+   - Si un cerebro se cuelga, lo suelta y vuelve a intentarlo.
+   - El micrófono solo se enciende en el modo conversación.
+   ===================================================================== */
+const Cola={L:[],desde:0,ultimo:0,cerebro:'',texto:'',actual:null,reintentos:0};
+const _showSub108=showSub; showSub=function(text,you){ if(busy) Cola.ultimo=Date.now(); return _showSub108(text,you); };
+(()=>{ const f0=window.fetch.bind(window);
+  window.fetch=function(u,o){ try{ const url=typeof u==='string'?u:(u&&u.url)||''; const m=url.match(/models\/([^:/?]+):(?:generateContent|streamGenerateContent)/);
+      if(busy&&(m||/\/chat\/completions/.test(url))) Cola.ultimo=Date.now(); if(m) Cola.cerebro=m[1]; else if(/\/chat\/completions/.test(url)&&o&&o.body){ try{ Cola.cerebro=JSON.parse(o.body).model||Cola.cerebro; }catch(e){} } }catch(e){}
+    return f0(u,o); }; })();
+const _send108=send;
+send=async function(text,opts={}){
+  opts=opts||{};
+  if(busy){ if(text&&!opts.event){ Cola.L.push([text,opts]); _showSub108('Termino lo que estoy haciendo y voy con esto.',text); toast('Apuntado: lo hago al terminar lo de ahora',3500); } return; }
+  const yo={}; Cola.actual=yo; Cola.desde=Date.now(); Cola.ultimo=Date.now(); Cola.texto=text||''; Cola.cerebro=''; Cola.args=[text,opts];
+  try{ return await _send108(text,opts); }
+  finally{ if(Cola.actual===yo){ Cola.actual=null; Cola.desde=0; if(!opts.reintento) Cola.reintentos=0; }
+    if(!busy&&Cola.L.length){ const [t,o]=Cola.L.shift(); setTimeout(()=>send(t,o),400); } } };
+setInterval(()=>{ if(!busy||!Cola.desde) return; const ahora=Date.now(), s=Math.round((ahora-Cola.desde)/1000);
+  if(!lastStreamHadText&&s>=3){ _showSub108(`Pensando… ${s} s`+(Cola.cerebro?' · cerebro: '+Cola.cerebro.replace(/^gemini-/,'gemini '):''),Cola.texto); }
+  const quieto=Voice.playing||Voice.cur?0:ahora-Cola.ultimo;
+  if(quieto>(lastStreamHadText?120000:75000)){
+    const [t,o]=Cola.args||[]; Cola.actual=null; Cola.desde=0; try{ Voice.stop(); }catch(e){} busy=false; $('bSend').disabled=false;
+    console.warn('Mor: cerebro colgado ('+Cola.cerebro+'), lo suelto');
+    if(t&&!lastStreamHadText&&Cola.reintentos<1){ Cola.reintentos++; if(Cola.cerebro&&/^gemini/.test(Cola.cerebro)) localStorage.setItem('mor_agotado_'+Cola.cerebro,String(Date.now()+10*60000));
+      _showSub108('Ese cerebro se ha quedado colgado. Lo intento con otro.',t); setTimeout(()=>send(t,Object.assign({},o,{reintento:true})),500); }
+    else { _showSub108('No me llega respuesta de ningún cerebro ahora mismo'+(window._lastErr?' ('+window._lastErr+')':'')+'. Mira la barra de uso; puedes volver a pedírmelo o trabajar a mano en Vértice 3D o ULTIMATE3D.',t||'');
+      Cola.reintentos=0; if(Cola.L.length){ const [t2,o2]=Cola.L.shift(); setTimeout(()=>send(t2,o2),800); } } } },1000);
+/* micrófono: solo en el modo conversación (no se enciende solo al abrir Mor) */
+if(MEM.listen&&!document.body.classList.contains('vozFull')){ MEM.listen=false; saveMem(); }
+const _modoVoz108=modoVoz; modoVoz=function(on){ _modoVoz108(on); if(!on&&Ears.on&&!(typeof Live!=='undefined'&&Live.on)) Ears.stop(); };
+$('vozExit').onclick=()=>{ modoVoz(false); if(typeof Live!=='undefined'&&Live.on) $('bLive').click(); };
 
 /* =====================================================================
    15. DESPERTAR
