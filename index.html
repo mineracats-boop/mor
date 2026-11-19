@@ -1035,9 +1035,10 @@ async function orStream(body,onText){ if(typeof OR==='undefined'||!OR.on()) retu
   return null; }
 async function geminiStream(body,onText){
   // 1) los listos de Google · 2) OpenRouter · 3) los «lite»
+  /* v47: Google solo da ~20 peticiones al día de los modelos fuertes (y las comparten entre ellos):
+     la conversación va con los «lite» y los fuertes se guardan para programar */
   const listos=MODELOS.filter(m=>MODELOS_LISTOS.includes(m)&&!agotado(m)), resto=MODELOS.filter(m=>!MODELOS_LISTOS.includes(m));
-  if(!listos.length){ const t=await orStream(body,onText); if(t) return t; }
-  const order=listos.length?[...listos,'__OR__',...vivos(resto)]:vivos(resto);
+  const order=window.CHAT_FUERTE&&listos.length?[...listos,'__OR__',...vivos(resto)]:[...vivos(resto),'__OR__',...listos];
   let last='';
   for(const m of order){
     if(m==='__OR__'){ const t=await orStream(body,onText); if(t) return t; continue; }
@@ -1274,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v46</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v47</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1438,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v46 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v47 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3959,7 +3960,7 @@ const Agente={running:false, espera:null,
     antes.forEach(a=>{ if(!now.find(f=>f.ruta===a.ruta)) res.push({ruta:a.ruta,mas:0,menos:a.code.split('\n').length,borrado:true}); }); return res; },
   final(c,P,msg,antes){ const d=this.diff(antes,P);
     c.querySelector('.agFin').innerHTML=`<div class="agRes">${mdLite(serio(msg))}</div>
-      ${d.length?`<div class="agDiff">${d.map(x=>`<div><b>${esc(x.ruta)}</b> <span class="mas">+${x.mas}</span> <span class="menos">−${x.menos}</span>${x.nuevo?' (nuevo)':x.borrado?' (borrado)':''}</div>`).join('')}</div>`:'<small>No ha cambiado ningún archivo.</small>'}
+      ${d.length?`<div class="agDiff">${d.map(x=>`<div><b>${esc(x.ruta)}</b> <span class="mas">+${x.mas}</span> <span class="menos">−${x.menos}</span>${x.nuevo?' (nuevo)':x.borrado?' (borrado)':''}</div>`).join('')}</div>`:(Agente._trasGrande?'<small>La prueba no ha necesitado más arreglos.</small>':'<small>No ha cambiado ningún archivo.</small>')}
       <div class="row" style="margin-top:8px">${this.bundle(P)?'<button class="tbtn on" data-a="j">Jugar</button>':''}<button class="tbtn" data-a="m">Pedir otro cambio</button>${d.length?'<button class="tbtn" data-a="u">Deshacer</button>':''}<button class="tbtn" data-a="z">Descargar .zip</button></div>`;
     const q=s=>c.querySelector(`.agFin [data-a=${s}]`);
     q('j')&&(q('j').onclick=()=>Art.open(P.nombre||'Juego',{html:this.bundle(P)}));
@@ -5436,7 +5437,7 @@ const Uso={
   anotar(m,{tok=0,err=0,lim=0}={}){ const d=this.datos(); const x=d.m[m]||(d.m[m]={n:0,tok:0,e:0}); x.n++; x.tok+=tok; if(err) x.e++; if(lim) localStorage.setItem('mor_lim_'+m,lim); this.guardar(d); },
   otro(host,tok=0){ const d=this.datos(); const x=d.otros[host]||(d.otros[host]={n:0,tok:0}); x.n++; x.tok+=tok; this.guardar(d); },
   principal(){ const L=MODELOS_CODIGO.filter(m=>!/lite/.test(m)); return L.find(m=>!agotado(m))||L[0]; },
-  resumen(){ const d=this.datos(), m=this.principal(), x=d.m[m]||{n:0}, lim=this.lim(m);
+  resumen(){ const d=this.datos(), m=this.principal(), lim=this.lim(m), x={n:MODELOS_CODIGO.filter(k=>!/lite/.test(k)).reduce((a,k)=>a+((d.m[k]||{}).n||0),0)};
     const total=Object.values(d.m).reduce((s,v)=>s+v.n,0), tok=Object.values(d.m).reduce((s,v)=>s+v.tok,0);
     const vivos=MODELOS_CODIGO.filter(k=>!agotado(k)).length;
     return {m,usados:x.n,hoy:Object.values(d.m||{}).reduce((a,v)=>a+(v.n||0),0),lim,total,tok,vivos,todos:MODELOS_CODIGO.length,frac:lim?Math.min(1,x.n/lim):(agotado(m)?1:null)}; },
@@ -5445,7 +5446,7 @@ const Uso={
     el.querySelector('i').style.width=Math.max(2,100-pct)+'%'; el.querySelector('i').style.background=pct>85?'#ff6b6b':pct>60?'#ffc35a':'#4fd18b';
     const quedan=r.lim?Math.max(0,r.lim-r.usados):null;
     const movil=innerWidth<600; el.firstElementChild.style.flexBasis=movil?'56px':'120px';
-    el.querySelector('small').textContent=movil?(quedan!=null?`${quedan}/${r.lim}`:`${r.hoy} hoy`)+` · ${r.vivos}/${r.todos}`:`Gemini: ${quedan!=null?'quedan '+quedan+' de '+r.lim+' (modelo principal)':r.hoy+' peticiones hoy'} · ${r.vivos}/${r.todos} modelos con cupo · ${(r.tok/1000).toFixed(0)}k tokens`; },
+    el.querySelector('small').textContent=movil?(quedan!=null?`${quedan}/${r.lim}`:`${r.hoy} hoy`)+` · ${r.vivos}/${r.todos}`:`Gemini: ${quedan!=null?'fuertes: quedan '+quedan+' de '+r.lim:r.hoy+' peticiones hoy'} · ${r.vivos}/${r.todos} modelos con cupo · ${(r.tok/1000).toFixed(0)}k tokens`; },
   tarjeta(){ const d=this.datos(); const fila=(m)=>{ const x=d.m[m]||{n:0,tok:0}, lim=this.lim(m), ag=agotado(m);
       return `<div class="row" style="margin:2px 0;align-items:center;gap:8px"><span style="flex:1;font-size:12px">${esc(m)}</span><span style="width:90px;height:6px;border-radius:3px;background:rgba(127,216,255,.15);overflow:hidden"><i style="display:block;height:100%;width:${lim?Math.max(2,100-Math.min(100,x.n*100/lim)):ag?2:100}%;background:${ag?'#ff6b6b':'#4fd18b'}"></i></span><small style="width:150px;text-align:right">${ag?'agotado hasta las 9:00':lim?`quedan ${Math.max(0,lim-x.n)} de ${lim}`:x.n+' hoy (límite aún sin saber)'}</small></div>`; };
     const otros=Object.entries(d.otros||{});
@@ -5565,6 +5566,73 @@ send=async function(text,opts={}){ opts=opts||{}; if(text&&!opts.event&&!busy){ 
 if(MEM.listen&&!document.body.classList.contains('vozFull')){ MEM.listen=false; saveMem(); }
 const _modoVoz108=modoVoz; modoVoz=function(on){ _modoVoz108(on); if(!on&&Ears.on&&!(typeof Live!=='undefined'&&Live.on)) Ears.stop(); };
 $('vozExit').onclick=()=>{ modoVoz(false); if(typeof Live!=='undefined'&&Live.on) $('bLive').click(); };
+
+/* =====================================================================
+   109. GOLPE MAESTRO: CAMBIOS GRANDES DE UNA VEZ
+   Google da unas 20 peticiones al día a los cerebros fuertes. El agente
+   gasta una por paso, así que un cambio grande se las comía y lo acababan
+   los «lite», que no saben. Ahora los cambios grandes se hacen de una vez:
+   el cerebro fuerte reescribe el juego entero en 1-3 peticiones y después
+   el agente solo lo prueba y corrige.
+   ===================================================================== */
+const FUERTES=MODELOS_CODIGO.filter(m=>!/lite/.test(m));
+const GRANDE_RE=/ciudad|npc|coches?|veh[ií]cul|tr[aá]fico|realista|gta|mundo abierto|sistema|niveles?|multijugador|enemigos|inventario|misiones|conducir|animaci|modelos? 3d|reescr|rehaz|desde cero|todo/i;
+async function escribirFuerte(prompt,log){ let code='', vueltas=0;
+  while(vueltas<4){ const vivosF=FUERTES.filter(m=>!agotado(m)); if(!vivosF.length) throw new Error('cerebros fuertes agotados');
+    const texto=vueltas===0?prompt:prompt+`\n\nYA HAS ESCRITO ESTO (no lo repitas):\n…\n${code.split('\n').slice(-40).join('\n')}\n\nCONTINÚA exactamente desde la línea siguiente, sin repetir nada y sin \`\`\`.`;
+    let part='', fin='', ok=false;
+    for(const m of vivosF){ const ac=new AbortController(), to=setTimeout(()=>ac.abort(),300000);
+      try{ log('Escribe '+m.replace(/^gemini-/,'gemini ')+(vueltas?' (sigue, parte '+(vueltas+1)+')':'')+'…');
+        const r=await fetch(API+m+':generateContent',{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
+          body:JSON.stringify({contents:[{role:'user',parts:[{text:texto}]}],generationConfig:cfgFor(m,{temperature:.3,maxOutputTokens:65536})})});
+        clearTimeout(to); if(!r.ok){ if(r.status===429){ try{ marcarAgotado(m,(await r.json()).error.message); }catch(x){} } continue; }
+        const j=await r.json(), c=j.candidates?.[0]; part=(c?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join(''); fin=c?.finishReason||'';
+        if(part){ ok=true; break; } }
+      catch(e){ clearTimeout(to); if(PARAR.on) throw e; } }
+    if(!ok) throw new Error('ningún cerebro fuerte ha contestado');
+    part=part.replace(/^\s*```[a-z]*\n?/i,'').replace(/\n?```\s*$/,''); code+=(vueltas?'\n':'')+part; vueltas++;
+    if(fin!=='MAX_TOKENS'||/<\/html>\s*$/i.test(code.trim())) break; }
+  return code.trim(); }
+const _run109=Agente.run.bind(Agente);
+Agente.run=async function(pid,tarea,...resto){
+  const pasar=()=>_run109(pid,tarea,...resto);
+  if(this.running||!tarea||/^(comprueba|revisa|mira|explica|analiza|dime)\b/i.test(String(tarea).trim())||/PLANTILLA PROBADA/.test(tarea)&&!GRANDE_RE.test(tarea.split('ESPECIFICACIÓN')[1]||'')) return pasar();
+  const P=(await DB.all('projects')).find(x=>x.id===pid); if(!P) return pasar();
+  const T=this.textos(P), idx=T.find(f=>/(^|\/)index\.html$/.test(f.ruta));
+  if(!idx||T.length>3||idx.code.split('\n').length>1600||!(GRANDE_RE.test(tarea)||tarea.length>140)) return pasar();
+  const c=chatCard(`<div class="ctit">Cambio grande en ${esc(P.nombre||'el juego')}</div><div class="gmLog" style="font-size:13px;opacity:.9"></div>`);
+  const L=c.querySelector('.gmLog'), log=t=>{ const d=document.createElement('div'); d.textContent=t; L.appendChild(d); if(typeof Apps!=='undefined'){} };
+  if(!FUERTES.some(m=>!agotado(m))){
+    log('Los cerebros fuertes ya han gastado su cupo de hoy (Google da unas 20 peticiones al día y se renuevan a las 9:00). Los que quedan son los «lite», que no saben hacer cambios grandes: lo intentarían y el juego se quedaría igual.');
+    const b=document.createElement('div'); b.className='row'; b.style.marginTop='8px';
+    b.innerHTML='<button class="btn">Intentarlo igual con los flojos</button>'; b.firstChild.onclick=()=>{ b.remove(); pasar(); }; c.appendChild(b);
+    logChat('m','[Cambio grande en '+(P.nombre||'el juego')+': esperando a que se renueven los cerebros fuertes (9:00)]'); return; }
+  const modelos=P.files.filter(f=>f.bin).map(f=>f.ruta);
+  const antesL=idx.code.split('\n').length;
+  log('Reescribo el juego entero de una vez con el cerebro fuerte (gasta 1-3 peticiones en vez de 20)…');
+  const prompt=`Eres el programador jefe de Rocket Jam (videojuegos web). Tienes el index.html COMPLETO de un juego y una petición de cambio grande. Devuelve el index.html NUEVO Y COMPLETO, de principio a fin, con el cambio hecho de verdad: nada de comentarios tipo «aquí iría…», nada a medias.
+
+REGLAS:
+- Un solo archivo index.html que se abre sin compilar. Conserva lo que funciona: bucle, controles (teclado y joystick táctil), escalado, pantallas de inicio/fin, sonido y el gancho window.__juego.
+- Si usa three.js, mantén el importmap y los cargadores que ya tiene (cargarModelo, MODELOS, TEXTURAS…). Usa los archivos que ya hay en el proyecto con su ruta exacta; si falta un modelo, el código ya pone una forma de color.
+- Sin gráficos de relleno dibujados ni emojis: usa los modelos y texturas del proyecto.
+- Responde SOLO con el código, empezando por <!doctype html>.
+${window.AG_SABER?'\nSABER DE ROCKET JAM:\n'+String(window.AG_SABER).slice(0,6000)+'\n':''}
+ARCHIVOS DEL PROYECTO (modelos, texturas, imágenes): ${modelos.join(', ')||'(ninguno)'}
+
+PETICIÓN: ${tarea}
+
+INDEX.HTML ACTUAL:
+${idx.code}`;
+  this.running=true; let nuevo='';
+  try{ nuevo=await escribirFuerte(prompt,log); }catch(e){ log('No ha salido: '+e.message+'. Sigo con el agente paso a paso.'); }
+  finally{ this.running=false; }
+  if(!nuevo||!/<\/html>/i.test(nuevo)||nuevo.length<idx.code.length*0.5||nuevo.trim()===idx.code.trim()){ if(nuevo) log('Lo que ha escrito está incompleto: no lo pongo. Sigo con el agente paso a paso.'); return pasar(); }
+  P.versiones=(P.versiones||[]); P.versiones.push({at:Date.now(),nota:'Antes de: '+String(tarea).slice(0,80),files:P.files.map(f=>Object.assign({},f))}); if(P.versiones.length>12) P.versiones.shift();
+  const f=P.files.find(x=>x.ruta===idx.ruta); f.code=nuevo; P.at=Date.now(); P.lineas=nuevo.split('\n').length; await DB.put('projects',P);
+  log(`Hecho: ${antesL} → ${P.lineas} líneas. Ahora el agente lo prueba y corrige lo que falle.`);
+  logChat('m',`[Cambio grande en ${P.nombre}: reescrito con el cerebro fuerte, ${P.lineas} líneas]`);
+  Agente._trasGrande=true; try{ return await _run109(pid,`Comprueba que el juego funciona después de este cambio grande y corrige solo lo que falle (no lo reescribas entero). El cambio pedido era: ${tarea}`,...resto); } finally{ Agente._trasGrande=false; } };
 
 /* =====================================================================
    15. DESPERTAR
