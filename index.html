@@ -1275,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v47</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v48</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1439,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v47 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v48 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -5633,6 +5633,80 @@ ${idx.code}`;
   log(`Hecho: ${antesL} → ${P.lineas} líneas. Ahora el agente lo prueba y corrige lo que falle.`);
   logChat('m',`[Cambio grande en ${P.nombre}: reescrito con el cerebro fuerte, ${P.lineas} líneas]`);
   Agente._trasGrande=true; try{ return await _run109(pid,`Comprueba que el juego funciona después de este cambio grande y corrige solo lo que falle (no lo reescribas entero). El cambio pedido era: ${tarea}`,...resto); } finally{ Agente._trasGrande=false; } };
+
+/* =====================================================================
+   110. PRUEBAS DE APPS (Testers Community)
+   Las pruebas las hace Antonio: Mor le da el acceso directo, le dice cada
+   día cuáles tocan (primero las que van a perder la racha), le abre cada
+   app con un toque y le escribe la opinión a partir de una frase suya.
+   ===================================================================== */
+const Pruebas={
+  PKG:'com.testerscommunity', DIAS:14,
+  datos(){ try{ return JSON.parse(localStorage.getItem('mor_pruebas'))||{apps:[],hora:''}; }catch(e){ return {apps:[],hora:''}; } },
+  guardar(d){ localStorage.setItem('mor_pruebas',JSON.stringify(d)); },
+  hoy(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); },
+  play(pkg){ return 'https://play.google.com/store/apps/details?id='+encodeURIComponent(pkg); },
+  abrirApp(pkg){ const play=this.play(pkg);
+    if(/Android/i.test(navigator.userAgent)) location.href='intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package='+pkg+';S.browser_fallback_url='+encodeURIComponent(play)+';end';
+    else window.open(play,'_blank','noopener'); },
+  paquete(t){ t=String(t||'').trim(); const m=t.match(/[?&]id=([\w.]+)/)||t.match(/^([a-z][\w]*(\.[\w]+)+)$/i); return m?m[1]:''; },
+  hechas(a){ return (a.dias||[]).length; },
+  pendiente(a){ return !(a.dias||[]).includes(this.hoy())&&this.hechas(a)<this.DIAS; },
+  orden(L){ return L.slice().sort((a,b)=>{ const pa=this.pendiente(a), pb=this.pendiente(b); if(pa!==pb) return pa?-1:1;
+      const ra=(a.dias||[]).length&&!(a.dias||[]).includes(this.ayer())?1:0, rb=(b.dias||[]).length&&!(b.dias||[]).includes(this.ayer())?1:0;
+      return (this.hechas(b)-this.hechas(a))||(rb-ra); }); },
+  ayer(){ const d=new Date(Date.now()-864e5); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); },
+  open(){ const d=this.datos(); const L=this.orden(d.apps), pend=L.filter(a=>this.pendiente(a));
+    const fila=a=>{ const n=this.hechas(a), hoyOk=(a.dias||[]).includes(this.hoy()), racha=(a.dias||[]).length&&!hoyOk&&!(a.dias||[]).includes(this.ayer());
+      return `<div style="border-top:1px solid rgba(127,216,255,.15);padding:8px 0" data-pk="${esc(a.pkg)}">
+        <div class="row" style="align-items:center;gap:8px"><b style="flex:1;margin-right:8px">${esc(a.nombre||a.pkg)}</b><small>${n>=this.DIAS?'terminada':`día ${n} de ${this.DIAS}`}${hoyOk?' · hecha hoy':racha?' · ayer no se probó':''}</small></div>
+        ${a.ruta?`<small style="display:block;opacity:.8;margin:4px 0">${esc(a.ruta)}</small>`:''}
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">
+          <button class="tbtn" data-a="abrir">Abrir</button>${hoyOk||n>=this.DIAS?'':'<button class="tbtn" data-a="hecha">Hecha hoy</button>'}
+          <button class="tbtn" data-a="opinion">Escribir opinión</button><button class="tbtn" data-a="ruta">Qué probar</button><button class="tbtn" data-a="quitar">Quitar</button></div>
+        <div class="opi"></div></div>`; };
+    const c=chatCard(`<div class="ctit">Pruebas de apps</div>
+      <small>Las pruebas las haces tú; Mor te dice cuáles tocan hoy, te las abre y te escribe la opinión. ${pend.length?`Hoy te quedan <b>${pend.length}</b>.`:d.apps.length?'Hoy ya están todas.':''}</small>
+      <div class="row" style="gap:6px;flex-wrap:wrap;margin:8px 0"><button class="tbtn on" data-g="tc">Abrir Testers Community</button><button class="tbtn" data-g="hora">Aviso diario: ${d.hora||'sin poner'}</button></div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin:6px 0"><input class="inp" data-g="nueva" placeholder="Enlace de Google Play de la app" style="grid-column:1/3;min-width:0"><input class="inp" data-g="nom" placeholder="Nombre (opcional)" style="min-width:0"><button class="tbtn on" data-g="add">Añadir</button></div>
+      <div>${L.map(fila).join('')||'<small>Aún no hay apps. Cuando te apuntes a una en Testers Community, copia su enlace de Google Play y pégalo aquí.</small>'}</div>`);
+    c.querySelector('[data-g=tc]').onclick=()=>this.abrirApp(this.PKG);
+    c.querySelector('[data-g=hora]').onclick=()=>{ const h=prompt('¿A qué hora te aviso cada día? (por ejemplo 19:00; vacío para quitarlo)',d.hora||'19:00'); if(h===null) return; this.ponerHora(h.trim()); c.remove(); this.open(); };
+    c.querySelector('[data-g=add]').onclick=()=>{ const pk=this.paquete(c.querySelector('[data-g=nueva]').value); if(!pk) return toast('Pega el enlace de Google Play de la app (el que lleva id=…) o su paquete',4500);
+      if(d.apps.some(a=>a.pkg===pk)) return toast('Esa app ya está en la lista'); d.apps.push({pkg:pk,nombre:c.querySelector('[data-g=nom]').value.trim(),dias:[],alta:Date.now()}); this.guardar(d); c.remove(); this.open(); };
+    c.querySelectorAll('[data-pk]').forEach(el=>{ const a=d.apps.find(x=>x.pkg===el.dataset.pk);
+      el.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{ const k=b.dataset.a;
+        if(k==='abrir') this.abrirApp(a.pkg);
+        else if(k==='hecha'){ a.dias=(a.dias||[]); if(!a.dias.includes(this.hoy())) a.dias.push(this.hoy()); this.guardar(d); c.remove(); this.open(); }
+        else if(k==='quitar'){ d.apps=d.apps.filter(x=>x!==a); this.guardar(d); c.remove(); this.open(); }
+        else if(k==='ruta'){ b.disabled=true; try{ a.ruta=serio(await gemini({contents:[{role:'user',parts:[{text:`Soy tester de una app de Android en prueba cerrada de Google Play (paquete ${a.pkg}${a.nombre?', se llama '+a.nombre:''}). Dame una ruta de prueba de 2 minutos para hoy (día ${this.hechas(a)+1} de 14), distinta cada día: 3 o 4 cosas concretas que abrir, tocar y fijarse (errores, textos cortados, lentitud). Una línea por paso, sin introducción.`}]}],generationConfig:{temperature:.8}},MODELOS_MEMORIA,20000)).trim(); this.guardar(d); c.remove(); this.open(); }catch(e){ b.disabled=false; toast('No he podido preparar la ruta: '+e.message,4000); } }
+        else if(k==='opinion'){ const box=el.querySelector('.opi'); box.innerHTML=`<div class="row" style="gap:6px;margin-top:6px"><input class="inp" placeholder="Dime en una frase qué te ha parecido" style="flex:1"><button class="tbtn">Escribir</button></div><div class="res" style="margin-top:6px"></div>`;
+          const inp=box.querySelector('input'); inp.focus(); box.querySelector('button').onclick=async()=>{ const f=inp.value.trim(); if(!f) return;
+            const res=box.querySelector('.res'); res.textContent='Escribiendo…';
+            try{ const t=serio(await gemini({contents:[{role:'user',parts:[{text:`Convierte esta opinión de un tester en un comentario de prueba para el desarrollador de la app ${a.nombre||a.pkg}, en inglés claro y educado, 2-4 frases, concreto (qué funciona, qué falla, una sugerencia). No inventes nada que no esté en la opinión. Opinión: «${f}»`}]}],generationConfig:{temperature:.5}},MODELOS_MEMORIA,20000)).trim();
+              res.innerHTML=`<div style="white-space:pre-wrap;background:rgba(127,216,255,.08);padding:8px;border-radius:8px">${esc(t)}</div><button class="tbtn" style="margin-top:6px">Copiar</button>`;
+              res.querySelector('button').onclick=()=>{ navigator.clipboard.writeText(t).then(()=>toast('Copiado: pégalo en Testers Community')); }; }
+            catch(e){ res.textContent='No he podido escribirla: '+e.message; } }; } }); }); },
+  ponerHora(h){ const d=this.datos(); MEM.reminders=(MEM.reminders||[]).filter(r=>!r.pruebas);
+    if(!h){ d.hora=''; this.guardar(d); saveMem(); return toast('Aviso diario quitado'); }
+    const m=h.match(/^(\d{1,2})(?::(\d{2}))?$/); if(!m) return toast('Escribe la hora así: 19:00',4000);
+    d.hora=String(+m[1]).padStart(2,'0')+':'+(m[2]||'00'); this.guardar(d);
+    for(let i=0;i<30;i++){ const t=new Date(); t.setDate(t.getDate()+i); t.setHours(+m[1],+(m[2]||0),0,0); if(t.getTime()<=Date.now()) continue;
+      MEM.reminders.push({id:'rp'+t.getTime(),t:'toca probar tus apps de Testers Community (escribe /pruebas)',when:t.getTime(),fired:false,at:Date.now(),pruebas:true}); }
+    MEM.reminders.sort((a,b)=>a.when-b.when); saveMem(); askNotify(); try{ if(typeof Avisos!=='undefined') Avisos.subir(); }catch(e){}
+    toast('Te aviso cada día a las '+d.hora,3500); }
+};
+/* renueva los avisos de 30 días cada vez que se abre Mor */
+setTimeout(()=>{ const d=Pruebas.datos(); if(d.hora&&!(MEM.reminders||[]).some(r=>r.pruebas&&r.when>Date.now()+20*864e5)) Pruebas.ponerHora(d.hora); },6000);
+CMDS.splice(2,0,['/pruebas','Pruebas de apps: abrir Testers Community, las que tocan hoy, opiniones y aviso diario',()=>Pruebas.open()]);
+SIDE.find(g=>g[0]==='CREAR')[1].push(['Pruebas de apps (Testers Community)',()=>Pruebas.open()]);
+const _send110=send;
+send=async function(text,opts={}){ const t=String(text||'');
+  if(t&&!(opts&&opts.event)&&!busy&&/testers|testerscommunity|pruebas de (las )?apps|probar (mis |las )?apps/i.test(t)&&t.length<200){
+    const h=t.match(/a las (\d{1,2})(?::(\d{2}))?/i); logChat('u',t);
+    if(h){ Pruebas.ponerHora(h[1]+':'+(h[2]||'00')); logChat('m','Hecho: te aviso cada día a las '+String(+h[1]).padStart(2,'0')+':'+(h[2]||'00')+' para probar tus apps.'); }
+    Pruebas.open(); return; }
+  return _send110(text,opts); };
 
 /* =====================================================================
    15. DESPERTAR
