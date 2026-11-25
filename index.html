@@ -1275,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v48</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v49</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1439,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v48 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v49 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -5702,11 +5702,89 @@ CMDS.splice(2,0,['/pruebas','Pruebas de apps: abrir Testers Community, las que t
 SIDE.find(g=>g[0]==='CREAR')[1].push(['Pruebas de apps (Testers Community)',()=>Pruebas.open()]);
 const _send110=send;
 send=async function(text,opts={}){ const t=String(text||'');
-  if(t&&!(opts&&opts.event)&&!busy&&/testers|testerscommunity|pruebas de (las )?apps|probar (mis |las )?apps/i.test(t)&&t.length<200){
+  if(t&&!(opts&&opts.event)&&!busy&&!/autom|maestro|solas?\b/i.test(t)&&/testers|testerscommunity|pruebas de (las )?apps|probar (mis |las )?apps/i.test(t)&&t.length<200){
     const h=t.match(/a las (\d{1,2})(?::(\d{2}))?/i); logChat('u',t);
     if(h){ Pruebas.ponerHora(h[1]+':'+(h[2]||'00')); logChat('m','Hecho: te aviso cada día a las '+String(+h[1]).padStart(2,'0')+':'+(h[2]||'00')+' para probar tus apps.'); }
     Pruebas.open(); return; }
   return _send110(text,opts); };
+
+/* =====================================================================
+   111. PRUEBAS AUTOMÁTICAS DE TUS APPS (Maestro en la nube)
+   Le describes a Mor qué probar de tu app de Android; él escribe la prueba
+   de Maestro, sube el APK a tu repo privado mor-nube y GitHub la pasa en un
+   móvil Android simulado. Vuelven el resultado y las capturas. Se puede
+   repetir sola cada día a una hora.
+   ===================================================================== */
+const Maestro={
+  lista(){ return MEM.maestro=(MEM.maestro||[]); },
+  b64buf(buf){ const u=new Uint8Array(buf); let s=''; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); },
+  async ponerBin(ruta,buf,msg){ let sha; try{ sha=(await Nube.api('/contents/'+ruta)).sha; }catch(e){ if(e.status!==404) throw e; }
+    return Nube.api('/contents/'+ruta,{method:'PUT',body:JSON.stringify({message:msg||('Mor: '+ruta),content:this.b64buf(buf),sha})}); },
+  async borrar(ruta){ try{ const sha=(await Nube.api('/contents/'+ruta)).sha; await Nube.api('/contents/'+ruta,{method:'DELETE',body:JSON.stringify({message:'Mor: '+ruta,sha})}); }catch(e){} },
+  async blob(ruta){ const c=Nube.cfg(); const r=await fetch('https://api.github.com/repos/'+c.repo+'/contents/'+ruta,{headers:{Accept:'application/vnd.github.raw',Authorization:'Bearer '+c.token}}); if(!r.ok) throw new Error('GitHub '+r.status); return r.blob(); },
+  cron(hora){ const m=String(hora||'').match(/^(\d{1,2}):(\d{2})$/); if(!m) return '0 3 1 1 *'; const d=new Date(); d.setHours(+m[1],+m[2],0,0); return d.getUTCMinutes()+' '+d.getUTCHours()+' * * *'; },
+  async prepararRepo(hora){ const yml=(await (await fetch('lib/nube/maestro.yml',{cache:'no-cache'})).text()).replace('__CRON__',this.cron(hora));
+    const sh=await (await fetch('lib/nube/correr.sh',{cache:'no-cache'})).text();
+    await Nube.poner('.github/workflows/maestro.yml',yml,'Mor: pruebas de apps'); await Nube.poner('pruebas/correr.sh',sh,'Mor: pruebas de apps'); MEM.maestroHora=hora||''; saveMem(); },
+  async escribirFlow(desc,juego){ const t=await gemini({contents:[{role:'user',parts:[{text:`Escribe una prueba de Maestro (YAML) para una app de Android. Reglas:
+- Empieza con: appId: \${APP_ID}  y luego ---
+- Primer paso: - launchApp: {clearState: true}
+- Usa solo comandos que existen en Maestro: launchApp, tapOn (texto o point: "50%,80%"), inputText, assertVisible, assertNotVisible, scroll, swipe, back, waitForAnimationToEnd, extendedWaitUntil, takeScreenshot, pressKey.
+- ${juego?'Es un JUEGO (Unity o canvas): no hay textos que tocar; toca por coordenadas con point en %, espera con extendedWaitUntil/waitForAnimationToEnd y haz takeScreenshot tras cada paso importante.':'Si es una app normal, toca por el texto visible de los botones.'}
+- Pon takeScreenshot con nombres cortos (inicio, paso1, paso2…) en los momentos clave.
+- Solo el YAML, sin explicaciones ni \`\`\`.
+QUÉ PROBAR: ${desc}`}]}],generationConfig:{temperature:.2}},MODELOS_CODIGO,60000);
+    return t.replace(/^\s*```[a-z]*\n?/i,'').replace(/\n?```\s*$/,'').trim(); },
+  open(){ if(!Nube.ok()){ const c=chatCard(`<div class="ctit">Pruebas automáticas de tus apps</div><small>Necesitan tu ordenador de la nube (el repo privado mor-nube de GitHub). Conéctalo primero y vuelve aquí.</small><div class="row" style="margin-top:8px"><button class="tbtn on">Conectar la nube</button></div>`); c.querySelector('button').onclick=()=>Nube.conectar(); return; }
+    const L=this.lista();
+    const c=chatCard(`<div class="ctit">Pruebas automáticas de tus apps</div>
+      <small>Mor escribe una prueba de Maestro, la pasa en un móvil Android simulado en tu GitHub y te trae el resultado con capturas. Tarda unos 8-10 minutos (arrancar el móvil es lo lento) y gasta minutos de GitHub Actions (2.000 gratis al mes en repos privados).</small>
+      <div style="display:grid;gap:6px;margin:8px 0">
+        <label style="font-size:13px">APK de tu app <input type="file" accept=".apk" data-m="apk" style="display:block;margin-top:4px"></label>
+        <input class="inp" data-m="nom" placeholder="Nombre de la app" style="min-width:0">
+        <textarea class="inp" data-m="desc" rows="3" placeholder="Qué probar. Ej.: abre el juego, toca Jugar, juega 20 segundos moviéndote a los lados y comprueba que no se cierra" style="min-width:0"></textarea>
+        <label style="font-size:13px"><input type="checkbox" data-m="juego" checked> Es un juego (Unity o canvas: toca por posición)</label>
+        <div class="row" style="gap:6px;flex-wrap:wrap"><button class="tbtn" data-m="escribir">Escribir la prueba</button><button class="tbtn on" data-m="lanzar">Probar ahora</button></div>
+        <textarea class="inp" data-m="flow" rows="8" placeholder="Aquí sale la prueba de Maestro (la puedes retocar)" style="min-width:0;font-family:monospace;font-size:12px"></textarea>
+        <div class="row" style="gap:6px;flex-wrap:wrap;align-items:center"><small>Repetir solas cada día a las</small><input class="inp" data-m="hora" placeholder="hh:mm" value="${esc(MEM.maestroHora||'')}" style="width:80px"><button class="tbtn" data-m="horaOk">Guardar hora</button></div>
+      </div><div data-m="estado" style="font-size:13px"></div>
+      ${L.length?'<div style="margin-top:8px"><b style="font-size:13px">Tus pruebas</b>'+L.slice().reverse().map(p=>`<div class="row" style="gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap" data-id="${p.id}"><span style="flex:1;font-size:13px">${esc(p.nombre)} <small>${p.ultimo?(p.ultimo.ok?'· pasó':'· falló')+' '+new Date(p.ultimo.at).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'}):''}${p.diario?' · diaria':''}</small></span><button class="tbtn" data-p="ver">Resultado</button><button class="tbtn" data-p="otra">Repetir</button><button class="tbtn" data-p="diario">${p.diario?'Quitar diaria':'Diaria'}</button></div>`).join('')+'</div>':''}`);
+    const q=k=>c.querySelector('[data-m='+k+']'), est=t=>{ q('estado').textContent=t; };
+    q('escribir').onclick=async()=>{ const d=q('desc').value.trim(); if(!d) return toast('Escribe qué quieres que pruebe'); est('Escribiendo la prueba…');
+      try{ q('flow').value=await this.escribirFlow(d,q('juego').checked); est('Prueba lista. Revísala si quieres y pulsa «Probar ahora».'); }catch(e){ est('No he podido escribirla: '+e.message); } };
+    q('lanzar').onclick=async()=>{ const f=q('apk').files[0], nom=q('nom').value.trim()||(f&&f.name.replace(/\.apk$/i,''))||'App';
+      if(!f) return toast('Elige el APK de tu app'); if(f.size>95*1024*1024) return toast('El APK pasa de 95 MB: GitHub no deja subirlo así',5000);
+      try{ if(!q('flow').value.trim()){ if(!q('desc').value.trim()) return toast('Escribe qué quieres que pruebe'); est('Escribiendo la prueba…'); q('flow').value=await this.escribirFlow(q('desc').value.trim(),q('juego').checked); }
+        const id='p'+Date.now().toString(36), P={id,nombre:nom,at:Date.now(),diario:false}; this.lista().push(P); saveMem();
+        await this.subirYLanzar(P,f,q('flow').value,est); }catch(e){ est('No se ha podido: '+e.message); } };
+    q('horaOk').onclick=async()=>{ const h=q('hora').value.trim(); if(h&&!/^\d{1,2}:\d{2}$/.test(h)) return toast('Escribe la hora así: 19:00');
+      try{ est('Guardando la hora en tu nube…'); await this.prepararRepo(h); est(h?'Las pruebas marcadas como «Diaria» se pasarán solas cada día a las '+h+' (aunque tengas el móvil apagado). El resultado lo ves aquí.':'Pruebas diarias desactivadas.'); }catch(e){ est('No se ha podido: '+e.message); } };
+    c.querySelectorAll('[data-id]').forEach(el=>{ const P=this.lista().find(p=>p.id===el.dataset.id);
+      el.querySelectorAll('[data-p]').forEach(b=>b.onclick=async()=>{ const k=b.dataset.p;
+        if(k==='ver') this.resultado(P);
+        else if(k==='otra'){ try{ est('Lanzando otra vez «'+P.nombre+'»…'); await this.lanzar(P,est); }catch(e){ est('No se ha podido: '+e.message); } }
+        else if(k==='diario'){ try{ P.diario=!P.diario; saveMem(); if(P.diario){ await Nube.poner('pruebas/'+P.id+'/diario','1'); if(!MEM.maestroHora) toast('Ahora pon la hora en «Repetir solas cada día a las»',5000); } else await this.borrar('pruebas/'+P.id+'/diario'); c.remove(); this.open(); }catch(e){ est('No se ha podido: '+e.message); } } }); }); },
+  async subirYLanzar(P,f,flow,est){ est('Preparando tu nube…'); await this.prepararRepo(MEM.maestroHora||'');
+    est('Subiendo el APK ('+(f.size/1048576).toFixed(1)+' MB)…'); await this.ponerBin('pruebas/'+P.id+'/app.apk',await f.arrayBuffer(),'Mor: app para probar');
+    await Nube.poner('pruebas/'+P.id+'/flow.yaml',flow,'Mor: prueba de Maestro'); await this.lanzar(P,est); },
+  async lanzar(P,est){ await Nube.api('/actions/workflows/maestro.yml/dispatches',{method:'POST',body:JSON.stringify({ref:R_RAMA,inputs:{id:P.id}})});
+    P.lanzado=Date.now(); saveMem(); est('Lanzada. Arrancando el móvil Android simulado en GitHub (unos 8-10 minutos). Puedes cerrar Mor: el resultado te espera aquí.'); logChat('m','[Prueba automática lanzada: '+P.nombre+']'); this.vigilar(P); },
+  vigilar(P){ clearInterval(P._t); let n=0; const t=setInterval(async()=>{ n++; if(n>80){ clearInterval(t); return; }
+      try{ const r=JSON.parse(await Nube.leer('pruebas/'+P.id+'/salida/resultado.json')); const fin=Date.parse(r.fin||0);
+        if(fin&&fin>(P.lanzado||0)-60000){ clearInterval(t); P.ultimo={ok:!!r.ok,at:fin,error:r.error||''}; saveMem(); notify('Prueba de '+P.nombre,r.ok?'Ha pasado':'Ha fallado'); this.resultado(P); } }catch(e){} },30000); },
+  async resultado(P){ const c=chatCard(`<div class="ctit">Prueba de ${esc(P.nombre)}</div><div class="mr" style="font-size:13px">Cargando el resultado…</div><div class="mimg" style="display:flex;gap:6px;overflow-x:auto;margin-top:6px"></div>`);
+    const box=c.querySelector('.mr');
+    try{ const r=JSON.parse(await Nube.leer('pruebas/'+P.id+'/salida/resultado.json')); let log=''; try{ log=await Nube.leer('pruebas/'+P.id+'/salida/log_fin.txt'); }catch(e){}
+      box.innerHTML=`<b style="color:${r.ok?'#4fd18b':'#ff6b6b'}">${r.ok?'Ha pasado la prueba':'Ha fallado'}</b> · ${esc(r.app||'')} · ${new Date(Date.parse(r.fin)).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'})}${r.error?'<br>'+esc(r.error):''}${log&&!r.ok?`<details style="margin-top:6px"><summary>Qué ha pasado</summary><pre style="white-space:pre-wrap;font-size:11px;max-height:220px;overflow:auto">${esc(log.slice(-3000))}</pre></details>`:''}`;
+      const L=await Nube.api('/contents/pruebas/'+P.id+'/salida'); const imgs=L.filter(x=>/\.png$/i.test(x.name)).slice(0,12);
+      for(const x of imgs){ try{ const u=URL.createObjectURL(await this.blob(x.path)); const im=document.createElement('img'); im.src=u; im.title=x.name; im.style.cssText='height:220px;border-radius:8px;cursor:pointer'; im.onclick=()=>window.open(u,'_blank'); c.querySelector('.mimg').appendChild(im); }catch(e){} } }
+    catch(e){ box.textContent=e.status===404?'Todavía no hay resultado: la prueba sigue en marcha o no se ha lanzado.':'No he podido leer el resultado: '+e.message; } }
+};
+setTimeout(()=>{ Maestro.lista().filter(p=>p.lanzado&&(!p.ultimo||p.ultimo.at<p.lanzado)&&Date.now()-p.lanzado<3600000).forEach(p=>Maestro.vigilar(p)); },8000);
+CMDS.splice(3,0,['/maestro','Pruebas automáticas de tus apps de Android en un móvil simulado (Maestro en la nube)',()=>Maestro.open()]);
+SIDE.find(g=>g[0]==='CREAR')[1].push(['Pruebas automáticas de mis apps',()=>Maestro.open()]);
+const _apply111=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply111(acts); for(const a of acts){ if(/^\s*maestro\s*$/i.test(String(a))) setTimeout(()=>Maestro.open(),300); } return r; };
+const _sys111=systemPrompt; systemPrompt=function(){ return _sys111.apply(this,arguments)+`\n\nPRUEBAS AUTOMÁTICAS DE APPS: si te piden probar automáticamente una app suya de Android (que se pruebe sola, Maestro, test automático), pon {{maestro}} y se abre el panel. Esto es SOLO para las apps propias de Rocket Jam: nunca para simular pruebas en apps de otros (Testers Community u otras): eso lo hace el humano.`; };
 
 /* =====================================================================
    15. DESPERTAR

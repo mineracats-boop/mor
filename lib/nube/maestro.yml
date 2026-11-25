@@ -1,0 +1,60 @@
+name: Mor prueba apps
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 'Prueba (vacío = las diarias)'
+        required: false
+        default: ''
+  schedule:
+    - cron: '__CRON__'
+permissions:
+  contents: write
+concurrency:
+  group: mor-pruebas
+  cancel-in-progress: false
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Qué pruebas toca
+        id: lista
+        run: |
+          if [ -n "${{ github.event.inputs.id }}" ]; then L="${{ github.event.inputs.id }}"; else L=$(for d in pruebas/*/; do [ -f "${d}diario" ] && basename "$d"; done | tr '\n' ' '); fi
+          echo "L=$L" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-java@v4
+        if: steps.lista.outputs.L != ''
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Acelerar el emulador
+        if: steps.lista.outputs.L != ''
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Instalar Maestro
+        if: steps.lista.outputs.L != ''
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: Móvil Android simulado y pruebas
+        if: steps.lista.outputs.L != ''
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: bash pruebas/correr.sh ${{ steps.lista.outputs.L }}
+      - name: Guardar resultados
+        if: always() && steps.lista.outputs.L != ''
+        run: |
+          git config user.name "Mor"
+          git config user.email "mor@rocketjam.local"
+          git add pruebas
+          git commit -q -m "Mor: resultado de pruebas" || true
+          git pull -q --rebase || true
+          git push -q || true
