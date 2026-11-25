@@ -1275,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v49</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v50</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1439,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v49 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v50 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3901,7 +3901,7 @@ const Agente={running:false, espera:null,
       case 'probar':{ const h=this.bundle(P); if(!h) return 'ERROR: el proyecto no tiene ningún .html para abrir'; const t=await testGame(h,P.files.filter(f=>f.bin&&f.data)); est.probado=true; est.editado=false; est.shot=t.shot||null; est.errs=t.errs;
         return (t.errs.length?'ERRORES EN LA CONSOLA:\n'+t.errs.join('\n'):'Sin errores en la consola.')+(t.shot?'\n(Te adjunto la captura de la pantalla: mírala y comprueba que se ve bien.)':'\n(No hay canvas para capturar.)'); }
       default: return 'ERROR: acción desconocida '+x.accion; } },
-  tarjeta(P,tarea){ const c=chatCard(`<div class="ctit">Agente de código · ${esc(P.nombre||'Proyecto')}</div><small>${esc(tarea)}</small><ol class="agPlan"></ol><div class="agLog"></div><div class="agFin"></div>`); return c; },
+  tarjeta(P,tarea){ const c=chatCard(`<div class="ctit">Agente de código · ${esc(P.nombre||'Proyecto')}</div><small>${esc(String(tarea).replace(/^\[Proyecto de [^\]]*\]\s*/,''))}</small><ol class="agPlan"></ol><div class="agLog"></div><div class="agFin"></div>`); return c; },
   pintaPlan(c,plan,paso){ c.querySelector('.agPlan').innerHTML=(plan||[]).map((p,i)=>`<li class="${i+1<paso?'hecho':i+1===paso?'ahora':''}">${esc(p)}</li>`).join(''); },
   log(c,txt,tipo){ const d=document.createElement('div'); d.className='agL '+(tipo||''); d.textContent=txt; const L=c.querySelector('.agLog'); L.appendChild(d); while(L.children.length>14) L.firstChild.remove(); $('feed').scrollTop=1e9; },
   etiqueta(x){ return {listar:'Mirando los archivos',leer:`Leyendo ${x.ruta||''}${x.desde?' ('+x.desde+'-'+(x.hasta||'')+')':''}`,buscar:`Buscando «${String(x.texto||'').slice(0,40)}»`,editar:`Editando ${x.ruta||''}`,crear:`Escribiendo ${x.ruta||''}`,borrar:`Borrando ${x.ruta||''}`,probar:'Probando el juego',preguntar:'Pregunta',terminar:'Terminado'}[x.accion]||x.accion; },
@@ -5785,6 +5785,116 @@ CMDS.splice(3,0,['/maestro','Pruebas automáticas de tus apps de Android en un m
 SIDE.find(g=>g[0]==='CREAR')[1].push(['Pruebas automáticas de mis apps',()=>Maestro.open()]);
 const _apply111=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply111(acts); for(const a of acts){ if(/^\s*maestro\s*$/i.test(String(a))) setTimeout(()=>Maestro.open(),300); } return r; };
 const _sys111=systemPrompt; systemPrompt=function(){ return _sys111.apply(this,arguments)+`\n\nPRUEBAS AUTOMÁTICAS DE APPS: si te piden probar automáticamente una app suya de Android (que se pruebe sola, Maestro, test automático), pon {{maestro}} y se abre el panel. Esto es SOLO para las apps propias de Rocket Jam: nunca para simular pruebas en apps de otros (Testers Community u otras): eso lo hace el humano.`; };
+
+/* =====================================================================
+   112. CARPETAS DEL ORDENADOR (Unity, Godot, Unreal y Descargas)
+   Con Chrome o Edge del ordenador, Mor entra en carpetas que tú le das:
+   - un proyecto de Unity, Godot o Unreal: el agente de código lee y cambia
+     sus scripts y guarda los cambios en la carpeta de verdad;
+   - tu carpeta de Descargas: coge los modelos y animaciones que bajes
+     (Mixamo, Sketchfab…) y los mete en tu proyecto;
+   - la biblioteca CC0 de Mor: copia modelos directamente al proyecto.
+   ===================================================================== */
+const Carpetas={
+  TXT:/\.(cs|gd|gdshader|gdshaderinc|tscn|tres|godot|cfg|shader|hlsl|cginc|compute|cpp|c|h|hpp|inl|ini|uproject|uplugin|build\.cs|target\.cs|json|md|txt|xml|asmdef|uss|uxml|py|lua|js|ts|html|css|yaml|yml)$/i,
+  MOD:/\.(glb|gltf|fbx|obj|blend|dae|zip)$/i,
+  SALTA:new Set(['Library','Temp','Logs','obj','Build','Builds','UserSettings','.godot','.import','Intermediate','Saved','Binaries','DerivedDataCache','.git','.vs','.vscode','.idea','node_modules','MemoryCaptures','Recordings']),
+  idb(){ return this._db||(this._db=new Promise((ok,ko)=>{ const q=indexedDB.open('mor_carpetas',1); q.onupgradeneeded=()=>q.result.createObjectStore('h',{keyPath:'id'}); q.onsuccess=()=>ok(q.result); q.onerror=()=>ko(q.error); })); },
+  async tx(modo,fn){ const db=await this.idb(); return new Promise((ok,ko)=>{ const t=db.transaction('h',modo), st=t.objectStore('h'); const r=fn(st); t.oncomplete=()=>ok(r&&r.result); t.onerror=()=>ko(t.error); }); },
+  todas(){ return this.tx('readonly',st=>st.getAll()); },
+  guardar(rec){ return this.tx('readwrite',st=>st.put(rec)); },
+  quitar(id){ return this.tx('readwrite',st=>st.delete(id)); },
+  puede(){ return 'showDirectoryPicker' in window; },
+  async permiso(h,escribir=true){ const o={mode:escribir?'readwrite':'read'}; if(await h.queryPermission(o)==='granted') return true; return (await h.requestPermission(o))==='granted'; },
+  async motor(dir){ const n=new Set(); for await (const [k] of dir.entries()) n.add(k);
+    if(n.has('project.godot')) return 'Godot'; if([...n].some(x=>/\.uproject$/i.test(x))) return 'Unreal'; if(n.has('Assets')&&n.has('ProjectSettings')) return 'Unity';
+    if(/^(downloads|descargas)$/i.test(dir.name)) return 'Descargas'; return 'Carpeta'; },
+  destinoModelos(m){ return m==='Unity'?'Assets/Models/Mor':m==='Godot'?'models':m==='Unreal'?'ImportarDesdeMor':'modelos'; },
+  async conectar(descargas){ if(!this.puede()) return toast('Esto solo funciona en el ordenador, con Chrome o Edge (el móvil no deja a las webs entrar en carpetas)',6000);
+    try{ const h=await showDirectoryPicker({id:descargas?'mor-descargas':'mor-proyecto',mode:descargas?'read':'readwrite',startIn:descargas?'downloads':'documents'});
+      const m=descargas?'Descargas':await this.motor(h); const rec={id:(descargas?'d_':'c_')+Date.now().toString(36),nombre:h.name,motor:m,h,at:Date.now()};
+      await this.guardar(rec); toast((m==='Carpeta'?'Carpeta':'Proyecto de '+m)+' «'+h.name+'» conectado',3500); logChat('m',`[Carpeta conectada: ${h.name} (${m})]`); this.open(); }
+    catch(e){ if(e.name!=='AbortError') toast('No se ha podido: '+e.message,5000); } },
+  async *recorrer(dir,base='',prof=0){ for await (const [k,v] of dir.entries()){ const r=base?base+'/'+k:k;
+      if(v.kind==='directory'){ if(this.SALTA.has(k)||prof>12) continue; yield* this.recorrer(v,r,prof+1); } else yield [r,v]; } },
+  async archivo(dir,ruta,crear){ const p=ruta.split('/'); let d=dir; for(let i=0;i<p.length-1;i++) d=await d.getDirectoryHandle(p[i],{create:!!crear}); return d.getFileHandle(p[p.length-1],{create:!!crear}); },
+  async escribir(dir,ruta,datos){ const fh=await this.archivo(dir,ruta,true); const w=await fh.createWritable(); await w.write(datos); await w.close(); },
+  /* ---- el proyecto entra en Mor para el agente de código ---- */
+  async importar(rec,log=()=>{}){ if(!await this.permiso(rec.h,true)) throw new Error('sin permiso para la carpeta');
+    const files=[], orig={}; let bytes=0, saltados=0;
+    for await (const [r,fh] of this.recorrer(rec.h)){
+      if(rec.motor==='Unity'&&!/^(Assets|Packages\/manifest\.json|ProjectSettings\/ProjectSettings\.asset)/.test(r)) continue;
+      if(/\.meta$/i.test(r)||!this.TXT.test(r)) continue;
+      if(rec.motor==='Unity'&&/^Assets\/(Plugins|TextMesh Pro|ThirdParty|Samples)\//i.test(r)) continue;
+      const f=await fh.getFile(); if(f.size>400000||files.length>=400||bytes>3e6){ saltados++; continue; }
+      const code=await f.text(); files.push({ruta:r,code}); orig[r]=code; bytes+=f.size; if(files.length%40===0) log(files.length+' archivos leídos…'); }
+    const P=(await DB.all('projects')).find(p=>p.id===rec.id)||{id:rec.id,at:Date.now(),estado:'listo',versiones:[]};
+    Object.assign(P,{nombre:rec.nombre+' ('+rec.motor+')',motor:rec.motor,carpeta:rec.id,files,orig,at:Date.now(),desc:`Proyecto de ${rec.motor} en el ordenador («${rec.nombre}»). Mor trabaja sobre sus scripts y guarda los cambios en la carpeta.`});
+    await DB.put('projects',P); return {P,saltados}; },
+  async volcar(P,log=()=>{}){ const rec=(await this.todas()).find(r=>r.id===P.carpeta); if(!rec) throw new Error('la carpeta ya no está conectada');
+    if(await rec.h.queryPermission({mode:'readwrite'})!=='granted'&&!await this.permiso(rec.h,true)) throw new Error('falta permiso para escribir en la carpeta');
+    const orig=P.orig||{}; let n=0; const cambiados=[];
+    for(const f of P.files.filter(f=>!f.bin&&f.code!=null)){ if(orig[f.ruta]===f.code) continue; await this.escribir(rec.h,f.ruta,f.code); orig[f.ruta]=f.code; n++; cambiados.push(f.ruta); }
+    for(const f of P.files.filter(f=>f.bin&&f.data&&!orig[f.ruta])){ const b=await (await fetch(f.data)).blob(); await this.escribir(rec.h,f.ruta,b); orig[f.ruta]='bin'; n++; cambiados.push(f.ruta); }
+    P.orig=orig; await DB.put('projects',P); log(n?`Guardado en «${rec.nombre}»: ${cambiados.slice(0,8).join(', ')}${n>8?' y '+(n-8)+' más':''}.`:'No había cambios que guardar.'); return n; },
+  /* ---- Descargas ---- */
+  async recientes(rec,max=40){ if(!await this.permiso(rec.h,false)) throw new Error('sin permiso para Descargas'); const L=[];
+    for await (const [r,fh] of this.recorrer(rec.h)){ if(!this.MOD.test(r)||r.split('/').length>3) continue; const f=await fh.getFile(); L.push({ruta:r,f,t:f.lastModified,kb:Math.round(f.size/1024)}); }
+    return L.sort((a,b)=>b.t-a.t).slice(0,max); },
+  async meter(destId,nombre,blob){ const recs=await this.todas(); const d=recs.find(r=>r.id===destId);
+    if(d){ if(!await this.permiso(d.h,true)) throw new Error('sin permiso'); const ruta=this.destinoModelos(d.motor)+'/'+nombre; await this.escribir(d.h,ruta,blob); return `${d.nombre}/${ruta}`; }
+    const P=(await DB.all('projects')).find(p=>p.id===destId); if(!P) throw new Error('no encuentro el proyecto');
+    const data=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); });
+    const ruta='models/'+nombre.replace(/[^\w.\-]/g,'_'); const f=P.files.find(x=>x.ruta===ruta); if(f) f.data=data; else P.files.push({ruta,data,bin:true}); P.at=Date.now(); await DB.put('projects',P); return `${P.nombre}/${ruta}`; },
+  async destinos(){ const recs=(await this.todas()).filter(r=>r.motor!=='Descargas'); const ps=(await DB.all('projects')).filter(p=>!p.carpeta).sort((a,b)=>b.at-a.at).slice(0,8);
+    return recs.map(r=>({id:r.id,t:r.nombre+' ('+r.motor+', en el ordenador)'})).concat(ps.map(p=>({id:p.id,t:(p.nombre||p.id)+' (Mor)'}))); },
+  aviso(m){ return m==='Unity'?'Unity: los .glb necesitan el paquete glTFast (Window › Package Manager › + › Add package by name › com.unity.cloud.gltfast). Los .fbx de Mixamo entran sin nada.':m==='Unreal'?'Unreal: arrastra los archivos de la carpeta ImportarDesdeMor al Content Browser para importarlos.':m==='Godot'?'Godot los importa solo al volver a la ventana del editor.':''; },
+  /* ---- panel ---- */
+  async open(){ if(!this.puede()){ chatCard(`<div class="ctit">Carpetas del ordenador</div><small>Para que Mor entre en tus carpetas (proyectos de Unity, Godot o Unreal y Descargas) abre Mor en el ordenador con Chrome o Edge. El móvil no deja a las webs entrar en carpetas.</small>`); return; }
+    const recs=await this.todas(), dest=await this.destinos();
+    const c=chatCard(`<div class="ctit">Carpetas del ordenador</div>
+      <small>Mor solo entra en las carpetas que tú le des. Chrome te preguntará el permiso; elige «Permitir en cada visita» para no tener que repetirlo.</small>
+      <div class="row" style="gap:6px;flex-wrap:wrap;margin:8px 0"><button class="tbtn on" data-c="proy">Conectar proyecto (Unity, Godot, Unreal…)</button><button class="tbtn" data-c="desc">Conectar Descargas</button></div>
+      ${recs.map(r=>`<div data-r="${r.id}" style="border-top:1px solid rgba(127,216,255,.15);padding:8px 0"><div class="row" style="align-items:center;gap:8px"><b style="flex:1;margin-right:8px">${esc(r.nombre)}</b><small>${esc(r.motor)}</small></div>
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${r.motor==='Descargas'?'<button class="tbtn" data-a="ver">Ver modelos y animaciones</button>':'<button class="tbtn on" data-a="agente">Trabajar con el agente</button><button class="tbtn" data-a="guardar">Guardar cambios en la carpeta</button><button class="tbtn" data-a="bib">Traer modelos de la biblioteca</button>'}<button class="tbtn" data-a="quitar">Quitar</button></div>
+        <div class="cx" style="margin-top:6px;font-size:13px"></div></div>`).join('')||'<small>Aún no hay carpetas conectadas.</small>'}`);
+    c.querySelector('[data-c=proy]').onclick=()=>{ c.remove(); this.conectar(false); };
+    c.querySelector('[data-c=desc]').onclick=()=>{ c.remove(); this.conectar(true); };
+    c.querySelectorAll('[data-r]').forEach(el=>{ const r=recs.find(x=>x.id===el.dataset.r), out=el.querySelector('.cx'), log=t=>{ out.textContent=t; };
+      el.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{ const k=b.dataset.a;
+        try{ if(k==='quitar'){ await this.quitar(r.id); c.remove(); this.open(); }
+          else if(k==='agente'){ log('Leyendo los scripts del proyecto…'); const {P,saltados}=await this.importar(r,log);
+            out.innerHTML=`${P.files.length} archivos de código listos${saltados?` (${saltados} se han quedado fuera por grandes o por límite)`:''}. Dime qué cambiar:<div class="row" style="gap:6px;margin-top:6px"><input class="inp" placeholder="Ej.: que el jugador salte doble" style="flex:1;min-width:0"><button class="tbtn on">Hacerlo</button></div>`;
+            const inp=out.querySelector('input'); inp.focus(); out.querySelector('button').onclick=()=>{ const t=inp.value.trim(); if(t) Agente.run(P.id,t); }; }
+          else if(k==='guardar'){ const P=(await DB.all('projects')).find(p=>p.id===r.id); if(!P) return log('Primero pulsa «Trabajar con el agente».'); await this.volcar(P,log); }
+          else if(k==='bib') this.panelBib(out,r.id,r.motor);
+          else if(k==='ver'){ log('Mirando tus descargas…'); const L=await this.recientes(r);
+            if(!L.length) return log('No hay modelos ni animaciones (.glb, .gltf, .fbx, .obj, .blend, .zip) en Descargas.');
+            out.innerHTML=`<div class="row" style="gap:6px;align-items:center;margin-bottom:6px"><small>Meter en</small><select class="inp" style="flex:1;min-width:0">${dest.map(d=>`<option value="${d.id}">${esc(d.t)}</option>`).join('')}</select></div>`+
+              L.map((x,i)=>`<div class="row" style="gap:6px;align-items:center;margin-top:4px"><span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis">${esc(x.ruta)} <small>· ${x.kb} KB · ${new Date(x.t).toLocaleDateString('es-ES')}</small></span><button class="tbtn" data-i="${i}">Meter</button></div>`).join('');
+            const sel=out.querySelector('select'); if(!dest.length) sel.outerHTML='<small>Conecta antes un proyecto o crea uno en Mor.</small>';
+            out.querySelectorAll('[data-i]').forEach(bb=>bb.onclick=async()=>{ const x=L[+bb.dataset.i]; try{ const donde=await this.meter(sel.value,x.ruta.split('/').pop(),x.f); bb.textContent='Metido'; bb.disabled=true;
+                const dm=(recs.find(q=>q.id===sel.value)||{}).motor; toast('Copiado a '+donde+(dm?' · '+this.aviso(dm):''),7000); }catch(e){ toast('No se ha podido: '+e.message,5000); } }); } }
+        catch(e){ log('No se ha podido: '+e.message); } }); }); },
+  panelBib(out,destId,motor){ out.innerHTML=`<div class="row" style="gap:6px"><input class="inp" placeholder="Qué modelo buscas (caballero, coche, árbol…)" style="flex:1;min-width:0"><button class="tbtn on">Buscar</button></div><div class="bl"></div><small>${esc(this.aviso(motor))}</small>`;
+    const inp=out.querySelector('input'); inp.focus();
+    out.querySelector('button').onclick=async()=>{ const L=await Biblioteca.buscar(inp.value,{max:10}); const bl=out.querySelector('.bl');
+      bl.innerHTML=L.length?L.map((x,i)=>`<div class="row" style="gap:6px;align-items:center;margin-top:4px"><span style="flex:1;font-size:12px">${esc(x.nombre)} <small>· ${esc(x.grupo)} · ${x.kb} KB${x.anims?' · animado':''}</small></span><button class="tbtn" data-i="${i}">Copiar</button></div>`).join(''):'<small>No he encontrado nada parecido en la biblioteca.</small>';
+      bl.querySelectorAll('[data-i]').forEach(b=>b.onclick=async()=>{ const x=L[+b.dataset.i]; try{ const blob=await (await fetch(x.ruta)).blob(); const d=await this.meter(destId,x.nombre+'.glb',blob); b.textContent='Copiado'; b.disabled=true; toast('Copiado a '+d,4000); }catch(e){ toast('No se ha podido: '+e.message,5000); } }); }; }
+};
+/* el agente sabe que es un proyecto de motor y guarda solo en la carpeta al acabar */
+const _run112=Agente.run.bind(Agente);
+Agente.run=async function(pid,tarea,...resto){ const P=(await DB.all('projects')).find(x=>x.id===pid);
+  if(!P||!P.carpeta) return _run112(pid,tarea,...resto);
+  const nota=`[Proyecto de ${P.motor} en el ordenador. Aquí NO se puede ejecutar ni probar: no intentes jugarlo. Escribe código correcto para ${P.motor}${P.motor==='Unity'?' (C#, MonoBehaviour, sin romper las referencias del editor; no cambies nombres de clases que ya usan escenas o prefabs)':P.motor==='Godot'?' (GDScript de Godot 4)':P.motor==='Unreal'?' (C++ de Unreal 5; ojo con los .h y las macros UCLASS/UPROPERTY)':''}. Si creas un archivo nuevo, ponlo en su carpeta correcta del proyecto.] `;
+  const r=await _run112(pid,nota+tarea,...resto);
+  try{ const P2=(await DB.all('projects')).find(x=>x.id===pid); const n=await Carpetas.volcar(P2,t=>toast(t,6000)); if(n) logChat('m',`[Guardados ${n} archivos en la carpeta de ${P2.nombre}]`); }
+  catch(e){ toast('Los cambios están en Mor pero no se han podido guardar en la carpeta: '+e.message+'. Abre «Carpetas del ordenador» y pulsa «Guardar cambios en la carpeta».',8000); }
+  return r; };
+CMDS.splice(3,0,['/carpetas','Carpetas del ordenador: proyectos de Unity, Godot, Unreal y Descargas',()=>Carpetas.open()]);
+SIDE.find(g=>g[0]==='CREAR')[1].push(['Carpetas del ordenador (Unity, Godot, Unreal, Descargas)',()=>Carpetas.open()]);
+const _apply112=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply112(acts); for(const a of acts){ if(/^\s*carpetas?\s*$/i.test(String(a))) setTimeout(()=>Carpetas.open(),300); } return r; };
+const _sys112=systemPrompt; systemPrompt=function(){ return _sys112.apply(this,arguments)+`\n\nCARPETAS DEL ORDENADOR: si te piden entrar en una carpeta o proyecto del ordenador (Unity, Godot, Unreal), coger modelos o animaciones de Descargas o adjuntar una carpeta, pon {{carpetas}} y se abre el panel. Los proyectos conectados salen en la lista de proyectos con «(Unity)», «(Godot)» o «(Unreal)» y el agente de código puede cambiarlos con {{agente: ...}}.`; };
 
 /* =====================================================================
    15. DESPERTAR
