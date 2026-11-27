@@ -1275,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v52</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v53</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1439,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v52 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v53 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6319,6 +6319,52 @@ const _render120=renderProjects; renderProjects=async function(){ const r=await 
     e.querySelector('[data-x=p]').onclick=async()=>{ $('sheetProj').classList.remove('open'); const P=L.find(p=>p.id===id); DBP.publicarAlgo(P.nombre); };
     e.querySelector('[data-x=f]').onclick=()=>{ $('sheetProj').classList.remove('open'); Ficha.open(id); }; d.append(...e.childNodes); });
   return r; };
+
+/* =====================================================================
+   121. MODELOS QUE FALTAN: AVISO CLARO Y ALTERNATIVAS
+   Al crear un juego 3D, Mor busca cada modelo primero en su biblioteca
+   CC0 y después en Sketchfab, y le pone esqueleto y animaciones solo.
+   Si alguno no aparece, ahora lo dice y da alternativas para cada uno:
+   buscar con otras palabras, que Mor lo modele, o hacerlo a mano.
+   ===================================================================== */
+const Faltan={
+  es3:t=>t==='modelo'||t==='personaje',
+  async ponerEn(pid,ruta,data){ const P=(await DB.all('projects')).find(p=>p.id===pid); if(!P) return; const f=P.files.find(x=>x.bin&&x.ruta===ruta);
+    if(f) f.data=data; else P.files.push({ruta,data,bin:true}); P.at=Date.now(); await DB.put('projects',P); },
+  async animar(pid,s,data,log){ if(s.tipo!=='personaje') return; try{ const sl=[{...s,data}]; await AnimAuto.llenar(sl,log); const P=(await DB.all('projects')).find(p=>p.id===pid);
+      for(const x of sl) if(x.data&&x.data!==data) await this.ponerEn(pid,x.ruta,x.data); }catch(e){} },
+  tarjeta(P,faltan){ const sk=!!Conn.get().skToken;
+    const c=chatCard(`<div class="ctit">Modelos que no he encontrado · ${esc(P.nombre||'')}</div>
+      <small>Los he buscado en la biblioteca de Mor${sk?' y en Sketchfab':' (Sketchfab no: falta tu token de Sketchfab en Conectores)'}. Mientras tanto el juego usa formas de color en su lugar. Para cada uno tienes estas opciones:</small>
+      ${faltan.map((s,i)=>`<div data-f="${i}" style="border-top:1px solid rgba(127,216,255,.15);padding:8px 0"><b>${esc(s.ruta.split('/').pop())}</b> <small>· ${esc(s.tipo)} · ${esc(s.desc||'')}</small>
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><input class="inp" value="${esc(s.buscar||s.desc||'')}" style="flex:1;min-width:140px;border-radius:12px;padding:8px 12px;font-size:14px"><button class="tbtn" data-a="buscar">Buscar con estas palabras</button><button class="tbtn on" data-a="modelar">Que Mor lo modele</button></div>
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px"><a class="tbtn" target="_blank" rel="noopener" href="https://sketchfab.com/search?features=downloadable&type=models&q=${encodeURIComponent(s.buscar||s.desc||'')}">Buscar yo en Sketchfab</a>${s.tipo==='personaje'?'<a class="tbtn" target="_blank" rel="noopener" href="https://www.mixamo.com/">Mixamo (personajes y animaciones)</a>':''}<a class="tbtn" target="_blank" rel="noopener" href="https://poly.pizza/search/${encodeURIComponent(s.buscar||s.desc||'')}">Poly Pizza (gratis)</a><a class="tbtn" target="_blank" rel="noopener" href="https://www.meshy.ai/">Meshy (con IA)</a></div>
+        <div class="fo" style="font-size:13px;margin-top:4px"></div><div class="fr" style="display:flex;gap:6px;overflow-x:auto;margin-top:4px"></div></div>`).join('')}
+      <small style="display:block;margin-top:6px">Lo que descargues tú (Sketchfab, Mixamo, Poly Pizza, Meshy) va a Descargas: mételo con «Carpetas del ordenador › Descargas» o con «Cambiar» en el hueco del proyecto. Mor le pone esqueleto y animaciones solo. Meshy: con el plan gratis da pocos modelos al mes y no deja descargar los de sus últimas versiones; su API es de pago.</small>`);
+    faltan.forEach((s,i)=>{ const el=c.querySelector(`[data-f="${i}"]`), out=el.querySelector('.fo'), res=el.querySelector('.fr'), log=t=>{ out.textContent=t; }, q=()=>el.querySelector('input').value.trim();
+      el.querySelector('[data-a=buscar]').onclick=async()=>{ res.innerHTML=''; log('Buscando…'); const op=[];
+        try{ (await Biblioteca.buscar(q(),{personaje:s.tipo==='personaje',max:6})).forEach(x=>op.push({t:x.nombre+' (biblioteca)',img:null,coger:async()=>{ const b=await (await fetch(x.ruta)).blob(); return await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r('data:model/gltf-binary;base64,'+String(fr.result).split(',')[1]); fr.readAsDataURL(b); }); }})); }catch(e){}
+        if(Conn.get().skToken) try{ (await SkAuto.buscar(q(),s.tipo==='personaje')).slice(0,8).forEach(m=>op.push({t:m.name+' · '+(m.user&&m.user.displayName||'')+' · '+(m.license&&m.license.label||''),img:(m.thumbnails&&m.thumbnails.images||[]).sort((a,b)=>a.width-b.width).find(x=>x.width>=200),coger:()=>SkAuto.bajar(m.uid),cred:{nombre:m.name,autor:m.user&&m.user.displayName,licencia:m.license&&m.license.label,url:m.viewerUrl}})); }catch(e){}
+        if(!op.length) return log('Nada con esas palabras. Prueba otras (en inglés suele encontrar más: «cat», «crystal», «ore») o pulsa «Que Mor lo modele».');
+        log('Elige uno:'); res.innerHTML=op.map((o,k)=>`<button class="tbtn" data-k="${k}" style="display:flex;flex-direction:column;align-items:center;max-width:150px;min-width:90px;white-space:normal;font-size:11px;border-radius:10px;padding:6px 8px;height:auto">${o.img?`<img src="${o.img.url}" style="width:120px;height:80px;object-fit:cover;border-radius:6px">`:''}${esc(o.t)}</button>`).join('');
+        res.querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{ const o=op[+b.dataset.k]; log('Descargando…');
+          try{ const data=await o.coger(); await this.ponerEn(P.id,s.ruta,data);
+            if(o.cred){ const Q=(await DB.all('projects')).find(p=>p.id===P.id); Q.creditos=(Q.creditos||[]).concat([o.cred]); Q.files=Q.files.filter(f=>f.ruta!=='CREDITOS.md').concat([{ruta:'CREDITOS.md',code:creditosMd(Q.creditos)}]); await DB.put('projects',Q); }
+            await this.animar(P.id,s,data,log); log('Puesto en el juego.'); res.innerHTML=''; }catch(e){ log('No se ha podido: '+e.message); } }); };
+      el.querySelector('[data-a=modelar]').onclick=async e=>{ e.target.disabled=true; log('Mor lo está modelando (tarda unos minutos)…'); const antes=Date.now();
+        try{ await Taller3D.create(q()+' para un videojuego: '+(s.desc||''),'alto');
+          const M=(await DB.all('projects')).filter(p=>p.modelo&&p.at>=antes-1000).sort((a,b)=>b.at-a.at)[0], g=M&&M.files.find(f=>f.bin&&/\.glb$/i.test(f.ruta));
+          if(!g) throw new Error('no ha salido el modelo'); await this.ponerEn(P.id,s.ruta,g.data); await this.animar(P.id,s,g.data,log); log('Modelado y puesto en el juego'+(s.tipo==='personaje'?', con esqueleto y animaciones.':'.')); }
+        catch(x){ log('No ha salido: '+x.message); e.target.disabled=false; } }; });
+    logChat('m',`[${faltan.length} modelos sin encontrar en ${P.nombre}]`); }
+};
+const _llenar121=SkAuto.llenar.bind(SkAuto);
+SkAuto.llenar=async function(slots,log){ const cred=await _llenar121(slots,log); Faltan._ult=slots.filter(s=>Faltan.es3(s.tipo)&&!s.data); return cred; };
+const _auto121=autoModelos; autoModelos=async function(P){ Faltan._ult=null; const r=await _auto121(P); const f=Faltan._ult; if(f&&f.length){ const Q=(await DB.all('projects')).find(p=>p.id===P.id)||P; Faltan.tarjeta(Q,f); } return r; };
+const _gcreate121=GameStudio.create.bind(GameStudio); GameStudio.create=async function(...a){ const t0=Date.now(); Faltan._ult=null; const r=await _gcreate121(...a); const f=Faltan._ult;
+  if(f&&f.length){ const P=(await DB.all('projects')).filter(p=>p.juego&&p.at>=t0-1000).sort((x,y)=>y.at-x.at)[0]; if(P){ const g=f.filter(s=>!P.files.some(x=>x.bin&&x.ruta===s.ruta)); if(g.length) Faltan.tarjeta(P,g); } } return r; };
+CMDS.splice(3,0,['/modelos','Modelos que faltan en el último juego 3D, con alternativas',async()=>{ const P=(await DB.all('projects')).filter(p=>(p.slots||[]).some(s=>Faltan.es3(s.tipo))).sort((a,b)=>b.at-a.at)[0]; if(!P) return toast('No hay juegos 3D');
+  const f=P.slots.filter(s=>Faltan.es3(s.tipo)&&!P.files.some(x=>x.bin&&x.ruta===s.ruta)); if(!f.length) return toast('A '+P.nombre+' no le falta ningún modelo'); Faltan.tarjeta(P,f); }]);
 
 /* =====================================================================
    15. DESPERTAR

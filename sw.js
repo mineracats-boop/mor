@@ -1,5 +1,5 @@
 // M.O.R. — guarda la app para que abra al instante (las IA siguen necesitando internet)
-const C='mor-v52';
+const C='mor-v53';
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(C).then(c=>c.addAll(['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png','marca/icon_color.png','marca/horizontal_white.png']))); self.skipWaiting(); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!=='mor-avisos').map(x=>caches.delete(x))))); self.clients.claim(); });
 self.addEventListener('fetch',e=>{ const u=new URL(e.request.url); if(u.origin!==location.origin||e.request.method!=='GET'||u.pathname.endsWith('avisos.json')) return;
