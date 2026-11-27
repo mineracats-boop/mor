@@ -1,0 +1,44 @@
+name: Mor compila Unity
+on:
+  workflow_dispatch:
+    inputs:
+      plataforma:
+        description: 'Android, WebGL o StandaloneWindows64'
+        required: true
+        default: 'Android'
+      carpeta:
+        description: 'Carpeta del proyecto dentro del repo (vacío = raíz)'
+        required: false
+        default: ''
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - name: Hacer sitio en el disco
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: false
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.event.inputs.carpeta || '.' }}/Library
+          key: Library-${{ github.event.inputs.plataforma }}-${{ hashFiles('**/Packages/manifest.json', '**/ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: Library-${{ github.event.inputs.plataforma }}-
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: ${{ github.event.inputs.carpeta || '.' }}
+          targetPlatform: ${{ github.event.inputs.plataforma }}
+          androidExportType: androidPackage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Juego-${{ github.event.inputs.plataforma }}
+          path: build
+          retention-days: 14

@@ -1275,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v50</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v51</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1439,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v50 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v51 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -5895,6 +5895,240 @@ CMDS.splice(3,0,['/carpetas','Carpetas del ordenador: proyectos de Unity, Godot,
 SIDE.find(g=>g[0]==='CREAR')[1].push(['Carpetas del ordenador (Unity, Godot, Unreal, Descargas)',()=>Carpetas.open()]);
 const _apply112=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply112(acts); for(const a of acts){ if(/^\s*carpetas?\s*$/i.test(String(a))) setTimeout(()=>Carpetas.open(),300); } return r; };
 const _sys112=systemPrompt; systemPrompt=function(){ return _sys112.apply(this,arguments)+`\n\nCARPETAS DEL ORDENADOR: si te piden entrar en una carpeta o proyecto del ordenador (Unity, Godot, Unreal), coger modelos o animaciones de Descargas o adjuntar una carpeta, pon {{carpetas}} y se abre el panel. Los proyectos conectados salen en la lista de proyectos con «(Unity)», «(Godot)» o «(Unreal)» y el agente de código puede cambiarlos con {{agente: ...}}.`; };
+
+/* =====================================================================
+   113. MOR JUEGA A TUS JUEGOS EN LA NUBE
+   Sube el juego a tu mor-nube, GitHub lo abre en un navegador de verdad,
+   juega un minuto pulsando teclas y haciendo clics, y guarda capturas y
+   errores. Mor mira las capturas y te dice qué falla; el agente lo arregla.
+   ===================================================================== */
+const Juega={
+  async preparar(){ for(const [r,f] of [['.github/workflows/juega.yml','lib/nube/juega.yml'],['pruebas/jugar.mjs','lib/nube/jugar.mjs']]) await Nube.poner(r,await (await fetch(f,{cache:'no-cache'})).text(),'Mor: jugar en la nube'); },
+  async subir(P,est){ const base='juegos/'+P.id+'/'; let i=0;
+    for(const f of P.files){ i++; est(`Subiendo el juego (${i}/${P.files.length}): ${f.ruta}`);
+      if(f.bin&&f.data){ const b=await (await fetch(f.data)).arrayBuffer(); await Maestro.ponerBin(base+f.ruta,b,'Mor: juego'); }
+      else if(f.code!=null) await Nube.poner(base+f.ruta,f.code,'Mor: juego'); } },
+  async jugar(pid){ if(!Nube.ok()){ toast('Para jugar en la nube conecta antes tu nube (menú › Herramientas › Mor en la nube)',6000); return Nube.conectar(); }
+    const P=(await DB.all('projects')).find(p=>p.id===pid); if(!P||!P.files.some(f=>/(^|\/)index\.html$/.test(f.ruta))) return toast('Ese proyecto no tiene un juego web (index.html)');
+    const c=chatCard(`<div class="ctit">Mor juega a ${esc(P.nombre||'tu juego')}</div><div class="je" style="font-size:13px"></div><div class="jimg" style="display:flex;gap:6px;overflow-x:auto;margin-top:6px"></div><div class="jprob" style="margin-top:6px;font-size:14px"></div>`);
+    const est=t=>{ c.querySelector('.je').textContent=t; };
+    try{ est('Preparando tu nube…'); await this.preparar(); await this.subir(P,est);
+      const lanzado=Date.now(); await Nube.api('/actions/workflows/juega.yml/dispatches',{method:'POST',body:JSON.stringify({ref:R_RAMA,inputs:{id:P.id,segundos:'60'}})});
+      est('Jugando en la nube: abre el juego en un navegador de verdad y juega un minuto (en total tarda unos 3-4 minutos). Puedes cerrar Mor.'); logChat('m','[Mor juega en la nube a '+P.nombre+']');
+      P.jugando=lanzado; await DB.put('projects',P); this.vigilar(P,c,lanzado); }
+    catch(e){ est('No se ha podido: '+e.message); } },
+  vigilar(P,c,lanzado){ let n=0; const t=setInterval(async()=>{ if(++n>40) return clearInterval(t);
+      try{ const inf=JSON.parse(await Nube.leer('juegos/'+P.id+'/salida/informe.json')); if(Date.parse(inf.fin)<lanzado-60000) return; clearInterval(t); await this.informe(P,inf,c); }catch(e){} },20000); },
+  async informe(P,inf,c){ c=c||chatCard(`<div class="ctit">Mor juega a ${esc(P.nombre||'tu juego')}</div><div class="je" style="font-size:13px"></div><div class="jimg" style="display:flex;gap:6px;overflow-x:auto;margin-top:6px"></div><div class="jprob" style="margin-top:6px;font-size:14px"></div>`);
+    const est=t=>{ c.querySelector('.je').textContent=t; }; est('He jugado. Miro las capturas…');
+    const imgs=[]; for(const x of inf.capturas||[]){ try{ const b=await Maestro.blob('juegos/'+P.id+'/salida/'+x.nombre+'.png'); imgs.push(b); const u=URL.createObjectURL(b), im=document.createElement('img'); im.src=u; im.title=x.nombre; im.style.cssText='height:150px;border-radius:8px;cursor:pointer'; im.onclick=()=>window.open(u,'_blank'); c.querySelector('.jimg').appendChild(im); }catch(e){} }
+    const b64=async b=>(await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(b); })).split(',')[1];
+    const sel=imgs.length<=6?imgs:[imgs[0],imgs[1],imgs[Math.floor(imgs.length/3)],imgs[Math.floor(imgs.length/2)],imgs[Math.floor(imgs.length*.8)],imgs[imgs.length-1]];
+    let probs=[];
+    try{ const parts=[{text:`Eres el probador de calidad de Rocket Jam. Son capturas de un minuto jugando a «${P.nombre}» (un juego web), en orden. Mira SOLO lo que se ve y di los problemas reales, concretos y comprobables, por ejemplo: pantalla negra o en blanco; personajes flotando sobre el suelo o metidos dentro; fondos o texturas borrosos o pixelados; cosas que se salen de la pantalla; textos cortados o encima de otros; el personaje no se mueve entre capturas (juego atascado); cámara mal puesta; objetos sin textura (formas de color de relleno). Datos de la prueba: ${inf.errores.length} errores en consola${inf.errores.length?' ('+inf.errores.slice(0,6).join(' | ')+')':''}; ${inf.congelado} capturas seguidas idénticas; ${inf.teclas} teclas pulsadas.
+Responde SOLO JSON: {"veredicto":"bien|regular|mal","problemas":[{"que":"problema en una frase","grave":true|false}]}. Si todo se ve bien, problemas vacío.`}];
+      for(const b of sel) parts.push({inline_data:{mime_type:'image/png',data:await b64(b)}});
+      const j=JSON.parse(String(await gemini({contents:[{role:'user',parts}],generationConfig:{temperature:.2,responseMimeType:'application/json'}},MODELOS_MEMORIA.concat(MODELOS_LISTOS),90000)).replace(/^[^{]*/,'').replace(/[^}]*$/,''));
+      probs=(j.problemas||[]).map(x=>x.que).filter(Boolean); }
+    catch(e){ est('He jugado, pero no he podido mirar las capturas: '+e.message); }
+    probs=probs.concat(inf.errores.slice(0,5).map(e=>'Error en el juego: '+e));
+    if(!inf.capturas||!inf.capturas.length) probs.unshift('El juego no ha llegado a abrirse');
+    est(`He jugado ${Math.round((Date.parse(inf.fin)-Date.parse(inf.inicio))/1000)} s: ${inf.teclas} teclas, ${inf.clics} clics. ${probs.length?'Esto falla:':'No he visto problemas.'}`);
+    const box=c.querySelector('.jprob'); box.innerHTML=probs.length?'<ul style="margin:4px 0 6px 18px">'+probs.map(p=>'<li>'+esc(p)+'</li>').join('')+'</ul><button class="tbtn on">Que lo arregle el agente</button>':'';
+    const bt=box.querySelector('button'); if(bt) bt.onclick=()=>{ bt.disabled=true; Agente.run(P.id,'Arregla estos problemas que se han visto jugando al juego en un navegador de verdad: '+probs.join('; ')); };
+    logChat('m',`[Mor ha jugado a ${P.nombre}: ${probs.length?probs.length+' problemas':'sin problemas'}]`); notify('Mor ha jugado a '+P.nombre,probs.length?probs.length+' problemas':'Todo bien'); }
+};
+setTimeout(async()=>{ try{ for(const P of (await DB.all('projects')).filter(p=>p.jugando&&Date.now()-p.jugando<1800000)) Juega.vigilar(P,null,P.jugando); }catch(e){} },9000);
+
+/* =====================================================================
+   114. COMPILAR TUS JUEGOS DE UNITY EN LA NUBE
+   El proyecto de Unity tiene que estar en un repo de GitHub (GitHub
+   Desktop). Mor le pone el compilador (GameCI) y lo lanza; GitHub saca el
+   APK, la versión web o la de Windows aunque tengas el PC apagado.
+   ===================================================================== */
+const Compilar={
+  async gh(repo,ruta,o={}){ const c=Nube.cfg(); const r=await fetch('https://api.github.com/repos/'+repo+ruta,Object.assign({},o,{headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+c.token,'Content-Type':'application/json'}}));
+    if(!r.ok){ const e=new Error('GitHub '+r.status+(r.status===404?' (¿el token tiene acceso a ese repo?)':'')); e.status=r.status; throw e; } return r.status===204?null:r.json(); },
+  async poner(repo,ruta,texto){ let sha; try{ sha=(await this.gh(repo,'/contents/'+ruta)).sha; }catch(e){ if(e.status!==404) throw e; }
+    const b=btoa(unescape(encodeURIComponent(texto))); return this.gh(repo,'/contents/'+ruta,{method:'PUT',body:JSON.stringify({message:'Mor: compilar en la nube',content:b,sha})}); },
+  open(){ if(!Nube.cfg().token) return toast('Primero conecta tu nube de GitHub (menú › Herramientas › Mor en la nube)',6000);
+    const U=MEM.unityRepo||{};
+    const c=chatCard(`<div class="ctit">Compilar Unity en la nube</div>
+      <small>GitHub compila tu juego de Unity aunque tengas el PC apagado. Necesita el proyecto subido a un repo de GitHub (con GitHub Desktop) y que tu token de Mor tenga acceso a ese repo.</small>
+      <div style="display:grid;gap:6px;margin:8px 0">
+        <input class="inp" data-u="repo" placeholder="usuario/repo del juego (ej.: mineracats-boop/liberty-vice)" value="${esc(U.repo||'')}" style="min-width:0">
+        <input class="inp" data-u="carpeta" placeholder="Carpeta del proyecto dentro del repo (vacío si está en la raíz)" value="${esc(U.carpeta||'')}" style="min-width:0">
+        <select class="inp" data-u="plat"><option value="Android">Android (APK)</option><option value="WebGL">Web (WebGL)</option><option value="StandaloneWindows64">Windows</option></select>
+        <div class="row" style="gap:6px;flex-wrap:wrap"><button class="tbtn" data-u="prep">1. Prepararlo</button><button class="tbtn on" data-u="go">2. Compilar</button><button class="tbtn" data-u="ver">Ver la última</button></div>
+      </div><div data-u="est" style="font-size:13px"></div>`);
+    const q=k=>c.querySelector('[data-u='+k+']'), est=h=>{ q('est').innerHTML=h; };
+    if(U.plat) q('plat').value=U.plat;
+    const datos=()=>{ const u={repo:q('repo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/$/,''),carpeta:q('carpeta').value.trim().replace(/^\/|\/$/g,''),plat:q('plat').value}; MEM.unityRepo=u; saveMem(); if(!/^[\w.-]+\/[\w.-]+$/.test(u.repo)) throw new Error('escribe el repo así: usuario/nombre'); return u; };
+    q('prep').onclick=async()=>{ try{ const u=datos(); est('Poniendo el compilador en '+esc(u.repo)+'…');
+        await this.poner(u.repo,'.github/workflows/mor-unity.yml',await (await fetch('lib/nube/mor-unity.yml',{cache:'no-cache'})).text());
+        est(`Listo. Falta una cosa que tienes que hacer tú una sola vez (son tus datos de Unity, Mor no los toca): en <a href="https://github.com/${esc(u.repo)}/settings/secrets/actions" target="_blank" rel="noopener">los secretos del repo</a> crea tres con «New repository secret»:<br>· <b>UNITY_EMAIL</b>: el correo de tu cuenta de Unity<br>· <b>UNITY_PASSWORD</b>: su contraseña<br>· <b>UNITY_LICENSE</b>: el contenido del archivo de licencia de tu PC (en Windows: C:\\ProgramData\\Unity\\Unity_lic.ulf; ábrelo con el Bloc de notas y copia todo).<br>Después pulsa «2. Compilar».`); }
+      catch(e){ est('No se ha podido: '+esc(e.message)); } };
+    q('go').onclick=async()=>{ try{ const u=datos(); est('Lanzando la compilación…');
+        await this.gh(u.repo,'/actions/workflows/mor-unity.yml/dispatches',{method:'POST',body:JSON.stringify({ref:(await this.gh(u.repo,'')).default_branch,inputs:{plataforma:u.plat,carpeta:u.carpeta}})});
+        MEM.unityRepo.lanzado=Date.now(); saveMem(); logChat('m','[Compilando '+u.repo+' para '+u.plat+' en la nube]');
+        est('Compilando en GitHub. La primera vez tarda bastante (30-60 minutos); las siguientes, menos. Puedes cerrar Mor: te aviso al acabar.'); this.vigilar(u,est); }
+      catch(e){ est('No se ha podido: '+esc(e.message)+(e.status===404?'. ¿Has pulsado antes «1. Prepararlo»?':'')); } };
+    q('ver').onclick=async()=>{ try{ await this.estado(datos(),est,true); }catch(e){ est('No se ha podido: '+esc(e.message)); } }; },
+  async estado(u,est,mostrar){ const r=(await this.gh(u.repo,'/actions/workflows/mor-unity.yml/runs?per_page=1')).workflow_runs[0];
+    if(!r){ est('Todavía no hay ninguna compilación.'); return null; }
+    if(r.status!=='completed'){ if(mostrar) est(`Compilando todavía (empezó ${new Date(r.created_at).toLocaleTimeString('es-ES',{timeStyle:'short'})}). <a href="${r.html_url}" target="_blank" rel="noopener">Verla en GitHub</a>`); return null; }
+    const ok=r.conclusion==='success';
+    est(ok?`<b style="color:#4fd18b">Compilado.</b> Descarga el juego en <a href="${r.html_url}" target="_blank" rel="noopener">esta página de GitHub</a>, abajo del todo, en «Artifacts». Con el APK puedes pasarle una prueba automática (/maestro).`
+          :`<b style="color:#ff6b6b">Ha fallado la compilación.</b> <a href="${r.html_url}" target="_blank" rel="noopener">Mira el error en GitHub</a>. Lo más normal la primera vez: faltan los tres secretos de Unity o la licencia está mal copiada.`);
+    return r; },
+  vigilar(u,est){ let n=0; const t=setInterval(async()=>{ if(++n>120) return clearInterval(t);
+      try{ const r=await this.estado(u,est,false); if(r&&Date.parse(r.created_at)>(u.lanzado||0)-120000){ clearInterval(t); notify('Compilación de Unity',r.conclusion==='success'?'Tu juego está listo':'Ha fallado'); } }catch(e){} },60000); }
+};
+
+/* =====================================================================
+   115. IMÁGENES CON CHATGPT: UN SOLO PROMPT Y REVISIÓN
+   Junta todas las imágenes que le faltan a un juego en un único prompt
+   para ChatGPT (que las haga por separado), con las imágenes del juego de
+   referencia; y revisa las que le devuelves antes de meterlas.
+   ===================================================================== */
+const ImgChat={
+  es3:t=>/modelo|personaje|animacion/.test(t),
+  forma(s){ const t=s.tipo; return t==='fondo'?{w:1920,h:1080,txt:'1920x1080 (16:9), sin texto, que ocupe toda la imagen'}:t==='textura'?{w:1024,h:1024,txt:'1024x1024 cuadrada, SIN COSTURAS (seamless, que se pueda repetir en mosaico), vista desde arriba, sin sombras fuertes'}
+      :t==='icono'?{w:512,h:512,txt:'512x512 cuadrada, el objeto centrado sobre fondo blanco liso'}:{w:1024,h:1024,txt:'cuadrada, el personaje u objeto ENTERO y centrado, sobre fondo blanco liso, sin sombra en el suelo, con margen alrededor'}; },
+  async open(pid){ const L=(await DB.all('projects')).filter(p=>(p.slots||[]).some(s=>!this.es3(s.tipo))).sort((a,b)=>b.at-a.at);
+    if(!L.length) return toast('Ningún proyecto tiene imágenes que pedir');
+    const P=L.find(p=>p.id===pid)||L[0];
+    const huecos=P.slots.filter(s=>!this.es3(s.tipo)), falta=huecos.filter(s=>!P.files.some(f=>f.bin&&f.ruta===s.ruta)), tiene=P.files.filter(f=>f.bin&&/^data:image/.test(f.data||'')).slice(0,3);
+    const estilo=(P.gdd&&(P.gdd.estilo||P.gdd.arte||P.gdd.estetica))||P.desc||'';
+    const pedir=falta.length?falta:huecos;
+    const prompt=`Necesito ${pedir.length} imágenes para mi videojuego «${P.nombre}». Genéralas POR SEPARADO: una imagen distinta para cada una (no las juntes en una sola imagen), en el orden de la lista. Todas con el MISMO estilo visual, para que peguen entre sí${tiene.length?' y con las imágenes que te adjunto (son del juego)':''}.
+Estilo: ${estilo||'el del juego'}. Nada de texto, letras ni marcas de agua dentro de las imágenes. Buena resolución y nítidas, sin desenfoque.
+
+${pedir.map((s,i)=>`${i+1}. ${s.ruta.split('/').pop()}: ${s.desc}. Formato: ${this.forma(s).txt}.`).join('\n')}
+
+Cuando termines una, sigue con la siguiente hasta hacer las ${pedir.length}.`;
+    const c=chatCard(`<div class="ctit">Imágenes con ChatGPT · ${esc(P.nombre)}</div>
+      ${L.length>1?`<select class="inp" data-i="proy" style="margin-bottom:6px">${L.map(p=>`<option value="${p.id}"${p.id===P.id?' selected':''}>${esc(p.nombre||p.id)}</option>`).join('')}</select>`:''}
+      <small>${falta.length?`Le faltan <b>${falta.length}</b> de ${huecos.length} imágenes.`:`Tiene las ${huecos.length} imágenes; si quieres rehacerlas, aquí va el prompt de todas.`} Abre una conversación NUEVA en ChatGPT${tiene.length?', adjunta las imágenes de referencia':''}, pega el prompt y, cuando las tenga, súbelas aquí abajo: Mor las revisa antes de meterlas.</small>
+      ${tiene.length?`<div class="row" style="gap:6px;margin:6px 0;flex-wrap:wrap">${tiene.map((f,i)=>`<a class="tbtn" download="referencia_${i+1}_${esc(f.ruta.split('/').pop())}" href="${f.data}">Referencia ${i+1}</a>`).join('')}</div>`:''}
+      <textarea class="inp" rows="7" style="width:100%;font-size:12px;margin-top:6px">${esc(prompt)}</textarea>
+      <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><button class="tbtn on" data-i="copiar">Copiar el prompt</button><a class="tbtn" href="https://chatgpt.com/" target="_blank" rel="noopener">Abrir ChatGPT</a><label class="tbtn">Subir las imágenes de ChatGPT<input type="file" accept="image/*" multiple data-i="subir" hidden></label></div>
+      <div data-i="rev" style="margin-top:8px"></div>`);
+    const q=k=>c.querySelector('[data-i='+k+']');
+    if(q('proy')) q('proy').onchange=()=>{ c.remove(); this.open(q('proy').value); };
+    q('copiar').onclick=()=>navigator.clipboard.writeText(c.querySelector('textarea').value).then(()=>toast('Prompt copiado: pégalo en ChatGPT'));
+    q('subir').onchange=e=>this.revisar(P,pedir,[...e.target.files],q('rev')); },
+  async leer(file){ const url=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(file); }); const im=new Image(); im.src=url; await im.decode(); return {url,im}; },
+  nitidez(im){ const W=256, H=Math.max(8,Math.round(W*im.height/im.width)), cv=document.createElement('canvas'); cv.width=W; cv.height=H; const x=cv.getContext('2d'); x.drawImage(im,0,0,W,H);
+    const d=x.getImageData(0,0,W,H).data, g=new Float32Array(W*H); for(let i=0;i<W*H;i++) g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
+    let s=0,s2=0,n=0; for(let y=1;y<H-1;y++) for(let k=1;k<W-1;k++){ const i=y*W+k, l=4*g[i]-g[i-1]-g[i+1]-g[i-W]-g[i+W]; s+=l; s2+=l*l; n++; } const m=s/n; return s2/n-m*m; },
+  fondoLiso(im){ const cv=document.createElement('canvas'); cv.width=64; cv.height=64; const x=cv.getContext('2d'); x.drawImage(im,0,0,64,64); const d=x.getImageData(0,0,64,64).data;
+    const px=(a,b)=>{ const i=(b*64+a)*4; return [d[i],d[i+1],d[i+2]]; }; const cs=[px(1,1),px(62,1),px(1,62),px(62,62)]; return cs.every(c=>Math.abs(c[0]-cs[0][0])+Math.abs(c[1]-cs[0][1])+Math.abs(c[2]-cs[0][2])<40); },
+  async revisar(P,pedir,files,box){ box.innerHTML='<small>Revisando…</small>'; const filas=[];
+    for(let i=0;i<files.length;i++){ const {url,im}=await this.leer(files[i]); const st=x=>x.ruta.split('/').pop().replace(/\.[^.]+$/,'').toLowerCase(), porNombre=pedir.find(x=>files[i].name.toLowerCase().includes(st(x))); const s=porNombre||pedir[Math.min(i,pedir.length-1)], f=this.forma(s), avisos=[];
+      const ar=im.width/im.height, arq=f.w/f.h; if(Math.abs(ar-arq)/arq>.15) avisos.push(`proporción ${im.width}x${im.height}, se esperaba ${f.w>f.h?'apaisada 16:9':'cuadrada'}`);
+      if(Math.max(im.width,im.height)<Math.max(f.w,f.h)*.5) avisos.push(`poca resolución (${im.width}x${im.height}): en pantalla se verá borrosa`);
+      if(this.nitidez(im)<60) avisos.push('se ve borrosa o desenfocada');
+      if(!/fondo|textura/.test(s.tipo)&&!this.fondoLiso(im)) avisos.push('el fondo no es liso: no podré quitarlo bien');
+      filas.push({i,url,im,s,avisos}); }
+    box.innerHTML=filas.map(r=>`<div class="row" style="gap:8px;align-items:center;margin-top:6px" data-r="${r.i}"><img src="${r.url}" style="width:64px;height:64px;object-fit:contain;background:#234;border-radius:8px">
+      <div style="flex:1;font-size:13px"><select class="inp" style="max-width:100%">${pedir.map((s,k)=>`<option value="${k}"${s===r.s?' selected':''}>${esc(s.ruta.split('/').pop())}</option>`).join('')}</select>
+      <div style="color:${r.avisos.length?'#ffb84d':'#4fd18b'}">${r.avisos.length?'Ojo: '+r.avisos.map(esc).join('; ')+'. Mejor pídela otra vez a ChatGPT.':'Bien'}</div></div></div>`).join('')+
+      `<div class="row" style="margin-top:8px"><button class="tbtn on">Meterlas en el juego</button></div>`;
+    box.querySelector('button.on').onclick=async e=>{ e.target.disabled=true; let n=0;
+      for(const r of filas){ const s=pedir[+box.querySelector(`[data-r="${r.i}"] select`).value]; let data=r.url;
+        if(s.tipo==='sprite'||s.tipo==='icono') data=await spriteFromImage(data); else { const cv=document.createElement('canvas'); cv.width=r.im.width; cv.height=r.im.height; cv.getContext('2d').drawImage(r.im,0,0); data=cv.toDataURL('image/jpeg',.88); }
+        const f=P.files.find(x=>x.bin&&x.ruta===s.ruta); if(f) f.data=data; else P.files.push({ruta:s.ruta,data,bin:true}); n++; }
+      P.at=Date.now(); await DB.put('projects',P); toast(n+' imágenes metidas en '+P.nombre,4000); logChat('m',`[${n} imágenes de ChatGPT metidas en ${P.nombre}]`);
+      const malas=filas.filter(r=>r.avisos.length).length; e.target.textContent=malas?`Metidas. ${malas} tenían problemas: pídelas otra vez cuando puedas`:'Metidas'; }; }
+};
+
+/* =====================================================================
+   116. SONIDOS Y MÚSICA
+   Efectos (salto, moneda, golpe, disparo, explosión…) y música de fondo
+   hechos aquí mismo, gratis y sin internet, en WAV. Se meten en el
+   proyecto (sounds/) y el agente los conecta al juego.
+   ===================================================================== */
+const Sonido={
+  SR:22050,
+  wav(f){ const n=f.length, b=new ArrayBuffer(44+n*2), v=new DataView(b), w=(o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+    w(0,'RIFF'); v.setUint32(4,36+n*2,true); w(8,'WAVE'); w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true); v.setUint32(24,this.SR,true); v.setUint32(28,this.SR*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,'data'); v.setUint32(40,n*2,true);
+    let pk=0; for(let i=0;i<n;i++) pk=Math.max(pk,Math.abs(f[i])); const g=pk>0?.9/pk:1; for(let i=0;i<n;i++) v.setInt16(44+i*2,Math.max(-1,Math.min(1,f[i]*g))*32767,true);
+    return new Blob([b],{type:'audio/wav'}); },
+  osc(tipo,fase){ const p=fase%1; return tipo==='cuadrada'?(p<.5?1:-1):tipo==='sierra'?2*p-1:tipo==='triangulo'?1-4*Math.abs(p-.5):tipo==='ruido'?Math.random()*2-1:Math.sin(2*Math.PI*p); },
+  efecto(o){ const n=Math.floor(this.SR*o.dur), f=new Float32Array(n); let fase=0, ruido=0, cnt=0;
+    for(let i=0;i<n;i++){ const t=i/n; let fr=o.f0*Math.pow(o.f1/o.f0,t); if(o.arp&&t>o.arpT) fr*=o.arp; if(o.vib) fr*=1+o.vib*Math.sin(2*Math.PI*o.vibF*i/this.SR);
+      fase+=fr/this.SR; let x; if(o.onda==='ruido'){ if(++cnt>Math.max(1,this.SR/(fr*2))){ cnt=0; ruido=Math.random()*2-1; } x=ruido; } else x=this.osc(o.onda,fase);
+      const env=t<o.ata?t/o.ata:Math.pow(1-(t-o.ata)/(1-o.ata),o.caida||1.5); f[i]=x*env*.6; }
+    return f; },
+  PRESETS:{
+    salto:r=>({onda:r<.5?'cuadrada':'triangulo',f0:260+r*120,f1:620+r*300,dur:.22+r*.08,ata:.02,caida:1.2}),
+    moneda:r=>({onda:'cuadrada',f0:880+r*300,f1:880+r*300,arp:1.5,arpT:.25,dur:.25,ata:.01,caida:1}),
+    golpe:r=>({onda:'ruido',f0:900+r*500,f1:120,dur:.18+r*.07,ata:.005,caida:2}),
+    disparo:r=>({onda:r<.5?'sierra':'cuadrada',f0:1200+r*600,f1:180,dur:.2,ata:.005,caida:1.6}),
+    explosion:r=>({onda:'ruido',f0:300+r*200,f1:40,dur:.8+r*.4,ata:.01,caida:1.3}),
+    poder:r=>({onda:'triangulo',f0:300,f1:1400+r*400,dur:.55,ata:.03,caida:.8,vib:.04,vibF:14}),
+    clic:r=>({onda:'cuadrada',f0:1500+r*400,f1:1200,dur:.05,ata:.002,caida:1}),
+    perder:r=>({onda:'sierra',f0:500,f1:90,dur:.9,ata:.02,caida:.7,vib:.03,vibF:6}),
+    dano:r=>({onda:'cuadrada',f0:400+r*100,f1:150,dur:.25,ata:.005,caida:1.4,vib:.08,vibF:30}),
+    paso:r=>({onda:'ruido',f0:2000+r*1500,f1:600,dur:.07,ata:.003,caida:2.5})},
+  NOMBRES:{salto:'Salto',moneda:'Moneda',golpe:'Golpe',disparo:'Disparo',explosion:'Explosión',poder:'Poder',clic:'Botón',perder:'Perder',dano:'Daño',paso:'Paso'},
+  musica(animo,seg=32){ const SR=this.SR, bpm={alegre:128,tenso:140,misterioso:84,epico:110,tranquilo:90}[animo]||120, beat=60/bpm, n=Math.floor(seg*SR), f=new Float32Array(n);
+    const esc={alegre:[0,2,4,5,7,9,11],tranquilo:[0,2,4,7,9],tenso:[0,1,3,5,7,8,10],misterioso:[0,2,3,5,7,8,11],epico:[0,2,3,5,7,8,10]}[animo]||[0,2,4,5,7,9,11];
+    const prog={alegre:[0,4,5,3],tranquilo:[0,5,3,4],tenso:[0,0,5,4],misterioso:[0,5,0,4],epico:[0,5,2,6]}[animo]||[0,4,5,3];
+    const raiz=animo==='tenso'||animo==='misterioso'||animo==='epico'?45:48, nota=g=>raiz+esc[((g%esc.length)+esc.length)%esc.length]+12*Math.floor(g/esc.length), hz=m=>440*Math.pow(2,(m-69)/12);
+    const tono=(fr,t0,d,vol,onda)=>{ const a=Math.floor(t0*SR), b=Math.min(n,Math.floor((t0+d)*SR)); for(let i=a;i<b;i++){ const t=(i-a)/SR, e=Math.min(1,t*60)*Math.exp(-t*(3/d)); f[i]+=vol*e*this.osc(onda,fr*t); } };
+    const golpeT=(t0,tipo)=>{ const a=Math.floor(t0*SR); for(let i=0;i<SR*.2&&a+i<n;i++){ const t=i/SR; f[a+i]+=tipo==='bombo'?.5*Math.sin(2*Math.PI*(50+90*Math.exp(-t*30))*t)*Math.exp(-t*14):tipo==='caja'?.25*(Math.random()*2-1)*Math.exp(-t*22):.07*(Math.random()*2-1)*Math.exp(-t*90); } };
+    const compas=beat*4; let mel=7;
+    for(let t0=0,k=0;t0<seg;t0+=compas,k++){ const g=prog[k%prog.length];
+      for(const d of [0,2,4]) tono(hz(nota(g+d)),t0,compas*.95,.08,'triangulo');
+      for(let b=0;b<4;b++){ tono(hz(nota(g)-12),t0+b*beat,beat*.8,.18,animo==='tranquilo'?'sinusoidal':'cuadrada');
+        if(animo!=='tranquilo'){ golpeT(t0+b*beat,b%2?'caja':'bombo'); golpeT(t0+b*beat+beat/2,'charles'); } }
+      const pasos=animo==='tranquilo'||animo==='misterioso'?4:8;
+      for(let s=0;s<pasos;s++){ if(Math.random()<.2) continue; mel+=[-2,-1,0,1,1,2][Math.floor(Math.random()*6)]; mel=Math.max(3,Math.min(13,mel)); tono(hz(nota(mel)+12),t0+s*compas/pasos,compas/pasos*.9,.12,animo==='epico'?'sierra':'cuadrada'); } }
+    return f; },
+  tocar(blob){ try{ if(this._a) this._a.pause(); this._a=new Audio(URL.createObjectURL(blob)); this._a.play(); }catch(e){} },
+  async aUrl(blob){ return new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob); }); },
+  async open(pid){ const L=(await DB.all('projects')).filter(p=>p.files.some(f=>/(^|\/)index\.html$/.test(f.ruta))).sort((a,b)=>b.at-a.at);
+    const c=chatCard(`<div class="ctit">Sonidos y música</div><small>Hechos aquí mismo y gratis. Escucha, pide otra versión si no te gusta y mételos en el juego.</small>
+      <div class="row" style="gap:6px;margin:8px 0;align-items:center"><small>Juego</small><select class="inp" data-s="proy" style="flex:1;min-width:0">${L.map(p=>`<option value="${p.id}"${p.id===pid?' selected':''}>${esc(p.nombre||p.id)}</option>`).join('')||'<option value="">(no hay juegos)</option>'}</select></div>
+      <b style="font-size:13px">Efectos</b><div data-s="efs"></div>
+      <b style="font-size:13px;display:block;margin-top:8px">Música de fondo (bucle de 32 s)</b>
+      <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px"><select class="inp" data-s="animo"><option value="alegre">Alegre</option><option value="epico">Épica</option><option value="tenso">Tensa (acción)</option><option value="misterioso">Misteriosa</option><option value="tranquilo">Tranquila</option></select><button class="tbtn" data-s="mus">Escuchar otra</button><button class="tbtn" data-s="musOk">Meter</button></div>
+      <div class="row" style="margin-top:10px"><button class="tbtn on" data-s="conectar">Que el agente los ponga en el juego</button></div><div data-s="est" style="font-size:13px;margin-top:6px"></div>`);
+    const q=k=>c.querySelector('[data-s='+k+']'), hechos={}, meter=async(nombre,blob)=>{ const P=(await DB.all('projects')).find(p=>p.id===q('proy').value); if(!P) return toast('Elige un juego');
+      const ruta='sounds/'+nombre+'.wav', data=await this.aUrl(blob), f=P.files.find(x=>x.ruta===ruta); if(f) f.data=data; else P.files.push({ruta,data,bin:true}); P.at=Date.now(); await DB.put('projects',P); hechos[ruta]=1; toast('Metido '+ruta,2500); };
+    q('efs').innerHTML=Object.keys(this.PRESETS).map(k=>`<div class="row" style="gap:6px;align-items:center;margin-top:4px" data-e="${k}"><span style="flex:1;font-size:13px">${this.NOMBRES[k]}</span><button class="tbtn" data-b="oir">Escuchar otro</button><button class="tbtn" data-b="ok">Meter</button></div>`).join('');
+    const ult={};
+    c.querySelectorAll('[data-e]').forEach(el=>{ const k=el.dataset.e; el.querySelector('[data-b=oir]').onclick=()=>{ ult[k]=this.wav(this.efecto(this.PRESETS[k](Math.random()))); this.tocar(ult[k]); };
+      el.querySelector('[data-b=ok]').onclick=async e=>{ if(!ult[k]) ult[k]=this.wav(this.efecto(this.PRESETS[k](Math.random()))); await meter(k,ult[k]); e.target.textContent='Metido'; }; });
+    let mus=null; q('mus').onclick=()=>{ mus=this.wav(this.musica(q('animo').value)); this.tocar(mus); };
+    q('musOk').onclick=async e=>{ if(!mus) mus=this.wav(this.musica(q('animo').value)); await meter('musica_'+q('animo').value,mus); e.target.textContent='Metida'; };
+    q('conectar').onclick=async()=>{ const P=(await DB.all('projects')).find(p=>p.id===q('proy').value); if(!P) return; const S=P.files.filter(f=>/^sounds\/.*\.wav$/.test(f.ruta)).map(f=>f.ruta);
+      if(!S.length) return toast('Mete antes algún sonido'); try{ if(this._a) this._a.pause(); }catch(e){}
+      Agente.run(P.id,`Pon los sonidos en el juego con la Web Audio API o <audio>, cargándolos desde sus archivos: ${S.join(', ')}. Cada efecto en su momento (salto al saltar, moneda al recoger, golpe/daño al recibir daño, disparo al disparar, explosión, poder al coger mejoras, botón en los botones, perder al perder, paso al andar si lo hay). La música en bucle durante la partida, a volumen bajo (0.35), que empiece tras el primer toque o tecla (los navegadores no dejan sonar antes) y un botón para silenciar. No cambies nada más.`); };
+    if(this._a) this._a.pause(); }
+};
+
+(()=>{ const st=document.createElement('style'); st.textContent='textarea.inp{border-radius:12px!important;padding:10px 12px}'; document.head.appendChild(st); })();
+/* accesos: menú, atajos, etiquetas para el cerebro y botones en cada proyecto */
+CMDS.splice(3,0,['/jugar','Mor juega a tu juego en la nube y te dice qué falla',()=>DB.all('projects').then(L=>{ const P=L.filter(p=>p.files.some(f=>/(^|\/)index\.html$/.test(f.ruta))).sort((a,b)=>b.at-a.at)[0]; if(P) Juega.jugar(P.id); else toast('No hay juegos'); })],
+  ['/compilar','Compilar tu juego de Unity en la nube (APK, web o Windows)',()=>Compilar.open()],['/imagenes','Pedir las imágenes de un juego a ChatGPT en un solo prompt y revisarlas',()=>ImgChat.open()],['/sonidos','Sonidos y música para tus juegos',()=>Sonido.open()]);
+SIDE.find(g=>g[0]==='CREAR')[1].push(['Compilar Unity en la nube',()=>Compilar.open()],['Imágenes con ChatGPT',()=>ImgChat.open()],['Sonidos y música',()=>Sonido.open()]);
+const _apply116=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply116(acts);
+  for(const a of acts){ const m=String(a).match(/^\s*(jugar_nube|compilar|imagenes_chatgpt|sonidos)\s*(?::\s*(.*))?$/i); if(!m) continue; const k=m[1].toLowerCase(), arg=(m[2]||'').trim();
+    setTimeout(async()=>{ const P=arg?await proyectoPorNombre(arg):null;
+      if(k==='jugar_nube'){ const Q=P||(await DB.all('projects')).filter(p=>p.files.some(f=>/(^|\/)index\.html$/.test(f.ruta))).sort((a,b)=>b.at-a.at)[0]; if(Q) Juega.jugar(Q.id); }
+      else if(k==='compilar') Compilar.open(); else if(k==='imagenes_chatgpt') ImgChat.open(P&&P.id); else Sonido.open(P&&P.id); },300); }
+  return r; };
+const _sys116=systemPrompt; systemPrompt=function(){ return _sys116.apply(this,arguments)+`\n\nMÁS HERRAMIENTAS DE JUEGOS: {{jugar_nube: nombre del juego}} para que juegues a un juego web en la nube y digas qué falla; {{compilar}} para compilar un juego de Unity en la nube; {{imagenes_chatgpt: nombre del juego}} para preparar el prompt único de ChatGPT con las imágenes que faltan y revisar las que traiga; {{sonidos: nombre del juego}} para hacer efectos de sonido y música.`; };
+const _render116=renderProjects; renderProjects=async function(){ const r=await _render116.apply(this,arguments);
+  const L=await DB.all('projects'); $('projList').querySelectorAll('li').forEach(li=>{ const b=li.querySelector('[data-pz],[data-pv],[data-pmb]'); if(!b) return; const id=b.dataset.pz||b.dataset.pv||b.dataset.pmb, P=L.find(p=>p.id===id); if(!P||li.querySelector('.extra116')) return;
+    const web=P.files.some(f=>/(^|\/)index\.html$/.test(f.ruta)), img=(P.slots||[]).some(s=>!/modelo|personaje|animacion/.test(s.tipo)); if(!web&&!img) return;
+    const d=document.createElement('div'); d.className='row extra116'; d.style.cssText='gap:6px;flex-wrap:wrap;margin-top:4px';
+    d.innerHTML=(web?'<button class="tbtn" data-x="j">Mor juega y revisa</button><button class="tbtn" data-x="s">Sonidos</button>':'')+(img?'<button class="tbtn" data-x="i">Imágenes con ChatGPT</button>':'');
+    d.querySelectorAll('[data-x]').forEach(x=>x.onclick=()=>{ $('sheetProj').classList.remove('open'); ({j:()=>Juega.jugar(id),s:()=>Sonido.open(id),i:()=>ImgChat.open(id)})[x.dataset.x](); }); li.appendChild(d); });
+  return r; };
 
 /* =====================================================================
    15. DESPERTAR

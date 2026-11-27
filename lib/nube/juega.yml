@@ -1,0 +1,41 @@
+name: Mor juega
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 'Juego'
+        required: true
+      segundos:
+        description: 'Segundos de juego'
+        required: false
+        default: '60'
+permissions:
+  contents: write
+concurrency:
+  group: mor-juega-${{ github.event.inputs.id }}
+  cancel-in-progress: true
+jobs:
+  jugar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Navegador
+        run: |
+          npm init -y > /dev/null
+          npm i --silent playwright@1.49.1
+          npx playwright install --with-deps chromium > /dev/null
+      - name: Mor juega
+        run: node pruebas/jugar.mjs "juegos/${{ github.event.inputs.id }}" "${{ github.event.inputs.segundos }}"
+      - name: Guardar el informe
+        if: always()
+        run: |
+          git config user.name "Mor"
+          git config user.email "mor@rocketjam.local"
+          git add juegos
+          git commit -q -m "Mor: informe de juego" || true
+          git pull -q --rebase || true
+          git push -q || true
