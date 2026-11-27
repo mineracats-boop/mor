@@ -1275,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v54</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v55</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1439,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v54 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v55 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3331,11 +3331,11 @@ const gameHtml=P=>{ const idx=P.files.find(f=>/index\.html$/.test(f.ruta)); retu
 // juegos: tarjeta en el chat y se juegan en el panel de la derecha
 showGame=function(P){ const faltan=(P.slots||[]).filter(s=>s.tipo!=='animacion'&&!P.files.some(f=>f.bin&&f.ruta===s.ruta)).length;
   const c=chatCard(`<div class="ctit">${esc(P.nombre)}</div><small>${P.lineas||'?'} líneas · ${(P.files||[]).filter(f=>f.bin).length} imágenes/modelos${faltan?` · faltan ${faltan}`:''}</small>
-    <div class="row"><button class="tbtn on" data-a="p">▶ Jugar</button><button class="tbtn" data-a="t">Pestaña nueva</button><button class="tbtn" data-a="z">.zip</button>${(P.slots||[]).length?'<button class="tbtn" data-a="i">Imágenes y modelos</button>':''}<button class="tbtn" data-a="g">Subir a GitHub</button></div>`);
+    <div class="row"><button class="tbtn on" data-a="p">▶ Jugar</button><button class="tbtn" data-a="t">Pestaña nueva</button><button class="tbtn" data-a="z">.zip</button>${(P.slots||[]).length?'<button class="tbtn" data-a="i">Imágenes y modelos</button>':''}<button class="tbtn" data-a="g">Publicar con enlace</button></div>`);
   c.querySelector('[data-a=p]').onclick=()=>{ const h=gameHtml(P); if(h) Art.open(''+P.nombre,{html:h}); };
   c.querySelector('[data-a=t]').onclick=()=>playProject(P);
   c.querySelector('[data-a=z]').onclick=()=>Files.zip(projToFiles(P),(P.nombre||'juego').toLowerCase().replace(/[^a-z0-9]+/g,'-'));
-  c.querySelector('[data-a=g]').onclick=()=>projToGitHub(P);
+  c.querySelector('[data-a=g]').onclick=()=>(window.DBP?DBP.publicarAlgo(P.nombre):projToGitHub(P));
   const bi=c.querySelector('[data-a=i]'); if(bi) bi.onclick=()=>{ renderProjects(); $('sheetProj').classList.add('open'); setTimeout(()=>{ const b=document.querySelector(`[data-pi="${P.id}"]`); b&&b.click(); },200); }; };
 // modelos 3D: visor dentro del chat
 Taller3D.ver=function(P){ this.cur=P; const code=(P.files.find(f=>f.ruta==='modelo.js')||{}).code;
@@ -6420,6 +6420,20 @@ const _tarj122=Faltan.tarjeta.bind(Faltan); Faltan.tarjeta=function(P,faltan){ _
 CMDS.splice(3,0,['/meshy','Meshy: poner tu clave y generar modelos 3D con IA (gasta créditos)',()=>Meshy.conectar()]);
 const _apply122=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply122(acts); for(const a of acts){ if(/^\s*meshy\s*(:.*)?$/i.test(String(a))) setTimeout(()=>Meshy.conectar(),300); } return r; };
 const _sys122=systemPrompt; systemPrompt=function(){ return _sys122.apply(this,arguments)+`\n\nMESHY: si piden generar un modelo con Meshy o con IA de pago, pon {{meshy}} y se abre su panel (gasta créditos de pago de Meshy: avisa). Para modelos gratis, primero la biblioteca y Sketchfab.`; };
+
+/* =====================================================================
+   123. 3D SI LO HAS PEDIDO EN LA CONVERSACIÓN, Y PUBLICAR EN DATABASEPRO
+   Si en este chat has pedido el juego en 3D (aunque la descripción larga
+   venga después sin decirlo), se hace en 3D. Y publicar o subir va a
+   DatabasePro; GitHub solo si lo pides por su nombre.
+   ===================================================================== */
+const _gc123=GameStudio.create.bind(GameStudio);
+GameStudio.create=async function(desc,motor,...r){ try{ if(!motor||!/3d|three/i.test(motor)){
+      const U=(await DB.all('chats')).filter(c=>c.cid===Convs.cur&&c.r==='u').slice(-8).map(c=>String(c.t||'')).join(' \n ')+' \n '+desc;
+      const pide3d=/\b3\s?d\b|tres de|three\.?js|en tres dimensiones/i.test(U), pide2d=/\b2\s?d\b|pixel ?art|desde arriba|cenital|plataformas 2d/i.test(desc);
+      if(pide3d&&!pide2d) motor='Three.js 3D'; } }catch(e){}
+  return _gc123(desc,motor,...r); };
+const _sys123=systemPrompt; systemPrompt=function(){ return _sys123.apply(this,arguments)+`\n\nPUBLICAR SIEMPRE EN DATABASEPRO: «publica», «súbelo», «ponle un enlace», «compártelo» → {{publicar: nombre}} (DatabasePro, con enlace y QR). GitHub SOLO si dicen «GitHub» expresamente. Si un juego se ha pedido en 3D en cualquier mensaje de la conversación, se hace en 3D (Three.js).`; };
 
 /* =====================================================================
    15. DESPERTAR
