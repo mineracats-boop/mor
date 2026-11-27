@@ -1275,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v55</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v56</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1439,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v55 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v56 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -2302,6 +2302,9 @@ const GDDSCHEMA={type:'OBJECT',properties:{titulo:{type:'STRING'},genero:{type:'
   mecanicas:{type:'ARRAY',items:{type:'STRING'}},controles:{type:'STRING'},niveles:{type:'STRING'},interfaz:{type:'STRING'},sonidos:{type:'STRING'},
   assets:{type:'ARRAY',items:{type:'OBJECT',properties:{archivo:{type:'STRING'},tipo:{type:'STRING',enum:['fondo','sprite','textura','icono']},descripcion_en_ingles:{type:'STRING'},ancho:{type:'INTEGER'},alto:{type:'INTEGER'}},required:['archivo','tipo','descripcion_en_ingles']}},
   modelos:{type:'ARRAY',items:{type:'OBJECT',properties:{nombre:{type:'STRING'},descripcion:{type:'STRING'},animado:{type:'BOOLEAN'},altura_metros:{type:'NUMBER'},buscar_en_ingles:{type:'STRING'}},required:['nombre','descripcion']}},
+  escenario:{type:'OBJECT',properties:{buscar_en_ingles:{type:'STRING'},descripcion:{type:'STRING'}}},
+  ambiente:{type:'STRING',enum:['dia','atardecer','noche','niebla']},
+  camara:{type:'STRING',enum:['tercera','primera']},
   texturas:{type:'ARRAY',items:{type:'OBJECT',properties:{nombre:{type:'STRING'},tipo:{type:'STRING',enum:['hierba','arena','tierra','roca','madera','ladrillo','agua','nieve','metal','baldosa','asfalto','hojas','lava','tela']},color1:{type:'STRING'},color2:{type:'STRING'}},required:['nombre','tipo']}}},
   required:['titulo','resumen','mecanicas','controles','assets']};
 // quita el fondo blanco de un sprite (desde los bordes), como hago yo con las imágenes de los juegos
@@ -2433,7 +2436,7 @@ const GameStudio={running:false,
       const g=await geminiJSON(`Eres un diseñador de videojuegos experto. Diseña este juego para navegador, divertido y completo:
 ${desc}
 Motor: ${motor||'el más adecuado (Canvas 2D o Three.js)'}. Debe jugarse en móvil (controles táctiles) y en ordenador (teclado/ratón).
-${/three|3d/i.test(motor||desc)?'Es un juego 3D: en "modelos" pon los modelos 3D imprescindibles (máximo 10: jugador, enemigos, vehículos, objetos, edificios…), con nombre corto sin espacios (jugador, coche, arbol), si es un personaje animado, su altura real en metros y 2-3 palabras en inglés para buscarlo en Sketchfab (p. ej. «low poly cat», «cartoon car»). En "texturas" pon 1-4 texturas (la del suelo se llama «suelo»), con tipo y dos colores hex del ambiente. En "assets" solo imágenes de verdad necesarias (texturas del suelo, cielo), o ninguna.':'En "assets" pon SOLO las imágenes imprescindibles (máximo 8): fondos, personajes/objetos como sprites y texturas. Nombres de archivo simples (jugador.png, fondo.jpg).'}`,GDDSCHEMA,[],MODELOS_CODIGO,120000);
+${/three|3d/i.test(motor||desc)?'Es un juego 3D: en "modelos" pon los modelos 3D imprescindibles (máximo 10: jugador, enemigos, vehículos, objetos, edificios…), con nombre corto sin espacios (jugador, coche, arbol), si es un personaje animado, su altura real en metros y 2-3 palabras en inglés para buscarlo en Sketchfab (p. ej. «low poly cat», «cartoon car»). En "texturas" pon 1-4 texturas (la del suelo se llama «suelo»), con tipo y dos colores hex del ambiente. En "assets" solo imágenes de verdad necesarias (texturas del suelo, cielo), o ninguna. Si el juego pasa en un lugar concreto (bosque, ciudad, isla, castillo…), pon en "escenario" 2-4 palabras en inglés para buscar ese escenario entero en Sketchfab (p. ej. «low poly forest», «medieval village») y añade también en "modelos" el elemento que más se repite (arbol, casa, roca) para repartirlo. Pon "ambiente" (dia, atardecer, noche —oscuro con linterna, para terror—, niebla) y "camara" (tercera o primera persona: primera para terror o exploración).':'En "assets" pon SOLO las imágenes imprescindibles (máximo 8): fondos, personajes/objetos como sprites y texturas. Nombres de archivo simples (jugador.png, fondo.jpg).'}`,GDDSCHEMA,[],MODELOS_CODIGO,120000);
       P.nombre=g.titulo; P.gdd=g; await DB.put('projects',P);
       // todas las imágenes tienen su hueco (ruta fija); si el dibujo automático falla, él podrá poner la suya luego
       const slots=(g.assets||[]).slice(0,8).map(a=>({ruta:assetPath(a),tipo:a.tipo,desc:a.descripcion_en_ingles,data:null}));
@@ -2443,6 +2446,7 @@ ${/three|3d/i.test(motor||desc)?'Es un juego 3D: en "modelos" pon los modelos 3D
       // modelos 3D: cada uno tiene su hueco; los pone él (Sketchfab, Mixamo, Taller 3D); mientras, el motor usa formas
       const slug=t=>String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'modelo';
       const mods=es3d?(g.modelos||[]).slice(0,10).map(m=>({...m,nombre:slug(m.nombre)})):[];
+      if(es3d&&g.escenario&&g.escenario.buscar_en_ingles) slots.push({ruta:'models/escenario.glb',tipo:'escenario',desc:g.escenario.descripcion||'escenario',buscar:g.escenario.buscar_en_ingles});
       mods.forEach(m=>{ slots.push({ruta:`models/${m.nombre}.glb`,tipo:m.animado?'personaje':'modelo',desc:m.descripcion,buscar:m.buscar_en_ingles||m.nombre,altura:m.altura_metros});
         if(m.animado) ['quieto','andar','correr','saltar'].forEach(a=>slots.push({ruta:`models/${m.nombre}_${a}.glb`,tipo:'animacion',desc:`Animación «${a}» de ${m.nombre} (Mixamo, In Place)`,buscar:m.buscar_en_ingles||m.nombre})); });
       // texturas: las crea Mor al momento · modelos: los busca y descarga solo de Sketchfab
@@ -4588,7 +4592,7 @@ const PLANTILLAS_INFO={
   arcade:{nombre:'Arcade (esquivar y recoger)',para:'el jugador se mueve abajo y caen cosas buenas (puntos) y malas (vidas); juegos de reflejos, recoger, esquivar, lluvia de objetos, atrapar',config:'CONFIG.objetos (tipo bueno/malo, puntos, tamaño, probabilidad), CONFIG.dificultad, CONFIG.velocidadJugador, CONFIG.imagenes, CONFIG.tactil'},
   plataformas:{nombre:'Plataformas 2D',para:'correr y saltar por niveles con plataformas, pinchos, enemigos que se pisan, monedas y bandera de meta; estilo Mario',config:'CONFIG.niveles (mapa de texto: # suelo, o moneda, E enemigo, ^ pinchos, P salida, F meta), CONFIG.fisica (gravedad, salto, coyote, buffer), CONFIG.imagenes, CONFIG.tactil'},
   cenital:{nombre:'Vista desde arriba',para:'moverse en 8 direcciones por mazmorras o mapas vistos desde arriba, disparar, enemigos que persiguen, gemas, puerta de salida; estilo Zelda o shooter cenital',config:'CONFIG.niveles (# muro, o gema, E enemigo, P salida, X puerta), CONFIG.jugador, CONFIG.enemigos (velocidad, vida, espera), CONFIG.imagenes, CONFIG.tactil'},
-  tercera3d:{nombre:'3D en tercera persona',para:'personaje 3D con cámara detrás, andar, correr y saltar, recoger objetos por rondas, obstáculos y enemigos que persiguen',config:'CONFIG (título, rondas, velocidades, cámara), MODELOS {jugador, enemigo, objeto, obstaculo} con rutas models/*.glb y animaciones nombre_quieto|andar|correr|saltar'}
+  tercera3d:{nombre:'3D (tercera o primera persona)',para:'cualquier juego 3D de explorar, sobrevivir, terror, recoger o huir: personaje con cámara detrás o en primera persona, día, atardecer, noche con linterna o niebla, escenario completo (bosque, ciudad…) y decorado repartido (árboles, rocas, casas), objetos por rondas y enemigos que persiguen',config:'CONFIG (título, rondas, velocidades, mundo, ambiente, camara, linterna, decorado:[{modelo,cantidad,altura,solido,tronco}]), MODELOS {jugador, enemigo, objeto, obstaculo, escenario, y los del decorado} con rutas models/*.glb y animaciones nombre_quieto|andar|correr|saltar'}
 };
 const RECETAS=`
 RECETAS PROBADAS (cópialas en vez de inventar):
@@ -4663,7 +4667,12 @@ JUEGO:\n${texto}\n\nPLANTILLAS:\n${ops.map(k=>`- ${k}: ${PLANTILLAS_INFO[k].nomb
       const en=elige(/enem|polic|zomb|monst|guard|malo|bandid/i), ob=elige(/edific|casa|torre|muro/i)||elige(/roca|arbol|árbol|caja/i)||elige(/coche/i), ok=elige(/moneda|objeto|gema|item|coin|estrella|tesoro/i);
       if(en) MOD.enemigo=M[en]; if(ob) MOD.obstaculo=M[ob]; if(ok) MOD.objeto=M[ok];
       if(!T.suelo){ const s2=Object.keys(T).find(k=>/suelo|asfalt|road|calle|cesped|hierba|grass|ground|floor/i.test(k)); if(s2) T.suelo=T[s2]; }
-      base=base.replace(/const MODELOS=\{[^\n]*\};/,'const MODELOS='+JSON.stringify(MOD)+';').replace('const TEXTURAS={};','const TEXTURAS='+JSON.stringify(T)+';'); }
+      const dec=Object.keys(M).filter(k=>/arbol|árbol|tree|pino|pine|abeto|roble|palmera|arbusto|bush|roca|rock|piedra|casa|house|farola|cabana|cabaña|cabin|choza|cueva|torre/i.test(k)&&k!==MOD.obstaculo);
+      const DEC=dec.slice(0,4).map(k=>/cabana|cabaña|cabin|choza|cueva|torre/i.test(k)?{modelo:k,cantidad:1,altura:[4.5,5],solido:true,tronco:.95}:/arbol|tree|pino|pine|abeto|roble|palmera/i.test(k)?{modelo:k,cantidad:45,altura:[5,9],solido:true,tronco:.25}:/arbusto|bush/i.test(k)?{modelo:k,cantidad:30,altura:[.8,1.5],solido:false}:/casa|house/i.test(k)?{modelo:k,cantidad:6,altura:[5,7],solido:true,tronco:.9}:{modelo:k,cantidad:15,altura:[.6,2],solido:true,tronco:.8});
+      const amb=['dia','atardecer','noche','niebla'].includes(g.ambiente)?g.ambiente:(/miedo|terror|horror|noche|oscur/i.test((g.genero||'')+' '+(g.resumen||'')+' '+spec)?'noche':'dia');
+      const cam=g.camara==='primera'||/primera persona|first.?person/i.test(spec)?'primera':'tercera';
+      base=base.replace(/const MODELOS=\{[^\n]*\};/,'const MODELOS='+JSON.stringify(MOD)+';').replace('const TEXTURAS={};','const TEXTURAS='+JSON.stringify(T)+';')
+        .replace("ambiente:'dia'","ambiente:'"+amb+"'").replace("camara:'tercera'","camara:'"+cam+"'").replace('decorado:[]','decorado:'+JSON.stringify(DEC)).replace(/obstaculos:10/,M.escenario||DEC.length?'obstaculos:0':'obstaculos:10'); }
     for(let i=0;i<240&&Agente.running;i++){ if(i===0) log('Espero a que el agente de código termine lo que está haciendo…'); await sleep(5000); }
     P.nombre=g.titulo; P.plantilla=id; P.estado='adaptando';
     P.files=[{ruta:'index.html',code:base}].concat(assets.map(a=>({ruta:a.ruta,data:a.data,bin:true}))); await DB.put('projects',P);
@@ -6434,6 +6443,22 @@ GameStudio.create=async function(desc,motor,...r){ try{ if(!motor||!/3d|three/i.
       if(pide3d&&!pide2d) motor='Three.js 3D'; } }catch(e){}
   return _gc123(desc,motor,...r); };
 const _sys123=systemPrompt; systemPrompt=function(){ return _sys123.apply(this,arguments)+`\n\nPUBLICAR SIEMPRE EN DATABASEPRO: «publica», «súbelo», «ponle un enlace», «compártelo» → {{publicar: nombre}} (DatabasePro, con enlace y QR). GitHub SOLO si dicen «GitHub» expresamente. Si un juego se ha pedido en 3D en cualquier mensaje de la conversación, se hace en 3D (Three.js).`; };
+
+/* =====================================================================
+   124. ESCENARIOS COMPLETOS DE SKETCHFAB (bosque, ciudad, isla…)
+   ===================================================================== */
+SkAuto.buscarEscenario=async function(q){ const u=`https://api.sketchfab.com/v3/search?type=models&downloadable=true&count=24&sort_by=-likeCount&max_face_count=400000&q=${encodeURIComponent(q)}`;
+  const r=await fetch(u); if(!r.ok) throw new Error('Sketchfab '+r.status); const j=await r.json();
+  return (j.results||[]).filter(m=>{ const g=m.archives&&m.archives.glb; return !g||!g.size||g.size<15e6; }).sort((a,b)=>this.ordenLic(a.license?.label||'')-this.ordenLic(b.license?.label||'')); };
+const _llenar124=SkAuto.llenar.bind(SkAuto);
+SkAuto.llenar=async function(slots,log){ const cred=[];
+  for(const s of slots.filter(s=>s.tipo==='escenario'&&!s.data)){ if(!Conn.get().skToken){ log('Sin token de Sketchfab: no puedo bajar el escenario'); break; }
+    for(const q of [s.buscar+' environment',s.buscar,s.buscar+' scene']){ try{ log(`Buscando el escenario en Sketchfab: ${q}…`); const L=await this.buscarEscenario(q);
+        for(const m of L.slice(0,4)){ try{ log(`Descargando el escenario «${m.name}»…`); s.data=await this.bajar(m.uid);
+            cred.push({ruta:s.ruta,nombre:m.name,autor:m.user&&(m.user.displayName||m.user.username),licencia:m.license&&m.license.label,url:m.viewerUrl||`https://sketchfab.com/3d-models/${m.uid}`}); break; }catch(e){ if(/token/.test(e.message)) throw e; } }
+        if(s.data) break; }catch(e){ log('Sketchfab: '+e.message); if(/token/.test(e.message)) break; } } }
+  return cred.concat(await _llenar124(slots,log)); };
+Faltan.es3=t=>t==='modelo'||t==='personaje'||t==='escenario';
 
 /* =====================================================================
    15. DESPERTAR

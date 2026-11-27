@@ -18,14 +18,18 @@
 <!-- más botones táctiles: <div class="ab" data-k="KeyE" style="bottom:120px">✋</div> -->
 <script type="module">
 // ===================== CONFIGURACIÓN (cámbialo para cada juego) =====================
-// Plantilla 3D TERCERA PERSONA de Rocket Jam: personaje con esqueleto y animaciones, cámara detrás,
+// Plantilla 3D de Rocket Jam (tercera o primera persona, día/noche con linterna, escenario completo y decorado): personaje con esqueleto y animaciones, cámara detrás,
 // objetos que recoger, enemigos que persiguen, obstáculos y rondas cada vez más difíciles.
 const CONFIG={
   titulo:'Aventura 3D', instrucciones:'Muévete con WASD o las flechas (joystick en el móvil), Espacio para saltar, Mayús para correr. Recoge todo y que no te pillen.',
   vidas:3, velocidad:5.5, velocidadCorrer:9, salto:9,
   objetosPorRonda:8, puntosObjeto:10, enemigosIniciales:2, enemigosMasPorRonda:1, velocidadEnemigo:3.2, visionEnemigo:14,
   mundo:40,   // el jugador se mueve dentro de un cuadrado de este tamaño (metros)
-  obstaculos:10
+  obstaculos:10,
+  ambiente:'dia',      // 'dia' | 'atardecer' | 'noche' (oscuro, con linterna) | 'niebla'
+  camara:'tercera',    // 'tercera' (detrás del personaje) | 'primera' (ojos del personaje; arrastra o usa el ratón para mirar)
+  linterna:true,       // en 'noche' y 'niebla' el jugador lleva linterna
+  decorado:[]          // decorado repartido por el mundo: [{modelo:'arbol',cantidad:40,altura:[5,9],solido:true,tronco:.25}]
 };
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
@@ -36,8 +40,16 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 const R=new THREE.WebGLRenderer({antialias:true}); R.setPixelRatio(Math.min(devicePixelRatio,2)); R.shadowMap.enabled=true; R.shadowMap.type=THREE.PCFSoftShadowMap; R.toneMapping=THREE.ACESFilmicToneMapping; document.body.appendChild(R.domElement);
 const escena=new THREE.Scene(); escena.background=new THREE.Color(0x9fd3ff); escena.fog=new THREE.Fog(0x9fd3ff,40,170);
 const camara=new THREE.PerspectiveCamera(60,1,.1,600);
-escena.add(new THREE.HemisphereLight(0xffffff,0x557744,1.1));
+const hemi=new THREE.HemisphereLight(0xffffff,0x557744,1.1); escena.add(hemi); escena.add(camara);
 const sol=new THREE.DirectionalLight(0xffffff,2.2); sol.castShadow=true; sol.shadow.mapSize.set(2048,2048); Object.assign(sol.shadow.camera,{left:-50,right:50,top:50,bottom:-50,far:200}); sol.shadow.bias=-.0005; escena.add(sol,sol.target);
+// ---------- AMBIENTE: día, atardecer, noche con linterna o niebla ----------
+let linterna=null;
+(function ambiente(){ const A={dia:{cielo:0x9fd3ff,niebla:[40,170],hemi:1.1,sol:2.2,colSol:0xffffff},atardecer:{cielo:0xf0a070,niebla:[30,140],hemi:.75,sol:1.5,colSol:0xffb27a},
+    noche:{cielo:0x070a14,exp:.045,hemi:.32,sol:.35,colSol:0x8899cc,suelo:0x1a2430},niebla:{cielo:0x7d878d,exp:.035,hemi:.6,sol:.5,colSol:0xdfe6ea}}[CONFIG.ambiente]||null;
+  if(!A) return; escena.background=new THREE.Color(A.cielo); escena.fog=A.exp?new THREE.FogExp2(A.cielo,A.exp):new THREE.Fog(A.cielo,A.niebla[0],A.niebla[1]);
+  hemi.intensity=A.hemi; if(A.suelo) hemi.groundColor.set(A.suelo); sol.intensity=A.sol; sol.color.set(A.colSol);
+  if((CONFIG.ambiente==='noche'||CONFIG.ambiente==='niebla')&&CONFIG.linterna){ linterna=new THREE.SpotLight(0xfff2d0,60,32,.45,.55,1.4); linterna.castShadow=true; linterna.shadow.mapSize.set(1024,1024);
+    camara.add(linterna); linterna.position.set(.3,-.2,0); linterna.target.position.set(0,-.4,-6); camara.add(linterna.target); } })();
 // ---------- TEXTURAS (las crea Mor; si falta alguna se usa el color) ----------
 // pon aquí las texturas del juego:  nombre: 'textures/nombre.jpg'   (la de «suelo» se pone sola en el suelo)
 const TEXTURAS={};
@@ -91,7 +103,10 @@ function mover(e){ const r=joy.getBoundingClientRect(), dx=(e.clientX-r.left-r.w
 joy.addEventListener('pointerdown',e=>{ jid=e.pointerId; try{ joy.setPointerCapture(jid); }catch(e){} mover(e); }); joy.addEventListener('pointermove',e=>{ if(e.pointerId===jid) mover(e); });
 ['pointerup','pointercancel'].forEach(t=>joy.addEventListener(t,()=>{ jid=null; JOY.x=JOY.y=0; knob.style.transform=''; }));
 const CAM={ang:0,dist:6,alto:2.6}; let arr=null;
-R.domElement.addEventListener('pointerdown',e=>{ arr={x:e.clientX,id:e.pointerId}; }); addEventListener('pointermove',e=>{ if(arr&&e.pointerId===arr.id){ CAM.ang-=(e.clientX-arr.x)*.008; arr.x=e.clientX; } }); addEventListener('pointerup',()=>arr=null);
+CAM.pitch=0; const PRIMERA=CONFIG.camara==='primera';
+R.domElement.addEventListener('pointerdown',e=>{ arr={x:e.clientX,y:e.clientY,id:e.pointerId}; if(PRIMERA&&e.pointerType==='mouse'&&estado==='jugando'&&R.domElement.requestPointerLock) try{ R.domElement.requestPointerLock(); }catch(x){} });
+addEventListener('pointermove',e=>{ if(document.pointerLockElement===R.domElement){ CAM.ang-=e.movementX*.0025; CAM.pitch=Math.max(-1.2,Math.min(1.2,CAM.pitch-e.movementY*.0025)); return; }
+  if(arr&&e.pointerId===arr.id){ CAM.ang-=(e.clientX-arr.x)*.008; if(PRIMERA) CAM.pitch=Math.max(-1.2,Math.min(1.2,CAM.pitch-(e.clientY-arr.y)*.006)); arr.x=e.clientX; arr.y=e.clientY; } }); addEventListener('pointerup',()=>arr=null);
 // dirección pedida (-1..1) en x (derecha) y z (atrás)
 function entrada(){ let x=(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0), z=(K.KeyS||K.ArrowDown?1:0)-(K.KeyW||K.ArrowUp?1:0); if(JOY.x||JOY.y){ x=JOY.x; z=JOY.y; } const l=Math.hypot(x,z); return l>1?{x:x/l,z:z/l}:{x,z}; }
 
@@ -99,8 +114,12 @@ function entrada(){ let x=(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0), 
 const GRAVEDAD=24, OBST=[];
 function obstaculo(obj){ obj.updateMatrixWorld(true); const o={obj,caja:new THREE.Box3().setFromObject(obj)}; OBST.push(o); return o; }
 // cuerpo = {obj, vel:Vector3, radio, alto, enSuelo}
-function moverCuerpo(c,dt){ const p=c.obj.position; c.vel.y-=GRAVEDAD*dt; p.x+=c.vel.x*dt; p.z+=c.vel.z*dt; p.y+=c.vel.y*dt; c.enSuelo=false;
-  if(p.y<=0){ p.y=0; c.vel.y=0; c.enSuelo=true; }
+// suelo del escenario (si hay un modelo de escenario): altura bajo un punto, con un rayo hacia abajo
+const ESC_MALLAS=[], rayo=new THREE.Raycaster(); rayo.far=60; const ABAJO=new THREE.Vector3(0,-1,0);
+function alturaSuelo(x,z,desde=30){ if(!ESC_MALLAS.length) return 0; rayo.set(new THREE.Vector3(x,desde+1.5,z),ABAJO); const h=rayo.intersectObjects(ESC_MALLAS,false)[0]; return h?h.point.y:0; }
+function moverCuerpo(c,dt){ const p=c.obj.position; c.vel.y-=GRAVEDAD*dt; const vx=p.x, vz=p.z; p.x+=c.vel.x*dt; p.z+=c.vel.z*dt; p.y+=c.vel.y*dt; c.enSuelo=false;
+  if(ESC_MALLAS.length){ c._f=(c._f||0)+1; if(c._f%2===0||c._h===undefined) c._h=alturaSuelo(p.x,p.z,Math.max(p.y,c._h||0)); if(c._h-p.y>1.2&&c.enSueloAntes){ p.x=vx; p.z=vz; } }
+  const hs=ESC_MALLAS.length?c._h:0; if(p.y<=hs){ p.y=hs; c.vel.y=0; c.enSuelo=true; } c.enSueloAntes=c.enSuelo;
   for(const o of OBST){ const b=o.caja, m=c.radio*.6, dentro=p.x>b.min.x-m&&p.x<b.max.x+m&&p.z>b.min.z-m&&p.z<b.max.z+m;
     if(dentro&&c.vel.y<=0&&p.y>=b.max.y-.35&&p.y<=b.max.y+.05){ p.y=b.max.y; c.vel.y=0; c.enSuelo=true; continue; }   // aterriza encima
     if(p.y>=b.max.y-.05||p.y+c.alto<=b.min.y) continue;                                                                 // pasa por encima/debajo
@@ -112,7 +131,10 @@ const cerca=(a,b,dist)=>a.position.distanceTo(b.position)<dist;
 let AC=null; function sonido(f=440,dur=.12,tipo='square',vol=.12){ try{ AC=AC||new AudioContext(); const o=AC.createOscillator(), g=AC.createGain(); o.type=tipo; o.frequency.value=f; g.gain.setValueAtTime(vol,AC.currentTime); g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur); o.connect(g).connect(AC.destination); o.start(); o.stop(AC.currentTime+dur); }catch(e){} }
 
 // ---------- CÁMARA EN TERCERA PERSONA ----------
-function seguirCamara(obj,dt){ const t=obj.position, q=new THREE.Vector3(t.x+Math.sin(CAM.ang)*CAM.dist,t.y+CAM.alto,t.z+Math.cos(CAM.ang)*CAM.dist);
+function seguirCamara(obj,dt){ if(PRIMERA){ const t=obj.position, alto=1.62*(obj.userData.alto||1); camara.position.set(t.x,t.y+alto,t.z);
+    const d=new THREE.Vector3(-Math.sin(CAM.ang)*Math.cos(CAM.pitch),Math.sin(CAM.pitch),-Math.cos(CAM.ang)*Math.cos(CAM.pitch)); camara.lookAt(camara.position.clone().add(d));
+    sol.position.set(t.x+25,t.y+45,t.z+18); sol.target.position.copy(t); return; }
+  const t=obj.position, q=new THREE.Vector3(t.x+Math.sin(CAM.ang)*CAM.dist,t.y+CAM.alto,t.z+Math.cos(CAM.ang)*CAM.dist);
   camara.position.lerp(q,1-Math.exp(-8*dt)); camara.lookAt(t.x,t.y+1.2,t.z); sol.position.set(t.x+25,t.y+45,t.z+18); sol.target.position.copy(t); }
 
 // ---------- JUGADOR ----------
@@ -131,16 +153,27 @@ const $=id=>document.getElementById(id);
 function mostrarUI(t,txt,b){ $('titulo').textContent=t; $('texto').textContent=txt; $('bJugar').textContent=b; $('bJugar').style.display=''; $('ui').classList.remove('oculto'); }
 const OBJETOS=[], ENEMIGOS=[]; let MOLDE_OBJ=null, MOLDE_ENE=null;
 const alAzar=(m=CONFIG.mundo/2-2)=>new THREE.Vector3((Math.random()*2-1)*m,0,(Math.random()*2-1)*m);
+async function cargarEscenario(){ if(!MODELOS.escenario) return; try{ const d=await leer(MODELOS.escenario), m=d.scene; m.updateMatrixWorld(true);
+    const b=new THREE.Box3().setFromObject(m), s=new THREE.Vector3(); b.getSize(s); const k=CONFIG.mundo*1.15/Math.max(s.x,s.z,1); m.scale.multiplyScalar(k);
+    const b2=new THREE.Box3().setFromObject(m), c=new THREE.Vector3(); b2.getCenter(c); m.position.x-=c.x; m.position.z-=c.z; m.position.y-=b2.min.y;
+    m.traverse(o=>{ if(o.isMesh){ o.receiveShadow=true; o.castShadow=true; ESC_MALLAS.push(o); } }); escena.add(m); m.updateMatrixWorld(true); suelo.position.y=-.05; }
+  catch(e){ console.warn('Sin escenario:',e.message); } }
+async function cargarDecorado(){ for(const d of CONFIG.decorado||[]){ if(!MODELOS[d.modelo]) continue; const [a0,a1]=Array.isArray(d.altura)?d.altura:[d.altura||3,d.altura||3];
+    for(let i=0;i<(d.cantidad||10);i++){ const o=await cargarModelo(d.modelo,{altura:a0+Math.random()*(a1-a0),color:0x557744,forma:'cilindro'}); let p, n=0; do{ p=alAzar(CONFIG.mundo/2-1); n++; }while(p.length()<6&&n<20);
+      o.position.copy(p); o.position.y=alturaSuelo(p.x,p.z); o.rotation.y=Math.random()*6.28; escena.add(o);
+      if(d.solido!==false){ const ob=obstaculo(o), t=d.tronco??.3, c=new THREE.Vector3(); ob.caja.getCenter(c); const sz=new THREE.Vector3(); ob.caja.getSize(sz);
+        ob.caja.min.x=c.x-sz.x*t/2; ob.caja.max.x=c.x+sz.x*t/2; ob.caja.min.z=c.z-sz.z*t/2; ob.caja.max.z=c.z+sz.z*t/2; } } } }
 async function preparar(){   // crea el mundo y carga los modelos (una sola vez)
-  jugador={obj:await cargarPersonaje('jugador',{altura:1.8,color:0x3b82f6}),vel:new THREE.Vector3(),radio:.4,alto:1.8,enSuelo:true}; escena.add(jugador.obj);
-  for(let i=0;i<CONFIG.obstaculos;i++){ const o=await cargarModelo('obstaculo',{altura:1.2+Math.random()*1.5,color:0x8d8f99,forma:'caja'}); let p; do{ p=alAzar(); }while(p.length()<5); o.position.copy(p); o.rotation.y=Math.random()*6; escena.add(o); obstaculo(o); }
-  const lim=new THREE.Mesh(new THREE.BoxGeometry(CONFIG.mundo,0.3,CONFIG.mundo),new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:.15})); lim.position.y=.15; escena.add(lim); }
-async function nuevoObjeto(){ const o=await cargarModelo('objeto',{altura:.7,color:0xffd23f,forma:'esfera'}); o.position.copy(alAzar()); o.position.y=.4; escena.add(o); OBJETOS.push(o); }
+  await cargarEscenario(); await cargarDecorado();
+  jugador={obj:await cargarPersonaje('jugador',{altura:1.8,color:0x3b82f6}),vel:new THREE.Vector3(),radio:.4,alto:1.8,enSuelo:true}; escena.add(jugador.obj); if(PRIMERA) jugador.obj.visible=false;
+  for(let i=0;i<CONFIG.obstaculos;i++){ const o=await cargarModelo('obstaculo',{altura:1.2+Math.random()*1.5,color:0x8d8f99,forma:'caja'}); let p; do{ p=alAzar(); }while(p.length()<5); o.position.copy(p); o.position.y=alturaSuelo(p.x,p.z); o.rotation.y=Math.random()*6; escena.add(o); obstaculo(o); }
+}
+async function nuevoObjeto(){ const o=await cargarModelo('objeto',{altura:.7,color:0xffd23f,forma:'esfera'}); o.position.copy(alAzar()); o.userData.y0=alturaSuelo(o.position.x,o.position.z)+.4; o.position.y=o.userData.y0; escena.add(o); OBJETOS.push(o); }
 async function nuevoEnemigo(){ const e={obj:await cargarPersonaje('enemigo',{altura:1.8,color:0xe5534b}),vel:new THREE.Vector3(),radio:.45,alto:1.8,enSuelo:true,deambula:Math.random()*6};
-  let p; do{ p=alAzar(); }while(p.distanceTo(jugador.obj.position)<12); e.obj.position.copy(p); escena.add(e.obj); ENEMIGOS.push(e); }
+  let p; do{ p=alAzar(); }while(p.distanceTo(jugador.obj.position)<12); e.obj.position.copy(p); e.obj.position.y=alturaSuelo(p.x,p.z); escena.add(e.obj); ENEMIGOS.push(e); }
 async function nuevaRonda(){ S.ronda++; for(const o of OBJETOS) escena.remove(o); OBJETOS.length=0; for(let i=0;i<CONFIG.objetosPorRonda;i++) await nuevoObjeto();
   const quiero=CONFIG.enemigosIniciales+(S.ronda-1)*CONFIG.enemigosMasPorRonda; while(ENEMIGOS.length<quiero) await nuevoEnemigo(); S.calma=2.5; }
-function nuevaPartida(){ S={t:0,puntos:0,vidas:CONFIG.vidas,ronda:0,inv:0,calma:2.5}; jugador.obj.position.set(0,0,0); jugador.vel.set(0,0,0);
+function nuevaPartida(){ S={t:0,puntos:0,vidas:CONFIG.vidas,ronda:0,inv:0,calma:2.5}; jugador.obj.position.set(0,alturaSuelo(0,0),0); jugador._h=undefined; jugador.vel.set(0,0,0);
   for(const e of ENEMIGOS) escena.remove(e.obj); ENEMIGOS.length=0; return nuevaRonda(); }
 async function empezar(){ await nuevaPartida(); estado='jugando'; $('ui').classList.add('oculto'); sonido(660,.15); }
 function finPartida(){ estado='fin'; if(S.puntos>RECORD){ RECORD=S.puntos; localStorage.setItem('record_JUEGO',RECORD); } sonido(140,.4,'sawtooth'); mostrarUI('¡Fin!','Puntos: '+Math.floor(S.puntos)+' · Récord: '+Math.floor(RECORD),'Otra vez'); }
@@ -152,8 +185,8 @@ R.domElement.addEventListener('click',()=>{ if(estado==='menu'||estado==='fin') 
 // ---------- LÓGICA (solo datos) ----------
 function update(dt){ S.t+=dt; controlarJugador(dt); const p=jugador.obj.position, M=CONFIG.mundo/2-1;
   p.x=Math.max(-M,Math.min(M,p.x)); p.z=Math.max(-M,Math.min(M,p.z));
-  for(let i=OBJETOS.length-1;i>=0;i--){ const o=OBJETOS[i]; o.rotation.y+=dt*2; o.position.y=.4+Math.sin(S.t*3+i)*.15;
-    if(o.position.distanceTo(new THREE.Vector3(p.x,.4,p.z))<1.1){ escena.remove(o); OBJETOS.splice(i,1); S.puntos+=CONFIG.puntosObjeto; sonido(880,.08,'triangle'); } }
+  for(let i=OBJETOS.length-1;i>=0;i--){ const o=OBJETOS[i]; o.rotation.y+=dt*2; o.position.y=(o.userData.y0??.4)+Math.sin(S.t*3+i)*.15;
+    if(Math.hypot(o.position.x-p.x,o.position.z-p.z)<1.1&&Math.abs(o.position.y-p.y-.4)<1.6){ escena.remove(o); OBJETOS.splice(i,1); S.puntos+=CONFIG.puntosObjeto; sonido(880,.08,'triangle'); } }
   if(!OBJETOS.length&&!S.cambiando){ S.cambiando=true; S.puntos+=50; sonido(660,.3,'triangle'); nuevaRonda().then(()=>S.cambiando=false); }
   if(S.calma>0) S.calma-=dt; if(S.inv>0) S.inv-=dt;
   for(const e of ENEMIGOS){ const d=new THREE.Vector3().subVectors(p,e.obj.position); d.y=0; const dist=d.length(); let mov=false;
