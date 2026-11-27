@@ -1275,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v51</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v52</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1439,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v51 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v52 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -3901,7 +3901,7 @@ const Agente={running:false, espera:null,
       case 'probar':{ const h=this.bundle(P); if(!h) return 'ERROR: el proyecto no tiene ningún .html para abrir'; const t=await testGame(h,P.files.filter(f=>f.bin&&f.data)); est.probado=true; est.editado=false; est.shot=t.shot||null; est.errs=t.errs;
         return (t.errs.length?'ERRORES EN LA CONSOLA:\n'+t.errs.join('\n'):'Sin errores en la consola.')+(t.shot?'\n(Te adjunto la captura de la pantalla: mírala y comprueba que se ve bien.)':'\n(No hay canvas para capturar.)'); }
       default: return 'ERROR: acción desconocida '+x.accion; } },
-  tarjeta(P,tarea){ const c=chatCard(`<div class="ctit">Agente de código · ${esc(P.nombre||'Proyecto')}</div><small>${esc(String(tarea).replace(/^\[Proyecto de [^\]]*\]\s*/,''))}</small><ol class="agPlan"></ol><div class="agLog"></div><div class="agFin"></div>`); return c; },
+  tarjeta(P,tarea){ const c=chatCard(`<div class="ctit">Agente de código · ${esc(P.nombre||'Proyecto')}</div><small>${esc(String(tarea).replace(/^\[Proyecto de [^\]]*\]\s*/,'').split('\n\nREGLAS DE ROCKET JAM')[0].split('\nJUEGOS ONLINE (DatabasePro)')[0])}</small><ol class="agPlan"></ol><div class="agLog"></div><div class="agFin"></div>`); return c; },
   pintaPlan(c,plan,paso){ c.querySelector('.agPlan').innerHTML=(plan||[]).map((p,i)=>`<li class="${i+1<paso?'hecho':i+1===paso?'ahora':''}">${esc(p)}</li>`).join(''); },
   log(c,txt,tipo){ const d=document.createElement('div'); d.className='agL '+(tipo||''); d.textContent=txt; const L=c.querySelector('.agLog'); L.appendChild(d); while(L.children.length>14) L.firstChild.remove(); $('feed').scrollTop=1e9; },
   etiqueta(x){ return {listar:'Mirando los archivos',leer:`Leyendo ${x.ruta||''}${x.desde?' ('+x.desde+'-'+(x.hasta||'')+')':''}`,buscar:`Buscando «${String(x.texto||'').slice(0,40)}»`,editar:`Editando ${x.ruta||''}`,crear:`Escribiendo ${x.ruta||''}`,borrar:`Borrando ${x.ruta||''}`,probar:'Probando el juego',preguntar:'Pregunta',terminar:'Terminado'}[x.accion]||x.accion; },
@@ -6128,6 +6128,196 @@ const _render116=renderProjects; renderProjects=async function(){ const r=await 
     const d=document.createElement('div'); d.className='row extra116'; d.style.cssText='gap:6px;flex-wrap:wrap;margin-top:4px';
     d.innerHTML=(web?'<button class="tbtn" data-x="j">Mor juega y revisa</button><button class="tbtn" data-x="s">Sonidos</button>':'')+(img?'<button class="tbtn" data-x="i">Imágenes con ChatGPT</button>':'');
     d.querySelectorAll('[data-x]').forEach(x=>x.onclick=()=>{ $('sheetProj').classList.remove('open'); ({j:()=>Juega.jugar(id),s:()=>Sonido.open(id),i:()=>ImgChat.open(id)})[x.dataset.x](); }); li.appendChild(d); });
+  return r; };
+
+/* =====================================================================
+   117. DATABASEPRO: PUBLICAR CON ENLACE, JUEGOS ONLINE Y ESTADÍSTICAS
+   Mor publica en tu DatabasePro (Cloudflare) cualquier juego o HTML con
+   un enlace para compartir y su QR. Las imágenes y modelos van aparte
+   como recursos (hasta 2 MB cada uno; los más grandes, dentro del HTML).
+   Los juegos publicados allí traen Datos, Juego y Sala: base de datos,
+   cuentas, ranking y multijugador en tiempo real.
+   ===================================================================== */
+const DBP={
+  cfg(){ const c=Conn.get(); return {url:(c.dbpUrl||'https://databasepro.guidavilagri.workers.dev').replace(/\/+$/,''),token:c.dbpToken||''}; },
+  ok(){ return !!this.cfg().token; },
+  async api(ruta,o={}){ const c=this.cfg(); const r=await fetch(c.url+ruta,Object.assign({},o,{headers:Object.assign({'Content-Type':'application/json',Authorization:'Bearer '+c.token},o.headers||{})}));
+    let j=null; try{ j=await r.json(); }catch(e){} if(!r.ok) throw new Error((j&&j.error)||('DatabasePro '+r.status)); return j; },
+  slug(t){ return String(t||'juego').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'juego'; },
+  conectar(){ const c=this.cfg(); const k=chatCard(`<div class="ctit">Conectar DatabasePro</div>
+      <small>Mor publica tus juegos en tu DatabasePro. Pega aquí la dirección y la clave de publicar (la que pusiste en PUBLISH_TOKEN en Cloudflare). Se guarda solo en este dispositivo.</small>
+      <div style="display:grid;gap:6px;margin-top:8px"><input class="inp" data-d="url" value="${esc(c.url)}" style="min-width:0"><input class="inp" data-d="tok" type="password" placeholder="Clave de publicar (PUBLISH_TOKEN)" style="min-width:0">
+      <div class="row"><button class="tbtn on" data-d="ok">Guardar y probar</button></div><div data-d="est" style="font-size:13px"></div></div>`);
+    const q=x=>k.querySelector('[data-d='+x+']');
+    q('ok').onclick=async()=>{ Conn.set({dbpUrl:q('url').value.trim(),dbpToken:q('tok').value.trim()||c.token}); q('est').textContent='Probando…';
+      try{ await this.api('/api/proyectos'); q('est').textContent='Conectado. Ya puedes decirme «publica mi juego» o «ponle un enlace a este HTML».'; }catch(e){ q('est').textContent='No va: '+e.message; } }; },
+  async subirRecurso(app,nombre,dataUrl){ const tipo=(dataUrl.match(/^data:([^;,]+)/)||[])[1]||'application/octet-stream';
+    const j=await this.api('/api/recursos/'+app,{method:'POST',body:JSON.stringify({nombre,datos:dataUrl.split(',')[1],tipo})}); return this.cfg().url+j.url; },
+  async publicar({nombre,html,files=[],desc='',visibilidad='enlace',slug},est=()=>{}){
+    if(!this.ok()){ this.conectar(); throw new Error('primero conecta DatabasePro'); }
+    slug=this.slug(slug||nombre); let code=html;
+    const bins=files.filter(f=>f.bin&&f.data);
+    for(let i=0;i<bins.length;i++){ const f=bins[i]; est(`Subiendo ${f.ruta} (${i+1}/${bins.length})…`); const peso=f.data.length*.75; let u;
+      if(peso<=2*1024*1024){ try{ u=await this.subirRecurso(slug,f.ruta.replace(/\//g,'_'),f.data); }catch(e){ u=null; } }
+      code=code.split(f.ruta).join(u||f.data); }
+    for(const f of files.filter(f=>!f.bin&&f.code!=null&&/\.(js|css)$/i.test(f.ruta))){ const tag=/\.css$/i.test(f.ruta)?`<style>\n${f.code}\n</style>`:`<script>\n${f.code.replace(/<\/script/gi,'<\\/script')}\n<\/script>`;
+      code=code.replace(new RegExp(`<script[^>]*src=["']\\.?/?${f.ruta.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}["'][^>]*>\\s*<\\/script>`,'i'),tag).replace(new RegExp(`<link[^>]*href=["']\\.?/?${f.ruta.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}["'][^>]*>`,'i'),tag); }
+    est('Publicando…'); const j=await this.api('/api/publish',{method:'POST',body:JSON.stringify({slug,html:code,name:nombre,title:nombre,description:String(desc).slice(0,200),visibilidad})});
+    const pubs=MEM.publicados=(MEM.publicados||[]).filter(x=>x.slug!==slug); pubs.push({slug,nombre,url:j.url,at:Date.now()}); saveMem(); return j.url; },
+  tarjeta(nombre,url,slug){ const qr='https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data='+encodeURIComponent(url);
+    const c=chatCard(`<div class="ctit">${esc(nombre)} · publicado</div><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><img src="${qr}" alt="QR" style="width:120px;height:120px;border-radius:8px;background:#fff">
+      <div style="flex:1;min-width:180px"><a href="${esc(url)}" target="_blank" rel="noopener" style="word-break:break-all">${esc(url)}</a><small style="display:block;margin-top:4px">Con enlace: solo lo ve quien lo tenga. No sale en Google.</small>
+      <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><a class="tbtn on" href="${esc(url)}" target="_blank" rel="noopener">Abrir</a><button class="tbtn" data-p="copiar">Copiar enlace</button>${navigator.share?'<button class="tbtn" data-p="comp">Compartir</button>':''}<button class="tbtn" data-p="stats">Quién juega</button><button class="tbtn" data-p="quitar">Despublicar</button></div></div></div><div data-p="out" style="font-size:13px;margin-top:6px"></div>`);
+    const q=k=>c.querySelector('[data-p='+k+']');
+    q('copiar').onclick=()=>navigator.clipboard.writeText(url).then(()=>toast('Enlace copiado'));
+    if(q('comp')) q('comp').onclick=()=>navigator.share({title:nombre,url}).catch(()=>{});
+    q('stats').onclick=()=>this.estadisticas(slug,q('out'));
+    q('quitar').onclick=async()=>{ if(!confirm('¿Quitar «'+nombre+'» de internet? El enlace dejará de funcionar.')) return; try{ await this.api('/api/publish/'+slug,{method:'DELETE'}); MEM.publicados=(MEM.publicados||[]).filter(x=>x.slug!==slug); saveMem(); q('out').textContent='Despublicado.'; }catch(e){ q('out').textContent='No se ha podido: '+e.message; } };
+    logChat('m',`[Publicado ${nombre}: ${url}]`); },
+  async estadisticas(slug,out){ out.textContent='Mirando…';
+    try{ const r=await fetch(this.cfg().url+'/api/juego/'+slug+'/stats'); const j=await r.json(); const dias=j.dias||j.stats||j||{};
+      const filas=Object.entries(dias).sort((a,b)=>a[0]<b[0]?1:-1).slice(0,14);
+      out.innerHTML=filas.length?'<table style="font-size:12px;border-collapse:collapse;width:100%">'+filas.map(([d,v])=>`<tr><td style="padding:2px 6px">${esc(d)}</td><td style="padding:2px 6px">${esc(Object.entries(v||{}).map(([k,n])=>k+': '+(n.veces??n)).join(' · '))}</td></tr>`).join('')+'</table><small>«entrar» son las veces que han abierto el juego. El agente puede añadir más (por ejemplo «partida_jugada» o «nivel_3») con Juego.evento.</small>'
+        :'Aún no hay datos. Se cuentan solos cuando alguien abre el juego publicado; para saber más (partidas, niveles, dónde abandonan) pídeme «añade estadísticas al juego».'; }
+    catch(e){ out.textContent='No he podido leerlas: '+e.message; } },
+  async ultimoHtml(){ const C=(await DB.all('chats')).filter(c=>c.cid===Convs.cur&&c.r==='f').reverse();
+    for(const c of C) for(const id of (c.ids||[]).slice().reverse()){ const f=(await DB.all('files')).find(x=>x.id===id); if(f&&/\.html?$/i.test(f.name||'')&&f.code) return f; }
+    const F=(await DB.all('files')).filter(f=>/\.html?$/i.test(f.name||'')&&f.code).sort((a,b)=>b.at-a.at); return F[0]||null; },
+  async publicarAlgo(nombre){ const c=chatCard(`<div class="ctit">Publicando en DatabasePro</div><div class="pe" style="font-size:13px"></div>`), est=t=>{ c.querySelector('.pe').textContent=t; };
+    try{ let P=nombre?await proyectoPorNombre(nombre):null; if(!P&&!nombre) P=await proyectoDelChat();
+      if(P&&P.files.some(f=>/(^|\/)index\.html$/.test(f.ruta))){ const idx=P.files.find(f=>/(^|\/)index\.html$/.test(f.ruta));
+        const url=await this.publicar({nombre:P.nombre,html:idx.code,files:P.files,desc:P.desc||''},est); P.publicado={url,at:Date.now()}; await DB.put('projects',P); c.remove(); return this.tarjeta(P.nombre,url,this.slug(P.nombre)); }
+      const f=await this.ultimoHtml(); if(!f) throw new Error('no encuentro ningún HTML ni juego que publicar');
+      const n=(nombre||f.name.replace(/\.html?$/i,'')); const url=await this.publicar({nombre:n,html:f.code},est); c.remove(); this.tarjeta(n,url,this.slug(n)); }
+    catch(e){ est('No se ha podido: '+e.message); } }
+};
+const ONLINE_SABER=`
+JUEGOS ONLINE (DatabasePro): si el juego se publica en DatabasePro, la página ya trae sin importar nada:
+- Datos (base de datos compartida): Datos.coleccion('ranking').crear({...}) / .listar({orden:'-puntos',limite:10}) / .alCambiar(fn); Datos.estado('partida').escribir({...}) / .sumar('goles') / .leer(). Máx. 1.000 escrituras al día: guarda al pasar algo, nunca en cada fotograma.
+- Juego (cuentas, progreso, ranking): await Juego.entrar(nombre,pin); await Juego.cargar(); Juego.guardar({monedas,nivel}); await Juego.puntuacion(n); await Juego.ranking({periodo:'semana'}) → {tabla:[{puesto,nombre,puntos}],mio}; Juego.temporada(), Juego.mision(clave,n), Juego.reclamar(clave); Juego.agregarAmigo(n), Juego.amigos(), Juego.retar(n), Juego.alRecibir(fn); await Juego.buscarPartida({espera:30000}) → {sala,rival}|null; Juego.evento('partida_jugada') para estadísticas; Juego.limpiar(texto); Juego.codigo(4).
+- Sala (multijugador en tiempo real por WebSocket): const sala=Sala.entrar('CODIGO',{nombre}); sala.al('entra',(j,todos)=>…); sala.al('mensaje',(datos,de)=>…); sala.al('estado',est=>…); sala.enviar({x,y}) para lo que cambia sin parar (10-15 veces/s como mucho); sala.guardar({goles}) para lo que define la partida; sala.yo, sala.jugadores, sala.esAnfitrion (el anfitrión manda la física), sala.estado, sala.enlace(), Sala.codigo().
+Estas librerías SOLO existen publicado en DatabasePro: comprueba typeof Juego!=='undefined' y, si no están, deja jugar en local sin online (un aviso «publícalo para jugar online»).`;
+const _sys117=systemPrompt; systemPrompt=function(){ return _sys117.apply(this,arguments)+`\n\nPUBLICAR: si te piden publicar, subir, poner un enlace o compartir un juego o un HTML, pon {{publicar: nombre del juego}} (o {{publicar}} para el del chat o el último HTML). Se publica en DatabasePro con enlace y QR.`+ONLINE_SABER; };
+const _run117=Agente.run.bind(Agente); Agente.run=function(pid,tarea,...r){ if(/online|multijugador|ranking|amigos|sala|partida con|base de datos|guardar (el )?progreso|cuentas|estad[ií]stic/i.test(tarea)) tarea=tarea+'\n'+ONLINE_SABER; return _run117(pid,tarea,...r); };
+const _send117=send; send=async function(text,opts={}){ const t=String(text||'');
+  if(t&&!(opts&&opts.event)&&!busy&&t.length<160&&/\b(publ[ií]ca(lo|me)?|s[uú]belo|p[oó]n(me|le)? (un )?enlace|dame (un |el )?enlace|comp[aá]rtelo|hazlo p[uú]blico)\b/i.test(t)&&!/github/i.test(t)){
+    logChat('u',t); const m=t.match(/(?:publica|sube|enlace a|comparte)\s+(?:el juego |mi juego |el html de |mi html )?(?:de |del |a )?[«"']?([^«»"'.,]{3,40})[»"']?$/i);
+    const n=m&&!/^(mi|el|este|esto|lo|html|juego)\b/i.test(m[1].trim())?m[1].trim():''; DBP.publicarAlgo(n); return; }
+  return _send117(text,opts); };
+const _apply117=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply117(acts); for(const a of acts){ const m=String(a).match(/^\s*publicar\s*(?::\s*(.*))?$/i); if(m) setTimeout(()=>DBP.publicarAlgo((m[1]||'').trim()),300); } return r; };
+
+/* =====================================================================
+   118. REGLAS DEL ESTUDIO: MOR APRENDE DE TUS CORRECCIONES
+   Cuando le corriges algo para siempre («los personajes siempre de pie»),
+   lo apunta como regla de Rocket Jam y la cumple en todo lo que haga:
+   chat, juegos nuevos y agente de código.
+   ===================================================================== */
+const Reglas={
+  BASE:['En los juegos no se dibujan decoraciones ni gráficos de relleno con código (formas de canvas, emojis): se hace la lista de imágenes que hacen falta y las pone el estudio.',
+    'En los juegos de apuntar y hacer clic, marcar con una X pequeña en el suelo dónde hay que dejar cada objeto.',
+    'Los personajes siempre de pie sobre el suelo, ni flotando ni metidos dentro.',
+    'Avisar claro de cualquier problema de calidad (fondos borrosos o de poca resolución, cosas mal colocadas) y pedir imágenes nuevas si hace falta.'],
+  lista(){ if(!MEM.reglasEstudio){ MEM.reglasEstudio=this.BASE.map(t=>({t,at:Date.now()})); saveMem(); } return MEM.reglasEstudio; },
+  texto(){ const L=this.lista(); return L.length?'REGLAS DE ROCKET JAM (cúmplelas siempre):\n'+L.map(r=>'- '+r.t).join('\n'):''; },
+  CORR:/\b(siempre|nunca|jam[aá]s|no vuelvas|que no (se |te )?|te he dicho|otra vez (has|lo)|deja de|a partir de ahora|de ahora en adelante|cada vez que|no me (pongas|hagas|metas))\b/i,
+  async quizas(t){ if(t.length<12||t.length>400||!this.CORR.test(t)) return;
+    try{ const j=JSON.parse(String(await gemini({contents:[{role:'user',parts:[{text:`Mensaje de Antonio (dueño del estudio de videojuegos Rocket Jam) a su IA: «${t}»
+¿Es una corrección o norma que quiere que se cumpla SIEMPRE en el futuro (sobre cómo hacer juegos, código, imágenes, cómo responder…)? Si es solo para este momento, o es otra cosa, no lo es.
+Responde SOLO JSON: {"regla": "la norma en una frase clara en imperativo o null"}`}]}],generationConfig:{temperature:0,responseMimeType:'application/json'}},MODELOS_MEMORIA,15000)).replace(/^[^{]*/,'').replace(/[^}]*$/,''));
+      if(!j.regla) return; const L=this.lista(); if(L.some(r=>r.t.toLowerCase()===j.regla.toLowerCase())) return;
+      L.push({t:j.regla,at:Date.now()}); saveMem();
+      const c=chatCard(`<div class="ctit">Regla del estudio apuntada</div><small>${esc(j.regla)}</small><div class="row" style="margin-top:6px;gap:6px"><button class="tbtn" data-r="no">No era una regla</button><button class="tbtn" data-r="ver">Ver todas</button></div>`);
+      c.querySelector('[data-r=no]').onclick=()=>{ MEM.reglasEstudio=this.lista().filter(r=>r.t!==j.regla); saveMem(); c.remove(); toast('Quitada'); };
+      c.querySelector('[data-r=ver]').onclick=()=>this.open(); }catch(e){} },
+  open(){ const L=this.lista(); const c=chatCard(`<div class="ctit">Reglas de Rocket Jam</div><small>Mor las cumple en todo: chat, juegos nuevos y agente de código. Se apuntan solas cuando le corriges algo «para siempre»; también puedes escribirlas tú.</small>
+      <div data-r="l">${L.map((r,i)=>`<div class="row" style="gap:6px;align-items:center;margin-top:4px"><span style="flex:1;font-size:13px">${esc(r.t)}</span><button class="tbtn" data-i="${i}">Quitar</button></div>`).join('')}</div>
+      <div class="row" style="gap:6px;margin-top:8px"><input class="inp" placeholder="Nueva regla" style="flex:1;min-width:0"><button class="tbtn on">Añadir</button></div>`);
+    c.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ L.splice(+b.dataset.i,1); saveMem(); c.remove(); this.open(); });
+    c.querySelector('button.on').onclick=()=>{ const v=c.querySelector('input').value.trim(); if(!v) return; L.push({t:v,at:Date.now()}); saveMem(); c.remove(); this.open(); }; }
+};
+const _sys118=systemPrompt; systemPrompt=function(){ return _sys118.apply(this,arguments)+'\n\n'+Reglas.texto(); };
+const _run118=Agente.run.bind(Agente); Agente.run=function(pid,tarea,...r){ const t=Reglas.texto(); return _run118(pid,t&&!/REGLAS DE ROCKET JAM/.test(tarea)?tarea+'\n\n'+t:tarea,...r); };
+const _send118=send; send=async function(text,opts={}){ const r=await _send118(text,opts); if(text&&!(opts&&opts.event)) setTimeout(()=>Reglas.quizas(String(text)),800); return r; };
+CMDS.splice(3,0,['/reglas','Reglas de Rocket Jam que Mor cumple siempre',()=>Reglas.open()],['/publicar','Publicar un juego o HTML en DatabasePro con enlace y QR',r=>DBP.publicarAlgo(r||'')],['/databasepro','Conectar DatabasePro',()=>DBP.conectar()]);
+SIDE.find(g=>g[0]==='CREAR')[1].push(['Publicar en DatabasePro',()=>DBP.publicarAlgo('')],['Reglas del estudio',()=>Reglas.open()]);
+
+/* =====================================================================
+   119. IDEAS: TRES PROPUESTAS DE JUEGO PARA ELEGIR
+   ===================================================================== */
+const IdeasJuego={
+  async open(tema){ if(!tema){ tema=prompt('¿Sobre qué quieres el juego? (piratas, fútbol, terror, gatos…)'); if(!tema) return; }
+    const c=chatCard(`<div class="ctit">Ideas de juego: ${esc(tema)}</div><div class="ie" style="font-size:13px">Pensando tres ideas distintas…</div><div class="il"></div>`);
+    try{ const j=JSON.parse(String(await gemini({contents:[{role:'user',parts:[{text:`Eres el director creativo de Rocket Jam, estudio de videojuegos web y móvil. Propón 3 ideas de juego MUY distintas entre sí sobre «${tema}»: distinto género, cámara y forma de jugar. Que se puedan hacer en un juego web de un archivo (Three.js para 3D o canvas para 2D) y que enganchen.
+${Reglas.texto()}
+Responde SOLO JSON: {"ideas":[{"titulo":"","gancho":"una frase que venda el juego","genero":"","motor":"2D|3D","como_se_juega":"3-4 frases","mecanicas":["",""],"progresion":"qué desbloqueas o cómo sube la dificultad","estilo":"estilo visual","imagenes":["lista de imágenes o modelos que hacen falta"]}]}`}]}],generationConfig:{temperature:1,responseMimeType:'application/json'}},MODELOS_CODIGO,60000)).replace(/^[^{]*/,'').replace(/[^}]*$/,''));
+      c.querySelector('.ie').textContent='Elige una y la creo:';
+      c.querySelector('.il').innerHTML=(j.ideas||[]).map((x,i)=>`<div style="border-top:1px solid rgba(127,216,255,.15);padding:8px 0"><b>${esc(x.titulo)}</b> <small>· ${esc(x.genero)} · ${esc(x.motor)}</small><div style="font-size:13px;margin:4px 0"><i>${esc(x.gancho)}</i></div>
+        <details><summary style="font-size:13px">Más</summary><div style="font-size:13px">${esc(x.como_se_juega)}<br><b>Mecánicas:</b> ${esc((x.mecanicas||[]).join(' · '))}<br><b>Progresión:</b> ${esc(x.progresion||'')}<br><b>Estilo:</b> ${esc(x.estilo||'')}<br><b>Imágenes:</b> ${esc((x.imagenes||[]).join(', '))}</div></details>
+        <div class="row" style="margin-top:6px"><button class="tbtn on" data-i="${i}">Crear este</button></div></div>`).join('');
+      c.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ const x=j.ideas[+b.dataset.i]; b.disabled=true;
+        GameStudio.create(`${x.titulo}: ${x.gancho} ${x.como_se_juega} Mecánicas: ${(x.mecanicas||[]).join('; ')}. Progresión: ${x.progresion}. Estilo visual: ${x.estilo}.`,x.motor==='3D'?'Three.js 3D':'',true); }); }
+    catch(e){ c.querySelector('.ie').textContent='No he podido pensarlas: '+e.message; } }
+};
+
+/* =====================================================================
+   120. FICHA DE TIENDA: GOOGLE PLAY E ITCH.IO
+   Textos en español e inglés, capturas a tamaño de tienda, icono 512 y
+   gráfico destacado 1024x500 hechos con tus imágenes.
+   ===================================================================== */
+const Ficha={
+  async open(pid){ const L=(await DB.all('projects')).filter(p=>p.juego||p.files.some(f=>/(^|\/)index\.html$/.test(f.ruta))).sort((a,b)=>b.at-a.at);
+    const P=L.find(p=>p.id===pid)||L[0]; if(!P) return toast('No hay juegos');
+    const c=chatCard(`<div class="ctit">Ficha de tienda · ${esc(P.nombre)}</div><div class="fe" style="font-size:13px">Escribiendo los textos…</div><div class="ft"></div><div class="fi" style="margin-top:8px"></div>`);
+    const est=t=>{ c.querySelector('.fe').textContent=t; };
+    try{ const idx=P.files.find(f=>/(^|\/)index\.html$/.test(f.ruta));
+      const j=JSON.parse(String(await gemini({contents:[{role:'user',parts:[{text:`Escribe la ficha de tienda del juego «${P.nombre}» de Rocket Jam para Google Play y itch.io, en español (es) y en inglés (en). Basada SOLO en lo que hace el juego de verdad (no inventes funciones).
+Descripción del proyecto: ${P.desc||''}
+${P.gdd&&Object.keys(P.gdd).length?'Diseño: '+JSON.stringify(P.gdd).slice(0,3000):''}
+Código (para ver qué hace): ${(idx&&idx.code||'').slice(0,12000)}
+Límites de Google Play: título ≤30 caracteres, descripción corta ≤80, descripción larga ≤4000 (con párrafos cortos y viñetas «•»).
+Responde SOLO JSON: {"es":{"titulo":"","corta":"","larga":"","etiquetas":["5 etiquetas"]},"en":{"titulo":"","corta":"","larga":"","etiquetas":[]},"categoria":"categoría de Google Play","edad":"clasificación orientativa (PEGI) y por qué"}`}]}],generationConfig:{temperature:.6,responseMimeType:'application/json'}},MODELOS_CODIGO,60000)).replace(/^[^{]*/,'').replace(/[^}]*$/,''));
+      const bloque=(k,t)=>{ const x=j[k]||{}; return `<details ${k==='es'?'open':''}><summary><b>${t}</b></summary>${['titulo','corta','larga'].map(c2=>`<div style="margin-top:6px"><small>${c2==='titulo'?'Título':c2==='corta'?'Descripción corta':'Descripción larga'} (${String(x[c2]||'').length} caracteres)</small><textarea class="inp" rows="${c2==='larga'?7:2}" style="width:100%;font-size:12px">${esc(x[c2]||'')}</textarea></div>`).join('')}<small>Etiquetas: ${esc((x.etiquetas||[]).join(', '))}</small></details>`; };
+      c.querySelector('.ft').innerHTML=bloque('es','Español')+bloque('en','English')+`<small style="display:block;margin-top:6px">Categoría: ${esc(j.categoria||'')} · Edad: ${esc(j.edad||'')}</small>`;
+      est('Textos listos. Ahora las imágenes de la tienda:'); await this.imagenes(P,c.querySelector('.fi')); }
+    catch(e){ est('No se ha podido: '+e.message); } },
+  async img(src){ const im=new Image(); im.src=src; await im.decode(); return im; },
+  cubrir(ctx,im,W,H){ const s=Math.max(W/im.width,H/im.height), w=im.width*s, h=im.height*s; ctx.drawImage(im,(W-w)/2,(H-h)/2,w,h); },
+  async imagenes(P,box){ const imgs=P.files.filter(f=>f.bin&&/^data:image/.test(f.data||'')); const fondo=imgs.find(f=>/fondo|background|bg|sky/i.test(f.ruta))||imgs[0];
+    const sprite=imgs.find(f=>/jugador|player|heroe|personaje|gato|logo|icon/i.test(f.ruta)&&/png|webp/.test(f.data.slice(0,20)))||imgs.find(f=>/^data:image\/(png|webp)/.test(f.data));
+    const piezas=[];
+    const lienzo=(W,H)=>{ const cv=document.createElement('canvas'); cv.width=W; cv.height=H; return cv; };
+    if(sprite||fondo){ const cv=lienzo(512,512), x=cv.getContext('2d'); if(fondo) this.cubrir(x,await this.img(fondo.data),512,512); else { x.fillStyle='#0b1a33'; x.fillRect(0,0,512,512); }
+      if(sprite){ const im=await this.img(sprite.data), s=Math.min(400/im.width,400/im.height); x.drawImage(im,(512-im.width*s)/2,(512-im.height*s)/2+10,im.width*s,im.height*s); }
+      piezas.push(['icono-512.png','Icono 512x512',cv.toDataURL('image/png')]); }
+    if(fondo){ const cv=lienzo(1024,500), x=cv.getContext('2d'); this.cubrir(x,await this.img(fondo.data),1024,500);
+      if(sprite){ const im=await this.img(sprite.data), s=Math.min(380/im.height,420/im.width); x.drawImage(im,1024-im.width*s-60,500-im.height*s-30,im.width*s,im.height*s); }
+      x.fillStyle='rgba(0,0,0,.35)'; x.fillRect(0,0,600,500); x.fillStyle='#fff'; x.font='bold 64px Montserrat, Arial'; x.textBaseline='middle';
+      const pal=String(P.nombre).split(' '); let lin=[''], k=0; for(const w of pal){ if((lin[k]+' '+w).length>14&&lin[k]) lin[++k]=w; else lin[k]=(lin[k]+' '+w).trim(); } lin.slice(0,3).forEach((l,i)=>x.fillText(l,48,250-(Math.min(lin.length,3)-1)*36+i*72));
+      piezas.push(['destacado-1024x500.png','Gráfico destacado 1024x500',cv.toDataURL('image/png')]); }
+    box.innerHTML=(piezas.length?`<div class="row" style="gap:8px;flex-wrap:wrap">${piezas.map(([n,t,d])=>`<div style="text-align:center"><img src="${d}" style="height:110px;border-radius:8px"><br><a class="tbtn" download="${n}" href="${d}">${t}</a></div>`).join('')}</div>`:'<small>El juego no tiene imágenes propias para hacer el icono; pídelas con «Imágenes con ChatGPT».</small>')+
+      `<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="tbtn" data-f="caps">Hacer capturas de tienda (1920x1080)</button></div><div data-f="cl" style="display:flex;gap:6px;overflow-x:auto;margin-top:6px"></div><small>Google Play pide entre 2 y 8 capturas, el icono de 512 y el gráfico de 1024x500.</small>`;
+    box.querySelector('[data-f=caps]').onclick=async e=>{ e.target.disabled=true; e.target.textContent='Jugando para sacar capturas…'; try{ await this.capturas(P,box.querySelector('[data-f=cl]')); e.target.textContent='Capturas hechas'; }catch(x){ e.target.textContent='No se han podido hacer: '+x.message; } }; },
+  async capturas(P,out){ const idx=P.files.find(f=>/(^|\/)index\.html$/.test(f.ruta)); let html=idx.code; for(const f of P.files.filter(f=>f.bin&&f.data)) html=html.split(f.ruta).join(f.data);
+    const fr=document.createElement('iframe'); fr.style.cssText='position:fixed;left:-3000px;top:0;width:1920px;height:1080px;border:0'; fr.srcdoc=html; document.body.appendChild(fr);
+    await sleep(3500); const w=fr.contentWindow, doc=fr.contentDocument; const tecla=(k,t)=>{ for(const tg of [w,doc,doc.body]) try{ tg.dispatchEvent(new KeyboardEvent(t,{key:k,code:k==='ArrowRight'?'ArrowRight':k==='ArrowLeft'?'ArrowLeft':k===' '?'Space':k,bubbles:true})); }catch(x){} };
+    try{ doc.body.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:960,clientY:600})); tecla('Enter','keydown'); tecla(' ','keydown'); tecla(' ','keyup'); }catch(x){}
+    for(let i=0;i<4;i++){ const k=['ArrowRight','ArrowLeft','ArrowUp',' '][i]; tecla(k,'keydown'); await sleep(1600); tecla(k,'keyup');
+      const cv=[...doc.querySelectorAll('canvas')].sort((a,b)=>b.width*b.height-a.width*a.height)[0]; if(!cv) break;
+      let d; try{ const o=document.createElement('canvas'); o.width=1920; o.height=1080; const x=o.getContext('2d'); x.fillStyle='#000'; x.fillRect(0,0,1920,1080); x.drawImage(cv,0,0,1920,1080); d=o.toDataURL('image/jpeg',.9); }catch(x){ break; }
+      const a=document.createElement('a'); a.download=`captura-${i+1}.jpg`; a.href=d; a.innerHTML=`<img src="${d}" style="height:90px;border-radius:6px">`; out.appendChild(a); }
+    fr.remove(); if(!out.children.length) throw new Error('el juego no deja copiar su imagen (WebGL sin preserveDrawingBuffer): usa «Mor juega y revisa», que hace capturas de verdad'); }
+};
+CMDS.splice(3,0,['/ideas','Tres ideas de juego sobre un tema para elegir',r=>IdeasJuego.open(r)],['/ficha','Ficha de tienda (Google Play, itch.io): textos, icono, gráfico y capturas',()=>Ficha.open()]);
+SIDE.find(g=>g[0]==='CREAR')[1].push(['Ideas de juego',()=>IdeasJuego.open()],['Ficha de tienda',()=>Ficha.open()]);
+const _apply120=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply120(acts);
+  for(const a of acts){ let m=String(a).match(/^\s*ideas\s*:\s*(.+)$/i); if(m) setTimeout(()=>IdeasJuego.open(m[1].trim()),300);
+    m=String(a).match(/^\s*ficha\s*(?::\s*(.*))?$/i); if(m) setTimeout(async()=>{ const P=m[1]?await proyectoPorNombre(m[1].trim()):null; Ficha.open(P&&P.id); },300); } return r; };
+const _sys120=systemPrompt; systemPrompt=function(){ return _sys120.apply(this,arguments)+`\n\nMÁS: {{ideas: tema}} da 3 ideas de juego para elegir (cuando te pidan ideas o no sepan qué juego hacer); {{ficha: nombre del juego}} prepara la ficha de Google Play/itch.io con textos, icono, gráfico destacado y capturas.`; };
+const _render120=renderProjects; renderProjects=async function(){ const r=await _render120.apply(this,arguments); const L=await DB.all('projects');
+  $('projList').querySelectorAll('.extra116').forEach(d=>{ if(d.querySelector('[data-x=p]')) return; const li=d.closest('li'), b=li.querySelector('[data-pz],[data-pv],[data-pmb]'), id=b&&(b.dataset.pz||b.dataset.pv||b.dataset.pmb); if(!id) return;
+    const e=document.createElement('span'); e.innerHTML='<button class="tbtn" data-x="p">Publicar con enlace</button><button class="tbtn" data-x="f">Ficha de tienda</button>';
+    e.querySelector('[data-x=p]').onclick=async()=>{ $('sheetProj').classList.remove('open'); const P=L.find(p=>p.id===id); DBP.publicarAlgo(P.nombre); };
+    e.querySelector('[data-x=f]').onclick=()=>{ $('sheetProj').classList.remove('open'); Ficha.open(id); }; d.append(...e.childNodes); });
   return r; };
 
 /* =====================================================================
