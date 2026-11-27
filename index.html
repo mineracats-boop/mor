@@ -1275,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v53</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v54</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1439,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v53 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v54 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6365,6 +6365,61 @@ const _gcreate121=GameStudio.create.bind(GameStudio); GameStudio.create=async fu
   if(f&&f.length){ const P=(await DB.all('projects')).filter(p=>p.juego&&p.at>=t0-1000).sort((x,y)=>y.at-x.at)[0]; if(P){ const g=f.filter(s=>!P.files.some(x=>x.bin&&x.ruta===s.ruta)); if(g.length) Faltan.tarjeta(P,g); } } return r; };
 CMDS.splice(3,0,['/modelos','Modelos que faltan en el último juego 3D, con alternativas',async()=>{ const P=(await DB.all('projects')).filter(p=>(p.slots||[]).some(s=>Faltan.es3(s.tipo))).sort((a,b)=>b.at-a.at)[0]; if(!P) return toast('No hay juegos 3D');
   const f=P.slots.filter(s=>Faltan.es3(s.tipo)&&!P.files.some(x=>x.bin&&x.ruta===s.ruta)); if(!f.length) return toast('A '+P.nombre+' no le falta ningún modelo'); Faltan.tarjeta(P,f); }]);
+
+/* =====================================================================
+   122. MESHY: MODELOS 3D CON IA (con tu clave de Meshy)
+   Texto a 3D e imagen a 3D con textura. La API de Meshy es de pago por
+   créditos (los compras en meshy.ai); Mor avisa del gasto antes de cada
+   modelo. El esqueleto y las animaciones se los pone Mor gratis.
+   ===================================================================== */
+const Meshy={
+  API:'https://api.meshy.ai',
+  key(){ return Conn.get().meshyKey||''; },
+  coste(cal,img){ return img?(cal==='mejor'?30:15):(cal==='mejor'?30:15); },
+  async api(ruta,o={}){ let r; try{ r=await fetch(this.API+ruta,Object.assign({},o,{headers:{Authorization:'Bearer '+this.key(),'Content-Type':'application/json'}})); }
+    catch(e){ throw new Error('no se puede llamar a Meshy desde el navegador ('+e.message+')'); }
+    let j=null; try{ j=await r.json(); }catch(e){}
+    if(r.status===401) throw new Error('la clave de Meshy no vale'); if(r.status===402) throw new Error('no te quedan créditos de API en Meshy');
+    if(r.status===429) throw new Error('Meshy dice que vayas más despacio (demasiadas peticiones)'); if(!r.ok) throw new Error('Meshy '+r.status+(j&&j.message?': '+j.message:''));
+    return j; },
+  async esperar(tipo,id,log,etapa){ for(let i=0;i<240;i++){ const t=await this.api(`/openapi/${tipo}/${id}`);
+      if(t.status==='SUCCEEDED') return t; if(t.status==='FAILED'||t.status==='CANCELED') throw new Error('Meshy no ha podido: '+((t.task_error&&t.task_error.message)||t.status));
+      log(`${etapa}: ${t.progress||0}%`); await sleep(5000); } throw new Error('Meshy tarda demasiado'); },
+  async glb(t){ const u=t.model_urls&&t.model_urls.glb; if(!u) throw new Error('Meshy no ha dado GLB'); let r; try{ r=await fetch(u); }catch(e){ throw new Error('no deja descargar el modelo desde el navegador: ábrelo aquí y descárgalo tú → '+u); }
+    if(!r.ok) throw new Error('descarga '+r.status); const b=await r.blob(); if(b.size>30e6) throw new Error('el modelo pesa demasiado');
+    return await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res('data:model/gltf-binary;base64,'+String(fr.result).split(',')[1]); fr.readAsDataURL(b); }); },
+  async texto(prompt,{cal='barato',personaje=false,log=()=>{}}={}){ if(!this.key()) throw new Error('falta tu clave de Meshy (/meshy)');
+    const modelo=cal==='mejor'?'latest':'meshy-6-lite';
+    const pid=(await this.api('/openapi/v2/text-to-3d',{method:'POST',body:JSON.stringify({mode:'preview',prompt:String(prompt).slice(0,780),ai_model:modelo,should_remesh:true,target_polycount:personaje?12000:8000,...(personaje?{pose_mode:'t-pose'}:{})})})).result;
+    await this.esperar('v2/text-to-3d',pid,log,'Forma');
+    const rid=(await this.api('/openapi/v2/text-to-3d',{method:'POST',body:JSON.stringify({mode:'refine',preview_task_id:pid,texture_prompt:String(prompt).slice(0,780),texture_resolution:'2k'})})).result;
+    const t=await this.esperar('v2/text-to-3d',rid,log,'Textura'); return {data:await this.glb(t),thumb:t.thumbnail_url,creditos:(t.consumed_credits||0)}; },
+  async imagen(dataUrl,{cal='barato',personaje=false,log=()=>{},prompt=''}={}){ if(!this.key()) throw new Error('falta tu clave de Meshy (/meshy)');
+    const id=(await this.api('/openapi/v1/image-to-3d',{method:'POST',body:JSON.stringify({image_url:dataUrl,ai_model:cal==='mejor'?'latest':'meshy-6-lite',should_texture:true,should_remesh:true,target_polycount:personaje?12000:8000,...(prompt?{texture_prompt:prompt.slice(0,780)}:{}),...(personaje?{pose_mode:'t-pose'}:{})})})).result;
+    const t=await this.esperar('v1/image-to-3d',id,log,'Modelo'); return {data:await this.glb(t),thumb:t.thumbnail_url}; },
+  conectar(){ const c=chatCard(`<div class="ctit">Meshy (modelos 3D con IA)</div><small>Pega tu clave de API de Meshy (meshy.ai › Settings › API). Se guarda solo en este dispositivo. La API gasta créditos de pago: cada modelo con textura cuesta unos 15 créditos en calidad «barata» y unos 30 en «mejor».</small>
+      <div class="row" style="gap:6px;margin-top:8px"><input class="inp" type="password" placeholder="msy_…" style="flex:1;min-width:0"><button class="tbtn on">Guardar</button></div>
+      <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><input class="inp" data-m="p" placeholder="Qué modelo quieres (ej.: gato minero con casco)" style="flex:1;min-width:0"><select class="inp" data-m="cal"><option value="barato">Barato (~15)</option><option value="mejor">Mejor (~30)</option></select><button class="tbtn" data-m="go">Generar</button></div>
+      <div data-m="o" style="font-size:13px;margin-top:6px"></div>`);
+    const q=k=>c.querySelector('[data-m='+k+']');
+    c.querySelector('button.on').onclick=()=>{ const v=c.querySelector('input[type=password]').value.trim(); if(!v) return; Conn.set({meshyKey:v}); c.querySelector('input[type=password]').value=''; toast('Clave de Meshy guardada'); };
+    q('go').onclick=async()=>{ const p=q('p').value.trim(); if(!p) return; if(!confirm(`Esto gasta unos ${this.coste(q('cal').value)} créditos de Meshy. ¿Sigo?`)) return; q('go').disabled=true;
+      try{ const r=await this.texto(p,{cal:q('cal').value,personaje:/personaje|gato|perro|hombre|mujer|chico|chica|soldado|robot|monstruo|animal|character/i.test(p),log:t=>{ q('o').textContent=t; }});
+        const P={id:'m'+Date.now(),nombre:p.slice(0,40),desc:'Modelo de Meshy: '+p,modelo:true,at:Date.now(),estado:'listo',files:[{ruta:'modelo.glb',data:r.data,bin:true},{ruta:'README.md',code:`# ${p}\n\nModelo 3D generado con Meshy (meshy.ai).`}]};
+        await DB.put('projects',P); q('o').innerHTML=`Hecho. Está en Proyectos como «${esc(P.nombre)}».${r.thumb?`<br><img src="${esc(r.thumb)}" style="height:120px;border-radius:8px;margin-top:4px">`:''}`; logChat('m','[Modelo de Meshy: '+P.nombre+']'); }
+      catch(e){ q('o').textContent='No ha salido: '+e.message; } q('go').disabled=false; }; }
+};
+/* botón de Meshy en la tarjeta de modelos que faltan */
+const _tarj122=Faltan.tarjeta.bind(Faltan); Faltan.tarjeta=function(P,faltan){ _tarj122(P,faltan); const cards=[...document.querySelectorAll('.ctit')].filter(x=>/no he encontrado/.test(x.textContent)); const c=cards.pop().parentElement;
+  faltan.forEach((s,i)=>{ const el=c.querySelector(`[data-f="${i}"]`); if(!el) return; const fila=el.querySelectorAll('.row')[0], out=el.querySelector('.fo');
+    const b=document.createElement('button'); b.className='tbtn'; b.textContent=Meshy.key()?'Generar con Meshy (~15 créditos)':'Generar con Meshy (pon tu clave)'; fila.appendChild(b);
+    b.onclick=async()=>{ if(!Meshy.key()) return Meshy.conectar(); if(!confirm('Esto gasta unos 15 créditos de Meshy. ¿Sigo?')) return; b.disabled=true;
+      try{ const q=el.querySelector('input').value.trim()||s.desc||s.buscar; const r=await Meshy.texto(q+(s.desc&&!q.includes(s.desc)?', '+s.desc:'')+', videojuego, low poly',{personaje:s.tipo==='personaje',log:t=>{ out.textContent='Meshy · '+t; }});
+        await Faltan.ponerEn(P.id,s.ruta,r.data); await Faltan.animar(P.id,s,r.data,t=>{ out.textContent=t; }); out.textContent='Generado con Meshy y puesto en el juego'+(s.tipo==='personaje'?', con esqueleto y animaciones.':'.'); }
+      catch(e){ out.textContent='Meshy: '+e.message; b.disabled=false; } }; }); };
+CMDS.splice(3,0,['/meshy','Meshy: poner tu clave y generar modelos 3D con IA (gasta créditos)',()=>Meshy.conectar()]);
+const _apply122=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply122(acts); for(const a of acts){ if(/^\s*meshy\s*(:.*)?$/i.test(String(a))) setTimeout(()=>Meshy.conectar(),300); } return r; };
+const _sys122=systemPrompt; systemPrompt=function(){ return _sys122.apply(this,arguments)+`\n\nMESHY: si piden generar un modelo con Meshy o con IA de pago, pon {{meshy}} y se abre su panel (gasta créditos de pago de Meshy: avisa). Para modelos gratis, primero la biblioteca y Sketchfab.`; };
 
 /* =====================================================================
    15. DESPERTAR
