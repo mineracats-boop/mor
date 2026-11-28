@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v84</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v85</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v84 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v85 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7017,7 +7017,7 @@ const Mas={
     if(!Modo.robot()) return;
     /* el robot entrega */
     const presentes=(Faces.now||[]).filter(n=>n&&n!=='desconocido');
-    for(const m of L.filter(x=>x.estado==='pendiente')){ const para=Vida.norm(m.para).replace(/^(a |la |el )/,''); const aqui=presentes.find(n=>Vida.norm(n)===para||(Faces.people.find(p=>p.name===n)||{}).rel&&Vida.norm((Faces.people.find(p=>p.name===n)||{}).rel).includes(para));
+    for(const m of L.filter(x=>x.estado==='pendiente')){ const para=Vida.norm(m.para).replace(/^(a |la |el )/,''); const aqui=(/^(todos|todo el mundo|casa|quien (este|haya)|cualquiera|mor)$/.test(para)&&presentes[0])||presentes.find(n=>Vida.norm(n)===para||(Faces.people.find(p=>p.name===n)||{}).rel&&Vida.norm((Faces.people.find(p=>p.name===n)||{}).rel).includes(para));
       if(aqui){ send(null,{event:`TIENES UN MENSAJE DE ${String(m.de).toUpperCase()} PARA ${aqui.toUpperCase()}, QUE ESTÁ DELANTE: «${m.texto}». Díselo con naturalidad (de parte de ${m.de}).`,image:null}); await this.api(`/api/datos/${c}/mensajes/${m.id}`,{method:'PUT',body:JSON.stringify({estado:'entregado',entregadoA:aqui,entregadoEn:ahora})}).catch(()=>{}); Vida.apuntar(`Le di a ${aqui} un mensaje de ${m.de}`); return; }
       if(ahora-m.creado>8*60000&&presentes.length){ const otro=presentes[0]; send(null,{event:`TIENES UN MENSAJE DE ${String(m.de).toUpperCase()} PARA ${String(m.para).toUpperCase()}: «${m.texto}». No encuentras a ${m.para}, pero está ${otro}: dile «${m.para} no está, te lo digo a ti» y dale el mensaje.`,image:null});
         await this.api(`/api/datos/${c}/mensajes/${m.id}`,{method:'PUT',body:JSON.stringify({estado:'otro',entregadoA:otro,entregadoEn:ahora})}).catch(()=>{}); return; } } },
@@ -8037,6 +8037,10 @@ const _send149=send; send=async function(text,opts={}){ const t=String(text||'')
     if(/^(date|da) una vuelta$/.test(n)){ Cuerpo.modo='paso'; Cuerpo.mover(45,-45,2200); return ok('¡Wiiii!'); }
     if(/^baila$/.test(n)){ Cuerpo.modo='baile'; Cuerpo._baile=Date.now(); return ok('¡Mira cómo bailo!'); } }
   return _send149(text,opts); };
+
+/* 150. mensajes «a todos»: «diles a todos que…», «di en casa que…», «dile a quien esté que…» */
+const _send150=send; send=async function(text,opts={}){ let t=String(text||''); const m=t.match(/^(?:mor[, ]+)?(?:d[ií]les a todos|di(?:le)? en casa|avisa en casa|d[ií]le a quien (?:est[eé]|haya)(?: en casa)?|d[ií]selo a quien (?:est[eé]|haya))\s*,?\s+que\s+(.{2,200})$/i);
+  if(m&&t&&!(opts&&opts.event)) text='dile a todos que '+m[1]; return _send150(text,opts); };
 
 /* =====================================================================
    15. DESPERTAR
