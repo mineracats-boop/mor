@@ -633,7 +633,7 @@ const vozGemini=()=>VOZ_MODO.startsWith('g:')?VOZ_MODO.slice(2):(localStorage.ge
 const VozTel={ elegida:null,
   buscar(){ if(!('speechSynthesis' in window)) return null; const vs=speechSynthesis.getVoices(); if(!vs.length) return null; const fija=localStorage.getItem('mor_voztel');
     return vs.find(v=>v.name===fija)||vs.find(v=>/^es[-_]ES/i.test(v.lang)&&/google/i.test(v.name))||vs.find(v=>/^es[-_]ES/i.test(v.lang)&&/natural|online|neural/i.test(v.name))||vs.find(v=>/^es[-_]ES/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang))||null; },
-  decidir(){ const v=this.buscar(); if(v){ this.elegida=v; localStorage.setItem('mor_voztel',v.name); VOZ_MODO='telefono'; } return v; } };
+  decidir(){ if(localStorage.getItem('mor_piper_fija')) return null; const v=this.buscar(); if(v){ this.elegida=v; localStorage.setItem('mor_voztel',v.name); VOZ_MODO='telefono'; } return v; } };
 if('speechSynthesis' in window){ VozTel.decidir(); try{ speechSynthesis.addEventListener('voiceschanged',()=>{ if(!VozTel.elegida&&!(typeof Voice!=='undefined'&&Voice.lastSpoken.at)) VozTel.decidir(); else if(VozTel.elegida) VozTel.elegida=VozTel.buscar()||VozTel.elegida; }); }catch(e){} }
 const VOZ_PIPER = 'es_ES-davefx-medium';  // voz ilimitada dentro del dispositivo (se descarga una vez, ~60 MB)
 const VOZ_PIPER_TONO = 1.0;
@@ -776,7 +776,7 @@ if(navigator.getBattery) navigator.getBattery().then(b=>{ const up=()=>{ energy=
   if(energy<.2&&!charging&&face.emo==='neutral') setEmotion('cansado'); }; up(); b.onlevelchange=up; b.onchargingchange=up; });
 let lastShake=0;
 addEventListener('devicemotion',e=>{ const a=e.accelerationIncludingGravity; if(!a) return;
-  const m=Math.hypot(a.x||0,a.y||0,a.z||0); if(m>28 && performance.now()-lastShake>4000 && awake){ lastShake=performance.now();
+  const m=Math.hypot(a.x||0,a.y||0,a.z||0); if(m>38 && performance.now()-lastShake>4000 && awake && !(typeof Modo!=='undefined'&&Modo.robot())){ lastShake=performance.now();
     squash(.4); setEmotion('asustado',2500); localSay(rnd(['¡Ay ay ay! ¡MOR mareado!','¡No agitar! MOR dar vueltas…','¡Terremoto! … ah, ser tú.']),'asustado'); } });
 
 /* =====================================================================
@@ -806,7 +806,7 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
     try{
       const lib=await import('https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.4/+esm');
       let shown=0;
-      this.piper=await lib.TtsSession.create({voiceId:VOZ_PIPER,progress:p=>{ const pc=p&&p.total?Math.round(p.loaded*100/p.total):0;
+      this.piper=await lib.TtsSession.create({voiceId:localStorage.getItem('mor_piper_fija')||VOZ_PIPER,progress:p=>{ const pc=p&&p.total?Math.round(p.loaded*100/p.total):0;
         if(pc-shown>=20&&pc<100){ shown=pc; toast('Descargando la voz de Mor (solo la primera vez)… '+pc+'%'); } }});
       this.piperState='ready'; if(shown) toast('Voz de Mor lista');
     }catch(e){ console.warn('Piper:',e); this.piperState='fail'; }
@@ -858,8 +858,8 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
   // recibe texto en trozos y lo corta en frases para empezar a hablar cuanto antes
   feed(t){ this.acc+=t;
     while(true){ const m=this.acc.match(/[\s\S]*?(?:[.!?…:;](?=\s)|\n)/); if(!m) break;
-      let s=m[0]; const minLen=(this.gem&&!this.eleven&&this.piperState!=='ready')?110:28;
-      if(s.trim().length<minLen && this.acc.length<s.length+40) break;   // junta frases cortas
+      let s=m[0]; const minLen=VOZ_MODO==='telefono'?14:(this.gem&&!this.eleven&&this.piperState!=='ready')?110:28;
+      if(s.trim().length<minLen && this.acc.length<s.length+(VOZ_MODO==='telefono'?12:40)) break;   // junta frases cortas
       this.acc=this.acc.slice(s.length); this.push(s); } },
   end(){ if(this.acc.trim()) this.push(this.acc); this.acc=''; },
   push(s){
@@ -899,7 +899,7 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
         if(this.cur===handle) this.cur=null; return this.done(it);
       }
     }catch(e){ console.warn('Voz:',e.message); this.lastErr=e.message; }
-    if(VOZ_MODO==='telefono' && 'speechSynthesis' in window && g===this.gen){ const u=new SpeechSynthesisUtterance(it.text); u.lang='es-ES'; u.pitch=1.05; u.rate=1.08;
+    if(VOZ_MODO==='telefono' && 'speechSynthesis' in window && g===this.gen){ const u=new SpeechSynthesisUtterance(it.text); this._u=u; const VE=VozElegir.cfg(); u.lang='es-ES'; u.pitch=VE.pitch||1.05; u.rate=VE.rate||1.05;
       const vs=speechSynthesis.getVoices(), fija=localStorage.getItem('mor_voztel'); let v=VozTel.elegida||vs.find(v=>v.name===fija)||vs.find(v=>/^es[-_]ES/i.test(v.lang)&&/google|natural|online/i.test(v.name))||vs.find(v=>/^es[-_]ES/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang)); if(v){ try{ u.voice=v; }catch(e){} if(!fija) localStorage.setItem('mor_voztel',v.name); }
       this.cur={pause(){ speechSynthesis.cancel(); }};
       const ka=MOVIL?0:setInterval(()=>{ try{ speechSynthesis.pause(); speechSynthesis.resume(); }catch(e){} },9000);   // fallo conocido de Chrome
@@ -919,7 +919,7 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
    ===================================================================== */
 const Cam={on:false,stream:null,prev:null,cv:document.createElement('canvas'),
   async start(){
-    try{ this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false}); }
+    try{ this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:localStorage.getItem('mor_cam')||'user',width:640,height:480},audio:false}); }
     catch(e){ localSay('MOR no poder abrir ojos de cámara… ¿tú dar permiso?','triste'); return false; }
     const v=$('video'); v.srcObject=this.stream; await v.play(); this.on=true; $('camBox').style.display='block'; this.track();
     DB.all('people').then(p=>{ if(p.length) Faces.load(); }); if(typeof Live!=='undefined'&&Live.on) Live.videoLoop(); return true;
@@ -1285,7 +1285,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v67</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v68</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1449,7 +1449,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v67 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v68 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6745,8 +6745,8 @@ const Vida={
   async aprender(nombre){ const P=this.pendiente; this.pendiente=null; if(!P||!P.descs.length) return false;
     const p={id:'p'+Date.now(),name:nombre,rel:'',descs:P.descs.slice(0,6),at:Date.now()}; await DB.put('people',p); Faces.people.push(p); Faces.seen[nombre]=Date.now();
     this.apuntar(`Conocí a ${nombre}`); return true; },
-  nombreDe(t){ const m=t.match(/(?:me llamo|soy|mi nombre es|ll[aá]mame)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]{2,20})/i); if(m) return m[1];
-    const w=t.trim().replace(/[.!¡¿?]/g,'').split(/\s+/); if(w.length<=2&&/^[A-ZÁÉÍÓÚÑ]/.test(w[0])&&!/^(Hola|Vale|Si|Sí|No|Bien|Mor|Gracias)$/i.test(w[0])) return w[0]; return null; },
+  nombreDe(t){ const m=t.match(/(?:me llamo|soy|mi nombre es|ll[aá]mame|se llama|es)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]{2,20})/i); if(m&&!/^(el|la|un|una|tu|mi|yo|de)$/i.test(m[1])) return m[1];
+    const w=t.trim().replace(/[.,!¡¿?]/g,'').split(/\s+/).filter(x=>!/^(hola|buenas|pues|yo|mor|oye|vale|bueno|eh)$/i.test(x)); if(w.length>=1&&w.length<=2&&/^[A-Za-zÁÉÍÓÚÑáéíóúñ]{2,20}$/.test(w[0])&&!/^(si|sí|no|bien|gracias|nada|que|qué|nadie|hola)$/i.test(w[0])) return w[0]; return null; },
   /* ---- voz ---- */
   voz:{ctx:null,an:null,ok:false,acc:null,n:0},
   async iniciarVoz(){ if(this.voz.ok||this.voz.tried) return; this.voz.tried=true;
@@ -6809,7 +6809,7 @@ setInterval(()=>{ if(!Modo.robot()) return; Vida.iniciarVoz(); Vida.vigilarTick(
   if(now.includes('desconocido')&&!busy&&!Vida.pendiente&&!Vida.vigilando&&ahora-(Vida.ultimaPregunta||0)>3*60000&&Faces.state==='ready'){
     const d=Vida.descNuevo(); if(d){ Vida.pendiente={descs:[d],at:ahora}; Vida.ultimaPregunta=ahora;
       send(null,{event:'VES A ALGUIEN CUYA CARA NO CONOCES. Salúdale con curiosidad y simpatía y pregúntale cómo se llama. Una frase.',image:null}); } }
-  if(Vida.pendiente){ if(ahora-Vida.pendiente.at>90000) Vida.pendiente=null; else { const d=Vida.descNuevo(); if(d&&Vida.pendiente.descs.length<6) Vida.pendiente.descs.push(d); } }
+  if(Vida.pendiente){ if(ahora-Vida.pendiente.at>300000) Vida.pendiente=null; else { const d=Vida.descNuevo(); if(d&&Vida.pendiente.descs.length<6) Vida.pendiente.descs.push(d); } }
 },3000);
 /* se queda quieto solo mientras se carga */
 if(navigator.getBattery) navigator.getBattery().then(b=>{ const f=()=>{ if(!Modo.robot()) return; if(b.charging&&!Vida.quieto) Vida.setQuieto(true,'carga'); else if(!b.charging&&Vida.quieto&&Vida.porCarga) Vida.setQuieto(false); }; b.addEventListener('chargingchange',f); f(); }).catch(()=>{});
@@ -6832,7 +6832,7 @@ const _send128=send; send=async function(text,opts={}){ const t=String(text||'')
     const rc=t.match(/recu[eé]rd(?:a|ale)(?:le)?\s+a\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+)\s+(?:que\s+)?(.{3,120}?)(?:\s+cuando (?:le|la|lo) veas.*)?$/i);
     if(rc){ logChat('u',t); const L=Vida.recados(); const de=Vida.quienHabla(); L.push({para:rc[1],que:rc[2].replace(/\s+cuando.*$/i,''),de,at:Date.now()}); Vida.guardarRecados(L); Robot.decir(`Hecho. Cuando vea a ${rc[1]} se lo digo.`,'feliz'); return; }
     /* ¿responde a «cómo te llamas»? */
-    if(Vida.pendiente){ const nm=Vida.nombreDe(t); if(nm){ const N=nm[0].toUpperCase()+nm.slice(1).toLowerCase(); await Vida.aprender(N); return _send128(t,Object.assign({},opts,{event:null})).then(r=>r); } }
+    if(Vida.pendiente){ const nm=Vida.nombreDe(t); if(nm){ const N=nm[0].toUpperCase()+nm.slice(1).toLowerCase(); logChat('u',t); const ok=await Vida.aprender(N); if(ok){ Robot.decir(rnd([`¡Encantado, ${N}! Ya me quedo con tu cara.`,`¡Hola, ${N}! Ya sé quién eres, no se me olvida.`]),'feliz'); return; } return _send128(t,Object.assign({},opts,{event:null})); } }
     /* quién habla */
     const q=Vida.quienHabla(); if(q) Vida.ultimoQuien={n:q,at:Date.now()}; }
   return _send128(text,opts); };
@@ -6862,8 +6862,8 @@ CMDS.splice(2,0,['/diario','Diario de Mor: lo que ha pasado cada día',()=>{ con
 const Susto={ ultimo:0, accion:null, td:null,
   oir(){ const V=Vida.voz; if(!V.ok||Voice.playing||Voice.cur||!Modo.robot()) return; this.td=this.td||new Float32Array(V.an.fftSize); V.an.getFloatTimeDomainData(this.td);
     let s=0,pk=0; for(const x of this.td){ s+=x*x; pk=Math.max(pk,Math.abs(x)); } const rms=Math.sqrt(s/this.td.length);
-    this.alto=(rms>.22||pk>.92)?(this.alto||0)+1:0;
-    if(this.alto>=2&&Date.now()-this.ultimo>20000&&Date.now()-(Voice.finAt||0)>800){ this.ultimo=Date.now(); this.alto=0; this.huir(); } },
+    this.alto=(rms>.32&&pk>.9)?(this.alto||0)+1:Math.max(0,(this.alto||0)-1);
+    if(this.alto>=4&&!(window.speechSynthesis&&speechSynthesis.speaking)&&Date.now()-this.ultimo>20000&&Date.now()-(Voice.finAt||0)>800){ this.ultimo=Date.now(); this.alto=0; this.huir(); } },
   huir(){ this.accion={tipo:'huir',at:Date.now()}; try{ squash(.5); }catch(e){} setEmotion('asustado',4000); face.tx=(Math.random()<.5?-1:1); face.lastInput=performance.now();
     Robot.decir(rnd(['¡Ay! ¡Qué susto!','¡Uy! ¿Qué ha sido eso?','¡Aaah! Me escondo…','¡Qué ruido! Me voy un poquito más allá.']),'asustado'); Vida.apuntar('Me asusté con un ruido fuerte'); }
 };
@@ -7226,6 +7226,90 @@ addEventListener('pointerdown',e=>{ if(!Modo.robot()) return; clearTimeout(Salir
 ['pointerup','pointercancel','pointermove'].forEach(ev=>addEventListener(ev,e=>{ if(ev==='pointermove'&&!(Math.abs(e.movementX)+Math.abs(e.movementY)>6)) return; clearTimeout(Salir.t); },true));
 /* al pasar a modo IA, que vuelva la pantalla normal */
 const _poner133=Modo.poner.bind(Modo); Modo.poner=function(m,nuevo){ _poner133(m,nuevo); if(m==='ia'){ document.body.classList.remove('modoRobot'); _mv133(false); } };
+
+/* =====================================================================
+   134. MODO ROBOT MÁS RÁPIDO Y CON LA VOZ QUE ÉL ELIJA
+   - Elegir voz: escucha las voces en español del aparato (y las de Mor
+     descargables) y se queda con la que elija, para siempre.
+   - «hola», «buenos días»…: contesta al momento, sin esperar al cerebro.
+   - Si estaba diciendo algo él solo y le hablan, lo deja y atiende.
+   - No corta una frase para decir otra cosa (salvo un susto).
+   - Cámara delantera o trasera («usa la cámara de atrás»).
+   - Si alguien nuevo no contesta cómo se llama, se lo vuelve a preguntar.
+   ===================================================================== */
+const VozElegir={
+  cfg(){ try{ return JSON.parse(localStorage.getItem('mor_voz_cfg')||'{}'); }catch(e){ return {}; } },
+  PIPER:[['es_ES-davefx-medium','Mor de antes (España)'],['es_ES-sharvard-medium','Sharvard (España)'],['es_MX-claude-high','Claude (México, alta calidad)']],
+  TONOS:[['Grave',.9],['Normal',1.05],['Aguda',1.25],['Robotito',1.45]],
+  FRASE:'¡Hola! Soy Mor. ¿Te gusta cómo suena mi voz?',
+  async probarTel(v,pitch){ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(this.FRASE); this._u=u; try{ u.voice=v; }catch(e){} u.lang=v.lang; u.pitch=pitch; u.rate=1.05; speechSynthesis.speak(u); },
+  async probarPiper(id,out){ out.textContent='Cargando esa voz (la primera vez descarga unos 60 MB)…';
+    try{ const lib=await import('https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.4/+esm'); const ses=await lib.TtsSession.create({voiceId:id}); const wav=await ses.predict(this.FRASE); out.textContent=''; new Audio(URL.createObjectURL(wav)).play(); }
+    catch(e){ out.textContent='No se ha podido cargar: '+e.message; } },
+  abrir(){ if($('vozElegir')) return; const vs=('speechSynthesis' in window?speechSynthesis.getVoices():[]).filter(v=>/^es/i.test(v.lang));
+    const C=this.cfg(), d=document.createElement('div'); d.id='vozElegir';
+    d.style.cssText='position:fixed;inset:0;z-index:9600;background:rgba(3,8,18,.95);color:#fff;overflow:auto;padding:22px;font-size:15px';
+    const B='padding:10px 14px;border-radius:12px;border:1px solid rgba(127,216,255,.5);background:rgba(127,216,255,.12);color:#fff;font-size:15px;margin:3px';
+    d.innerHTML=`<div style="max-width:620px;margin:0 auto"><div style="font-size:24px;font-weight:800;margin-bottom:4px">Elige la voz de Mor</div>
+      <small style="opacity:.8">Pulsa ▶ para escucharla y «Esta» para quedarte con ella. Será su voz para siempre en este aparato.</small>
+      <div style="margin:12px 0 4px;font-weight:700">Tono</div><div>${this.TONOS.map(([n,p])=>`<button data-p="${p}" style="${B}${(C.pitch||1.05)==p?';background:#7fd8ff;color:#022':''}">${n}</button>`).join('')}</div>
+      <div style="margin:14px 0 4px;font-weight:700">Voces de este aparato (rápidas)</div>
+      ${vs.length?vs.map((v,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="flex:1">${esc(v.name)} <small style="opacity:.6">${esc(v.lang)}</small>${C.tipo==='tel'&&C.name===v.name?' ✓':''}</span><button data-t="${i}" style="${B}">▶</button><button data-tu="${i}" style="${B}">Esta</button></div>`).join(''):'<small>Este aparato no tiene voces en español.</small>'}
+      <small style="display:block;opacity:.75;margin-top:6px">En Android hay voces más bonitas: Ajustes del móvil › busca «Texto a voz» › Motor de Google › Instalar datos de voz › Español (España) y elige la voz que más te guste. Luego vuelve aquí.</small>
+      <div style="margin:14px 0 4px;font-weight:700">Voces de Mor (se descargan, más lentas en el móvil)</div>
+      ${this.PIPER.map(([id,n])=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="flex:1">${esc(n)}${C.tipo==='piper'&&C.id===id?' ✓':''}</span><button data-pp="${id}" style="${B}">▶</button><button data-pu="${id}" style="${B}">Esta</button></div>`).join('')}
+      <div data-o style="margin-top:8px;font-size:13px;min-height:18px"></div>
+      <button data-x style="${B};margin-top:14px;width:100%">Cerrar</button></div>`;
+    document.body.appendChild(d); const out=d.querySelector('[data-o]'); let pitch=C.pitch||1.05;
+    d.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ pitch=+b.dataset.p; d.querySelectorAll('[data-p]').forEach(x=>x.style.background=x===b?'#7fd8ff':'rgba(127,216,255,.12)'); d.querySelectorAll('[data-p]').forEach(x=>x.style.color=x===b?'#022':'#fff'); const c=this.cfg(); if(c.tipo==='tel'){ c.pitch=pitch; localStorage.setItem('mor_voz_cfg',JSON.stringify(c)); } if(VozTel.elegida) this.probarTel(VozTel.elegida,pitch); });
+    d.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>this.probarTel(vs[+b.dataset.t],pitch));
+    d.querySelectorAll('[data-tu]').forEach(b=>b.onclick=()=>{ const v=vs[+b.dataset.tu]; localStorage.removeItem('mor_piper_fija'); localStorage.setItem('mor_voztel',v.name); localStorage.setItem('mor_voz_cfg',JSON.stringify({tipo:'tel',name:v.name,pitch}));
+      VozTel.elegida=v; VOZ_MODO='telefono'; d.remove(); Voice.reset(); Voice.push('¡Hecho! Desde ahora hablo siempre así.'); Voice.end(); });
+    d.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>this.probarPiper(b.dataset.pp,out));
+    d.querySelectorAll('[data-pu]').forEach(b=>b.onclick=()=>{ localStorage.setItem('mor_piper_fija',b.dataset.pu); localStorage.setItem('mor_voz_cfg',JSON.stringify({tipo:'piper',id:b.dataset.pu})); VozTel.elegida=null; VOZ_MODO='piper';
+      Voice.piper=null; Voice.piperState='off'; out.textContent='Hecho. Cargando la voz…'; Voice.loadPiper().then(()=>{ d.remove(); Voice.reset(); Voice.push('¡Hecho! Desde ahora hablo siempre así.'); Voice.end(); }); });
+    d.querySelector('[data-x]').onclick=()=>d.remove(); }
+};
+if('speechSynthesis' in window) try{ speechSynthesis.addEventListener('voiceschanged',()=>{ const c=VozElegir.cfg(); if(c.tipo==='tel'){ const v=speechSynthesis.getVoices().find(x=>x.name===c.name); if(v){ VozTel.elegida=v; VOZ_MODO='telefono'; } } }); }catch(e){}
+CMDS.splice(2,0,['/voz','Elegir la voz de Mor (escuchar y quedarse con una)',()=>VozElegir.abrir()]);
+/* botones en la pantalla de salir del modo robot */
+const _salirM134=Salir.mostrar.bind(Salir); Salir.mostrar=function(){ _salirM134(); const d=$('morSalir'); if(!d) return; const mk=(t,f)=>{ const b=document.createElement('button'); b.textContent=t; b.style.cssText='min-width:240px;padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font-size:17px'; b.onclick=()=>{ d.remove(); f(); }; d.appendChild(b); };
+  mk('Elegir la voz de Mor',()=>VozElegir.abrir()); mk('Cámara: '+(Camara.trasera()?'trasera (cambiar a delantera)':'delantera (cambiar a trasera)'),()=>Camara.poner(!Camara.trasera())); };
+/* cámara delantera o trasera */
+const Camara={ trasera(){ return localStorage.getItem('mor_cam')==='environment'; },
+  async poner(tras){ localStorage.setItem('mor_cam',tras?'environment':'user'); const on=Cam.on; if(on){ Cam.stop(); await sleep(400); await Cam.start(); }
+    Robot.decir(tras?'Vale, ahora miro con la cámara de atrás.':'Vale, ahora miro con la cámara de delante.','curioso'); } };
+/* foto trasera más robusta: si ya mira por detrás usa esa; si no, busca la cámara trasera por su nombre */
+Sentidos.fotoTrasera=async function(){ if(Camara.trasera()&&Cam.on){ const v=$('video'), c=document.createElement('canvas'); c.width=480; c.height=360; c.getContext('2d').drawImage(v,0,0,480,360); return c; }
+  const abrir=async()=>{ try{ return await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:'environment'},width:640,height:480},audio:false}); }catch(e){}
+    try{ const ds=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput'); const t=ds.find(d=>/back|rear|tras|environment|0, facing back/i.test(d.label))||(ds.length>1?ds[ds.length-1]:null);
+      if(t) return await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:t.deviceId},width:640,height:480},audio:false}); }catch(e){} return null; };
+  let s=await abrir(), frontal=false; if(!s&&Cam.on){ frontal=true; Cam.stop(); await sleep(500); s=await abrir(); }
+  if(!s){ if(frontal) await Cam.start(); throw new Error('no consigo abrir la cámara de atrás'); }
+  const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.srcObject=s; await v.play(); await sleep(800);
+  const c=document.createElement('canvas'); c.width=480; c.height=360; c.getContext('2d').drawImage(v,0,0,480,360); s.getTracks().forEach(t=>t.stop()); if(frontal){ await sleep(300); await Cam.start(); } return c; };
+/* no cortar lo que está diciendo para decir otra cosa (menos los sustos) */
+const _say134=localSay; localSay=async function(text,emo,sfx){ if(Modo.robot()&&(Voice.playing||Voice.q.length)&&emo!=='asustado') await withTimeout(Voice.flush(),15000); return _say134(text,emo,sfx); };
+const _send134=send; send=async function(text,opts={}){ opts=opts||{}; const t=String(text||'');
+  if(Modo.robot()){
+    /* lo que dice él solo espera a que termine de hablar */
+    if(opts.event&&!text&&(Voice.playing||Voice.q.length)) await withTimeout(Voice.flush(),20000);
+    if(t&&!opts.event){
+      /* le hablan mientras decía algo por su cuenta: lo deja y atiende */
+      if(busy&&Cola.args&&Cola.args[1]&&Cola.args[1].event){ try{ PARAR.parar(); }catch(e){} await sleep(250); PARAR.on=false; }
+      const n=Vida.norm(t).replace(/[^a-zñ ]/g,'').trim(), quien=(Faces.now||[]).find(x=>x&&x!=='desconocido')||(Vida.ultimoQuien&&Date.now()-Vida.ultimoQuien.at<60000?Vida.ultimoQuien.n:'');
+      /* «cambia tu voz» */
+      if(/\b(cambia(r)? (tu|la|de) voz|elige (una |otra )?voz|otra voz|voz (mas )?bonita|pon(te)? otra voz|elegir voz)\b/.test(n)){ logChat('u',t); VozElegir.abrir(); Robot.decir('Te enseño mis voces. Elige la que más te guste.','curioso'); return; }
+      if(/\b(usa|pon|activa|enciende) (la )?camara (de atras|trasera)\b|\bcamara trasera\b/.test(n)&&n.length<60){ logChat('u',t); Camara.poner(true); return; }
+      if(/\b(usa|pon|activa|enciende) (la )?camara (de delante|delantera|frontal)\b|\bcamara (delantera|frontal)\b/.test(n)&&n.length<60){ logChat('u',t); Camara.poner(false); return; }
+      /* saludos: al momento */
+      if(/^(hola|holi|hey|ey|buenas|buenos dias|buenas tardes|buenas noches|hola mor|mor hola|hola hola|que pasa mor|hola que tal|hola mor que tal)( mor)?$/.test(n)&&!Vida.pendiente){
+        logChat('u',t); MEM.history.push({r:'u',t,at:Date.now()}); const h=new Date().getHours(), nm=quien?' '+quien:'';
+        const r=/noches/.test(n)?`¡Buenas noches${nm}!`:/dias/.test(n)?`¡Buenos días${nm}!${h<11?' ¿Qué tal has dormido?':''}`:/tardes/.test(n)?`¡Buenas tardes${nm}!`:/que tal/.test(n)?rnd([`¡Muy bien${nm}! ¿Y tú?`,`¡Genial${nm}, ahora que te veo! ¿Y tú qué tal?`]):rnd([`¡Hola${nm}!`,`¡Hola${nm}! ¿Qué tal?`,`¡Hey${nm}! ¿Qué me cuentas?`]);
+        MEM.history.push({r:'m',t:r,at:Date.now()}); logChat('m',r); try{ Mas.alHablarle(); }catch(e){} Robot.decir(r,'feliz'); return; } } }
+  return _send134(text,opts); };
+/* si alguien nuevo no ha dicho su nombre, se lo pregunta otra vez (una vez) */
+setInterval(()=>{ if(!Modo.robot()||!Vida.pendiente||busy) return; const P=Vida.pendiente; if(!P.repetida&&Date.now()-P.at>45000&&(Faces.now||[]).includes('desconocido')){ P.repetida=true; Robot.decir(rnd(['Perdona, no te he oído bien. ¿Cómo te llamas?','Oye, ¿cómo te llamas? Así me acuerdo de ti.']),'curioso'); } },5000);
 
 /* =====================================================================
    15. DESPERTAR
