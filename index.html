@@ -1188,7 +1188,8 @@ async function send(text,opts={}){
   setEmotion('pensativo'); face.lastInput=performance.now();
   Voice.reset();
   const VISUAL=/\b(mira|mirar|ves|ver|veo|esto|esta|este|aqu[ií]|qu[eé] es|qui[eé]n|c[aá]mara|foto|lee|pone|enfoca|cara|llevo|ropa|color|delante|detr[aá]s|cuantos|cu[aá]ntas)\b/i;
-  let img=opts.image!==undefined?opts.image:(pendingPhoto||(Cam.on&&text&&VISUAL.test(text)?Cam.snapshot():null));
+  const _vis=(typeof Modo!=='undefined'&&Modo.robot())?/\b(qu[eé] ves|qu[eé] es esto|qu[eé] es eso|mira (esto|esta|este|lo que|mi|qu[eé])|ves (esto|esta|este|lo que|mi|qu[eé])|qu[eé] llevo|de qu[eé] color|c[oó]mo voy|c[oó]mo me queda|lee (esto|lo que)|qu[eé] pone|qu[eé] tengo en la mano|cu[aá]ntos dedos|qui[eé]n est[aá] (aqu[ií]|conmigo)|me ves)\b/i:VISUAL;
+  let img=opts.image!==undefined?opts.image:(pendingPhoto||(Cam.on&&text&&_vis.test(text)?Cam.snapshot():null));
   if(pendingPhoto&&opts.image===undefined){ pendingPhoto=null; clearTimeout(window._qp); }
   // recuerdos y apuntes relacionados con lo que dice
   let extra='';
@@ -1286,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v74</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v75</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1450,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v74 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v75 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7525,6 +7526,77 @@ const _unir139=Sync.unir.bind(Sync); Sync.unir=async function(R){ const P0=JSON.
     P[k]=Object.assign({},b,a,{rel:a.rel||b.rel,datos:[...a.datos,...b.datos.filter(d=>!ya.has(Vida.norm(d.t)))].sort((x,y)=>x.at-y.at).slice(-150),
       charlas:[...a.charlas,...b.charlas.filter(c=>!a.charlas.some(x=>x.at===c.at))].sort((x,y)=>x.at-y.at).slice(-40),veces:Math.max(a.veces||0,b.veces||0)}); }
   MEM.colaMem=C0; MEM.diaMem=D0; MEM.cumples=Object.assign({},(R&&R.mem&&R.mem.cumples)||{},cum0); localStorage.setItem(MKEY,JSON.stringify(MEM)); };
+
+/* =====================================================================
+   140. RESPONDER AL INSTANTE Y CON CABEZA
+   1) Cronómetro: mide cuánto tarda en oír, pensar y empezar a hablar
+      («Mor, ¿cuánto tardas?» o /tiempos).
+   2) Cerebro rápido: con llave de Groq habla con su mejor modelo y, si
+      se le acaba el cupo de uno, pasa al siguiente modelo de Groq.
+   3) Piensa mientras hablas: si lo que has dicho lleva casi un segundo
+      quieto, empieza ya sin esperar a que el móvil dé la frase por acabada.
+   4) Reflejos: hora, día, temporizadores, «¿quién soy?», «gracias»…
+      al momento, sin cerebro.
+   5) Con cabeza: las preguntas difíciles van al cerebro bueno si no hay
+      Groq; y respuestas cortas y al grano.
+   ===================================================================== */
+const Crono={ c:null, L(){ try{ return JSON.parse(localStorage.getItem('mor_tiempos')||'[]'); }catch(e){ return []; } },
+  nuevo(){ this.c={oye:Date.now()}; }, marca(k){ if(!this.c) this.c={}; if(this.c[k]==null) this.c[k]=Date.now(); },
+  cerrar(){ const c=this.c; this.c=null; if(!c||!c.envio) return; const L=this.L(); L.push(c); localStorage.setItem('mor_tiempos',JSON.stringify(L.slice(-30))); },
+  resumen(){ const L=this.L().filter(c=>c.envio); if(!L.length) return null; const med=a=>{ a=a.filter(x=>x!=null&&x>=0&&x<120000).sort((x,y)=>x-y); return a.length?a[Math.floor(a.length/2)]:null; };
+    const s=x=>x==null?'—':(x/1000).toFixed(1)+' s';
+    const oir=med(L.map(c=>c.oye&&c.final?c.final-c.oye:null)), pensar=med(L.map(c=>c.cerebro?c.cerebro-c.envio:null)), voz=med(L.map(c=>c.voz?c.voz-(c.cerebro||c.envio):null)), total=med(L.map(c=>c.voz?c.voz-(c.final||c.envio):null));
+    const cer={}; L.forEach(c=>{ if(c.cer) cer[c.cer]=(cer[c.cer]||0)+1; });
+    return {oir,pensar,voz,total,n:L.length,cer,txt:`De media (${L.length} respuestas): oírte hasta que acabas ${s(oir)}, pensar ${s(pensar)}, empezar a hablar ${s(voz)}. Desde que terminas de hablar hasta que contesto: ${s(total)}. Cerebros: ${Object.entries(cer).map(([k,v])=>k.replace(/^pv:/,'')+' ×'+v).join(', ')||'—'}.`}; } };
+/* oído: cuándo empiezas a hablar y cuándo termina la frase */
+const _run140=Ears.run.bind(Ears); Ears.run=function(){ const r0=this.rec; _run140(); const r=this.rec; if(r&&r!==r0&&!r._crono){ r._crono=1;
+  r.addEventListener('result',e=>{ if(!Modo.robot()) return; const res=e.results[e.results.length-1]; if(!res) return; const t=res[0].transcript.trim(); if(!t) return;
+    if(!Crono.c||Crono.c.envio) Crono.nuevo();
+    /* 3) piensa mientras hablas: frase quieta 0,9 s → la da por buena */
+    if(!res.isFinal){ clearTimeout(Ears._est); Ears._ult=t; Ears._est=setTimeout(()=>{ if(Ears._ult===t&&t.split(/\s+/).length>=2&&!Voice.playing&&!Voice.cur&&!busy){ Ears._adelanto=null; Crono.marca('final'); Ears.heard(t); Ears._adelanto=Vida.norm(t); } },900); }
+    else clearTimeout(Ears._est); }); } };
+const _heard140=Ears.heard.bind(Ears); Ears.heard=function(t){ if(Modo.robot()){ const n=Vida.norm(t);
+    if(Ears._adelanto){ const a=Ears._adelanto; Ears._adelanto=null; if(n===a||(n.startsWith(a)&&n.length-a.length<15)){ $('hear').textContent=''; return; } }   /* ya lo había adelantado: no contestar dos veces */
+    Crono.marca('final'); } return _heard140(t); };
+/* cerebro y voz */
+const _gs140=geminiStream; geminiStream=async function(body,onText){ let primero=true; const r=await _gs140(body,t=>{ if(primero){ primero=false; if(Crono.c&&Crono.c.envio) { Crono.marca('cerebro'); Crono.c.cer=String(modelOk||'').slice(0,40); } } onText(t); }); if(Crono.c&&Crono.c.envio) Crono.c.cer=String(modelOk||Crono.c.cer||'').slice(0,40); return r; };
+const _play140=Voice.play.bind(Voice); Voice.play=async function(it,g){ if(Crono.c&&Crono.c.envio&&Crono.c.voz==null){ Crono.c.voz=Date.now(); setTimeout(()=>Crono.cerrar(),50); } return _play140(it,g); };
+/* 2) Groq: si un modelo se queda sin cupo, el siguiente */
+const GROQ_MODELOS=['openai/gpt-oss-120b','llama-3.3-70b-versatile','qwen/qwen3-32b','meta-llama/llama-4-maverick-17b-128e-instruct','openai/gpt-oss-20b','llama-3.1-8b-instant'];
+const _pstream140=Prov.stream.bind(Prov); Prov.stream=async function(p,body,onText){ if(p.id!=='groq') return _pstream140(p,body,onText);
+  const L=[...new Set([this.model(p),...GROQ_MODELOS])].filter(m=>m&&!agotado('pvm:'+m));
+  for(const m of L){ const c=Conn.get(), antes=c['pv_groq_model']; Conn.set({pv_groq_model:m}); let r=null;
+    try{ r=await _pstream140(p,body,onText); } finally{ Conn.set({pv_groq_model:antes}); }
+    if(r) return r; if(agotado('pv:groq')){ localStorage.removeItem('mor_agotado_pv:groq'); marcarAgotado('pvm:'+m,'rate limit'); } }
+  return null; };
+/* 4) reflejos: sin cerebro */
+const Reflejos={ hora(){ const d=new Date(); const h=d.getHours(), m=d.getMinutes(); const hh=h%12||12; const parte=h<6?'de la madrugada':h<13?'de la mañana':h<21?'de la tarde':'de la noche';
+    return `Son las ${hh===1?'una':hh}${m?(m===15?' y cuarto':m===30?' y media':m===45?' menos cuarto':' y '+m).replace(' menos cuarto',''):' en punto'} ${parte}.`.replace(/las una/,'la una'); },
+  probar(t){ const n=Vida.norm(t).replace(/[^a-z0-9ñ ]/g,' ').replace(/\s+/g,' ').trim(), q=Personas.quien();
+    if(/^(mor )?(que hora es|que hora tienes|me dices la hora|dime la hora|tienes hora)( mor)?$/.test(n)) return this.hora();
+    if(/^(mor )?(que dia es hoy|a que estamos hoy|que fecha es hoy|que dia es|a cuanto estamos)( mor)?$/.test(n)){ const d=new Date(); return 'Hoy es '+d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})+'.'; }
+    if(/^(mor )?(quien soy( yo)?|sabes quien soy|me conoces)( mor)?$/.test(n)) return q?rnd([`¡Eres ${q}! Claro que te conozco.`,`Tú eres ${q}.`]):'Ahora mismo no te veo bien la cara. ¿Quién eres?';
+    if(/^(mor )?(como te llamas|quien eres( tu)?)( mor)?$/.test(n)) return 'Soy Mor, el robot de la familia.';
+    if(/^(muchas )?gracias( mor)?( por todo)?$/.test(n)) return rnd(['¡De nada!','¡A mandar!','Para eso estoy.']);
+    if(/^(mor )?(adios|hasta luego|hasta mañana|me voy|chao)( mor)?$/.test(n)) return rnd([`¡Hasta luego${q?', '+q:''}!`,'¡Adiós! Aquí te espero.']);
+    let m=n.match(/(?:pon|ponme|activa)(?: un)? (?:temporizador|alarma|cuenta atras)(?: de)? (\d+|un|una|dos|tres|cinco|diez|quince|veinte|media)(?: (minutos?|horas?|segundos?|hora))?/)||n.match(/avisame (?:en|dentro de) (\d+|un|una|dos|tres|cinco|diez|quince|veinte|media) (minutos?|horas?|segundos?|hora)/);
+    if(m){ const nums={un:1,una:1,dos:2,tres:3,cinco:5,diez:10,quince:15,veinte:20,media:.5}; let v=nums[m[1]]??+m[1]; const u=m[2]||'minutos'; if(m[1]==='media'&&!/hora/.test(u)) v=30; let min=/hora/.test(u)?v*60:/segundo/.test(u)?v/60:v;
+      Timers.add(min,'temporizador'); const txt=/segundo/.test(u)?`${v} segundos`:/hora/.test(u)?(v===.5?'media hora':`${v} ${v===1?'hora':'horas'}`):`${v} ${v===1?'minuto':'minutos'}`; return `Hecho. Te aviso dentro de ${txt}.`; }
+    if(/^(quita|para|cancela|apaga)( el)? (temporizador|alarma)$/.test(n)){ const x=Timers.cancel(); return x?'Temporizador quitado.':'No hay ningún temporizador puesto.'; }
+    if(/(cuanto tardas|que tal vas de rapido|tus tiempos|cuanto tardas en contestar)/.test(n)){ const r=Crono.resumen(); return r?r.txt:'Todavía no tengo medidas. Háblame un poco y vuelve a preguntármelo.'; }
+    return null; } };
+const _send140=send; send=async function(text,opts={}){ const t=String(text||'');
+  if(t&&!(opts&&opts.event)){ if(!Crono.c||Crono.c.envio) Crono.nuevo(); Crono.marca('final'); Crono.c.envio=Date.now(); Crono.c.txt=t.slice(0,40);
+    if(Modo.robot()){ const r=Reflejos.probar(t); if(r){ logChat('u',t); MEM.history.push({r:'u',t,at:Date.now()}); MEM.history.push({r:'m',t:r,at:Date.now()}); logChat('m',r); Crono.marca('cerebro'); Crono.c.cer='reflejo'; Robot.decir(r,'feliz'); return; }
+      /* 5) difícil y sin Groq → cerebro bueno (si le queda cupo) */
+      const dificil=t.split(/\s+/).length>=7&&/\b(por qu[eé]|c[oó]mo (funciona|se hace|puedo)|expl[ií]ca|qu[eé] diferencia|ay[uú]dame|deberes|problema|calcula|cu[aá]nto es)\b/i.test(t);
+      const hayGroq=Prov.listos().some(p=>p.id==='groq'); const antes=window.CHAT_FUERTE; if(dificil&&!hayGroq) window.CHAT_FUERTE=true;
+      try{ return await _send140(text,opts); } finally{ window.CHAT_FUERTE=antes; } } }
+  return _send140(text,opts); };
+CMDS.splice(2,0,['/tiempos','Cuánto tarda Mor en oír, pensar y hablar',()=>{ const r=Crono.resumen(); const L=Crono.L().slice(-12).reverse(); const s=x=>x==null?'—':(x/1000).toFixed(1);
+  chatCard(`<div class="ctit">Tiempos de Mor</div><div style="font-size:13px">${r?esc(r.txt):'Aún no hay medidas.'}</div><table style="font-size:12px;margin-top:6px;width:100%"><tr><th align=left>Frase</th><th>oír</th><th>pensar</th><th>voz</th><th>cerebro</th></tr>${L.map(c=>`<tr><td>${esc(c.txt||'')}</td><td>${s(c.oye&&c.final?c.final-c.oye:null)}</td><td>${s(c.cerebro?c.cerebro-c.envio:null)}</td><td>${s(c.voz?c.voz-(c.cerebro||c.envio):null)}</td><td>${esc((c.cer||'').replace(/^pv:/,''))}</td></tr>`).join('')}</table>`); }]);
+/* respuestas cortas y al grano en modo robot */
+const _sys140=systemPrompt; systemPrompt=function(){ const b=_sys140.apply(this,arguments); if(!Modo.robot()) return b; return b+`\nRESPONDE BIEN: entiende qué te preguntan de verdad y contesta eso primero, en la primera frase. Si es un dato y no estás seguro, dilo o usa {{buscar: …}}. No te enrolles.`; };
 
 /* =====================================================================
    15. DESPERTAR
