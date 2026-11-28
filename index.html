@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v75</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v76</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v75 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v76 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6999,7 +6999,7 @@ const Mas={
     const v={people:quien,cumples:this.cumples(),reglas:MEM.reglasEstudio||[],recados:Vida.recados(),at:Date.now(),de:localStorage.getItem('mor_dev_nombre')||(Modo.robot()?'robot':'aparato')};
     const txt=JSON.stringify({valor:v}); if(txt.length>95000) v.people.forEach(p=>{ p.descs=p.descs.slice(0,3); p.voces=[]; });
     if(JSON.stringify(v.people)+JSON.stringify(v.cumples)===this._firma) return; this._firma=JSON.stringify(v.people)+JSON.stringify(v.cumples);
-    try{ await this.api(`/api/estado/${c}/cuenta`,{method:'PUT',body:JSON.stringify({valor:v,reemplazar:true})}); }catch(e){} },
+    try{ await this.api(`/api/estado/${c}/cuenta`,{method:'POST',body:JSON.stringify({valor:v,reemplazar:true})}); }catch(e){} },
   async bajarCuenta(){ const c=this.codigo(); if(!c) return; try{ const v=(await this.api(`/api/estado/${c}/cuenta`)).valor; if(!v) return;
       for(const q of v.people||[]){ let p=Faces.people.find(x=>x.name===q.name); if(!p){ p={id:'p'+Date.now()+Math.random().toString(36).slice(2,5),name:q.name,rel:q.rel,descs:q.descs,voces:q.voces||[],at:Date.now()}; Faces.people.push(p); await DB.put('people',p); }
         else if((q.descs||[]).length>(p.descs||[]).length){ p.descs=q.descs; await DB.put('people',p); } }
@@ -7098,7 +7098,7 @@ const SyncDBP={ TROZO:88000,
   async hash(s){ return b64e(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).slice(0,16); },
   url(k){ return `/api/estado/${Mas.codigo()}/${k}`; },
   async leer(k){ return (await Mas.api(this.url(k))).valor; },
-  async escribir(k,v){ return Mas.api(this.url(k),{method:'PUT',body:JSON.stringify({valor:v,reemplazar:true})}); },
+  async escribir(k,v){ return Mas.api(this.url(k),{method:'POST',body:JSON.stringify({valor:v,reemplazar:true})}); },
   async partes(){ const P=await Sync.paquete(), partes={};
     partes.mem={mem:P.mem,convs:P.convs,cproj:P.cproj,hist:P.hist,claves:P.claves,con:P.con};
     const porMes={}; for(const c of P.chats){ const k='chats_'+new Date(c.at||0).toISOString().slice(0,7); (porMes[k]=porMes[k]||[]).push(c); } Object.assign(partes,porMes);
@@ -7597,6 +7597,41 @@ CMDS.splice(2,0,['/tiempos','Cuánto tarda Mor en oír, pensar y hablar',()=>{ c
   chatCard(`<div class="ctit">Tiempos de Mor</div><div style="font-size:13px">${r?esc(r.txt):'Aún no hay medidas.'}</div><table style="font-size:12px;margin-top:6px;width:100%"><tr><th align=left>Frase</th><th>oír</th><th>pensar</th><th>voz</th><th>cerebro</th></tr>${L.map(c=>`<tr><td>${esc(c.txt||'')}</td><td>${s(c.oye&&c.final?c.final-c.oye:null)}</td><td>${s(c.cerebro?c.cerebro-c.envio:null)}</td><td>${s(c.voz?c.voz-(c.cerebro||c.envio):null)}</td><td>${esc((c.cer||'').replace(/^pv:/,''))}</td></tr>`).join('')}</table>`); }]);
 /* respuestas cortas y al grano en modo robot */
 const _sys140=systemPrompt; systemPrompt=function(){ const b=_sys140.apply(this,arguments); if(!Modo.robot()) return b; return b+`\nRESPONDE BIEN: entiende qué te preguntan de verdad y contesta eso primero, en la primera frase. Si es un dato y no estás seguro, dilo o usa {{buscar: …}}. No te enrolles.`; };
+
+/* =====================================================================
+   141. CUENTA DE LA FAMILIA QUE SÍ SINCRONIZA
+   - DatabasePro no deja usar PUT desde el navegador (por eso salía
+     «Failed to fetch»): todo va por POST.
+   - Lo de «mensaje entregado» se guarda en un documento aparte.
+   - Sube primero lo importante (memoria, personas, charlas recientes) y,
+     para no gastar el cupo diario de DatabasePro (compartido con el
+     servidor de MDG 27), como mucho 150 escrituras al día; lo demás,
+     los días siguientes.
+   ===================================================================== */
+const _api141=Mas.api.bind(Mas); Mas.api=async function(ruta,o={}){ const m=String(ruta).match(/^\/api\/datos\/([^/]+)\/mensajes\/([^/?]+)$/);
+  if(m&&o.method==='PUT'){ let b={}; try{ b=JSON.parse(o.body||'{}'); }catch(e){} return _api141(`/api/estado/${m[1]}/entregas`,{method:'POST',body:JSON.stringify({valor:{[m[2]]:b}})}); }
+  if(o.method==='PUT') o=Object.assign({},o,{method:'POST'});
+  const r=await _api141(ruta,o);
+  const lm=String(ruta).match(/^\/api\/datos\/([^/]+)\/mensajes(\?|$)/);
+  if(lm&&(!o.method||o.method==='GET')&&r&&r.registros){ try{ const e=(await _api141(`/api/estado/${lm[1]}/entregas`)).valor||{}; r.registros.forEach(x=>{ if(e[x.id]) Object.assign(x,e[x.id]); }); }catch(x){} }
+  return r; };
+/* subir con presupuesto diario y lo importante primero */
+SyncDBP.subir=async function(estado){ const hoy=new Date().toDateString(); let gas=JSON.parse(localStorage.getItem('mor_dbp_gasto')||'{}'); if(gas.d!==hoy) gas={d:hoy,n:0}; const TOPE=150;
+  const idxR=(await this.leer('sync_idx'))||{partes:{}}, idx={at:Date.now(),de:localStorage.getItem('mor_yo')||'',partes:{}}; let escritos=0, faltan=0;
+  const partes=await this.partes(), mesAct='chats_'+new Date().toISOString().slice(0,7);
+  const prio=n=>n==='mem'?0:n==='people'?1:n===mesAct?2:n==='cards'||n==='docs'?3:n.startsWith('chats_')?4:n==='files'?5:6;
+  const orden=Object.keys(partes).sort((a,b)=>prio(a)-prio(b)||(b>a?1:-1));
+  for(const nombre of orden){ const c=await this.cifrar(partes[nombre]), h=await this.hash(c), n=Math.ceil(c.length/this.TROZO);
+    if(idxR.partes[nombre]&&idxR.partes[nombre].h===h){ idx.partes[nombre]={h,n}; continue; }
+    if(gas.n+n+1>TOPE){ faltan++; if(idxR.partes[nombre]) idx.partes[nombre]=idxR.partes[nombre]; continue; }
+    estado('Subiendo '+nombre+'…'); for(let i=0;i<n;i++){ await this.escribir('sync_'+nombre+'_'+i,c.slice(i*this.TROZO,(i+1)*this.TROZO)); escritos++; gas.n++; }
+    idx.partes[nombre]={h,n}; localStorage.setItem('mor_dbp_gasto',JSON.stringify(gas)); }
+  for(const [nombre,v] of Object.entries(idxR.partes||{})) if(!idx.partes[nombre]) idx.partes[nombre]=v;
+  if(escritos||JSON.stringify(Object.keys(idx.partes).sort())!==JSON.stringify(Object.keys(idxR.partes||{}).sort())){ await this.escribir('sync_idx',idx); escritos++; gas.n++; }
+  localStorage.setItem('mor_dbp_gasto',JSON.stringify(gas));
+  const mio={}; for(const [k,v] of Object.entries(idx.partes)) mio[k]=v; localStorage.setItem('mor_dbp_idx',JSON.stringify(mio));
+  if(faltan) estado(`Subido lo importante. Quedan ${faltan} partes (proyectos y chats antiguos) que se subirán los próximos días para no gastar el cupo de DatabasePro.`);
+  return escritos; };
 
 /* =====================================================================
    15. DESPERTAR
