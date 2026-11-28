@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v80</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v81</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v80 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v81 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7353,7 +7353,8 @@ const _heard135=Ears.heard.bind(Ears); Ears.heard=function(t){
   if(!(typeof Modo!=='undefined'&&Modo.robot())) return _heard135(t);
   $('hear').textContent='';
   if(Voice.isEcho(t)) return;
-  if(Voice.cur||Voice.playing){ if(STOPW.test(t)&&!STOPW.test(Voice.curText)){ Voice.stop(); setEmotion('curioso',3000); this.listenFor(9000); } return; }
+  if(Voice.cur||Voice.playing){ if(STOPW.test(t)&&!STOPW.test(Voice.curText)){ Voice.stop(); setEmotion('curioso',3000); this.listenFor(9000); return; }
+    if(t.trim().split(/\s+/).length<2) return; Voice.stop(); Diag.ap('oído','le interrumpes: se calla y te escucha'); }
   const conMor=WAKE.test(t), resto=conMor?t.replace(WAKE,'').trim():t;
   const hayAlguien=(Faces.now||[]).length>0, charlando=Date.now()-(Ears.ultimaCharla||0)<45000;
   /* v70: en modo robot contesta siempre, aunque no te vea ni digas «Mor» */
@@ -7736,7 +7737,7 @@ const _pa143=Mapa.parecido.bind(Mapa); Mapa.parecido=function(a,b){ const p=_pa1
     const conocidos=prev.filter(n=>n&&n!=='desconocido'); if(v.length===1&&v[0]==='desconocido'&&conocidos.length===1&&!this._dud){ this._dud=1; _now=[conocidos[0]]; return; }
     this._dud=0; prev=v.slice(); _now=v; }}); })();
 /* arrancar en modo robot */
-setInterval(()=>{ if(Modo.robot()&&Cam.on&&Vista.estado==='off') Vista.cargar(); },4000);
+setInterval(()=>{ if(Modo.robot()&&Cam.on&&Vista.estado==='off'&&performance.now()>60000&&!busy) Vista.cargar(); },5000);
 /* lo que ve, para el cerebro */
 const _sys143=systemPrompt; systemPrompt=function(){ const b=_sys143.apply(this,arguments); if(!Modo.robot()||Vista.estado!=='listo') return b; const s=Mapa.aqui();
   return b+`\n${Vista.hecho?'LO QUE ESTÁ HACIENDO AHORA quien tienes delante: '+Vista.hecho+'. ':''}${Vista.cosas.length?'COSAS QUE VES ALREDEDOR: '+Vista.cosas.join(', ')+'. ':''}${s&&s.cosas&&s.cosas.length?'En '+s.nombre+' sueles ver: '+s.cosas.slice(-10).join(', ')+'.':''}`; };
@@ -7797,7 +7798,7 @@ const _run145=Ears.run.bind(Ears); Ears.run=function(){ const r0=this.rec; _run1
   r.addEventListener('start',()=>{ Diag.ap('oído','escuchando'); Punto.poner('oye'); }); r.addEventListener('end',()=>Diag.ap('oído','para'));
   r.addEventListener('error',ev=>{ Diag.ap('oído-error',ev.error+' '+(ev.message||'')); if(ev.error!=='no-speech'&&ev.error!=='aborted') Punto.poner('mal'); });
   r.addEventListener('result',e=>{ const res=e.results[e.results.length-1]; if(res&&res.isFinal) Diag.ap('oído-final',res[0].transcript); }); } };
-const _heard145=Ears.heard.bind(Ears); Ears.heard=function(t){ let por=''; if(Voice.isEcho(t)) por='lo toma por su propia voz'; else if(Voice.cur||Voice.playing) por='no hace caso: está hablando él'; else if(busy) por='ocupado: a la cola';
+const _heard145=Ears.heard.bind(Ears); Ears.heard=function(t){ let por=''; if(Crono.c&&!Crono.c.envio&&Crono.c.final&&Date.now()-Crono.c.final>3000) Crono.nuevo(); if(Voice.isEcho(t)) por='lo toma por su propia voz'; else if((Voice.cur||Voice.playing)&&t.trim().split(/\s+/).length<2) por='no hace caso: está hablando él'; else if(busy) por='ocupado: a la cola';
   Diag.ap('oye',t+(por?' ['+por+']':'')); return _heard145(t); };
 const _send145=send; send=async function(text,opts={}){ const t0=Date.now(); if(text) Diag.ap('envía',text); else if(opts&&opts.event) Diag.ap('evento',String(opts.event).slice(0,70));
   if(text) Punto.poner('piensa');
