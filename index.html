@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v77</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v78</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v77 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v78 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1764,17 +1764,20 @@ const Faces={api:null,state:'off',people:[],seen:{},now:[],busyDet:false,last:0,
       await this.api.nets.tinyFaceDetector.loadFromUri(base);
       await this.api.nets.faceLandmark68TinyNet.loadFromUri(base);
       await this.api.nets.faceRecognitionNet.loadFromUri(base);
+      /* v78: detector y puntos de la cara buenos (mejor reconocimiento); si no cargan, los pequeños */
+      try{ await this.api.nets.ssdMobilenetv1.loadFromUri(base); await this.api.nets.faceLandmark68Net.loadFromUri(base); this.full=true; }catch(e){ console.warn('Caras (modelo grande):',e); this.full=false; }
       this.people=await DB.all('people'); this.state='ready'; return true;
     }catch(e){ console.warn('Caras:',e); this.state='fail'; return false; }
   },
-  opts(){ return new this.api.TinyFaceDetectorOptions({inputSize:224,scoreThreshold:.5}); },
+  opts(){ return this.full?new this.api.SsdMobilenetv1Options({minConfidence:.45,maxResults:5}):new this.api.TinyFaceDetectorOptions({inputSize:320,scoreThreshold:.45}); },
   async describe(src){ // descriptor de la cara más grande
-    const r=await this.api.detectAllFaces(src,this.opts()).withFaceLandmarks(true).withFaceDescriptors();
+    const r=await this.api.detectAllFaces(src,this.opts()).withFaceLandmarks(!Faces.full).withFaceDescriptors();
     if(!r.length) return null; r.sort((a,b)=>b.detection.box.area-a.detection.box.area); return r;
   },
-  match(desc){ let best=null,bd=1;
-    for(const p of this.people) for(const d of p.descs){ let s=0; for(let i=0;i<128;i++){ const x=desc[i]-d[i]; s+=x*x; } const dist=Math.sqrt(s); if(dist<bd){ bd=dist; best=p; } }
-    return bd<.5?best:null; },
+  match(desc){ /* v78: media de las 3 muestras más parecidas de cada persona, y que gane con margen */
+    const sc=[]; for(const p of this.people){ const ds=[]; for(const d of p.descs){ let s=0; for(let i=0;i<128;i++){ const x=desc[i]-d[i]; s+=x*x; } ds.push(Math.sqrt(s)); } if(!ds.length) continue; ds.sort((a,b)=>a-b); const k=Math.min(3,ds.length); sc.push([p,(ds.slice(0,k).reduce((a,b)=>a+b,0)/k)*.6+ds[0]*.4]); }
+    if(!sc.length) return null; sc.sort((a,b)=>a[1]-b[1]); const [p,v]=sc[0], seg=sc[1]?sc[1][1]:1;
+    return v<.42||(v<.52&&seg-v>.04)?p:null; },
   async enroll(name,rel){
     if(!Cam.on){ if(!(await Cam.start())) return; $('bCam').classList.add('on'); }
     if(!(await this.load())) return localSay('Mor no poder cargar ojos de reconocer caras en este aparato.','triste');
@@ -6959,7 +6962,7 @@ const Mas={
   async cargarExpr(){ if(this.exprCargado||Faces.state!=='ready') return; try{ await Faces.api.nets.faceExpressionNet.loadFromUri('./lib/models'); this.exprCargado=true; }catch(e){ this.exprCargado='no'; } },
   ear(pts){ const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y); const e=o=>(d(pts[o+1],pts[o+5])+d(pts[o+2],pts[o+4]))/(2*d(pts[o],pts[o+3])||1); return (e(36)+e(42))/2; },
   async mirarCaras(){ if(!Modo.robot()||!Cam.on||Faces.state!=='ready') return; await this.cargarExpr(); if(this.exprCargado!==true) return;
-    try{ const r=await Faces.api.detectAllFaces($('video'),Faces.opts()).withFaceLandmarks(true).withFaceExpressions().withFaceDescriptors(); const ahora=Date.now();
+    try{ const r=await Faces.api.detectAllFaces($('video'),Faces.opts()).withFaceLandmarks(!Faces.full).withFaceExpressions().withFaceDescriptors(); const ahora=Date.now();
       for(const f of r){ const p=Faces.match(f.descriptor); const n=p?p.name:null; if(!n) continue;
         /* dormido: ojos cerrados un buen rato */
         const e=this.ear(f.landmarks.positions); if(e<.16){ this.ojosCerrados[n]=(this.ojosCerrados[n]||0)+1; if(this.ojosCerrados[n]>=10&&!this.dormidos[n]&&Date.now()-ultimaPalabra>10*60000){ this.dormidos[n]=ahora; Vida.apuntar(`${n} se quedó dormido`); } }
@@ -7654,6 +7657,91 @@ const _salirM142=Salir.mostrar.bind(Salir); Salir.mostrar=function(){ const ya=!
 const _send142=send; send=async function(text,opts={}){ const t=String(text||''); if(Modo.robot()&&t&&!(opts&&opts.event)&&t.length<70){ const n=Vida.norm(t);
     if(/\b(sal(te|ir)? del modo robot|quita el modo robot|abre (los )?ajustes|ve a ajustes|ajustes)\b/.test(n)){ logChat('u',t); Robot.decir('Vale, te abro el menú.','neutral'); Salir.mostrar(); return; } }
   return _send142(text,opts); };
+
+/* =====================================================================
+   143. VER MEJOR: GESTOS, MOVIMIENTOS, CARAS Y SITIOS (modo robot)
+   Con MediaPipe (dentro del aparato, sin gastar cupo):
+   - Gestos con la mano: pulgar arriba/abajo, victoria, «te quiero», palma
+     (saludar moviendo la mano), puño, señalar.
+   - Cuerpo: brazos arriba, bailar, saltar, acercarse o irse. Los ojos
+     siguen a la persona.
+   - Objetos que hay alrededor (sofá, tele, silla, perro…) para entender
+     el sitio, y una «huella» buena de cada habitación para reconocerla.
+   - Caras: no cambia de nombre por un fallo suelto (tiene que verlo dos
+     veces seguidas).
+   ===================================================================== */
+const MPV='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3', MPM='https://storage.googleapis.com/mediapipe-models/';
+const Vista={ estado:'off', gest:null, pose:null, emb:null, obj:null, hecho:'', ahoraGesto:'', cosas:[], ult:{}, hist:[], t:null,
+  async cargar(){ if(this.estado!=='off') return; this.estado='cargando';
+    try{ const M=await import(MPV+'/vision_bundle.mjs'); this.M=M; const F=await M.FilesetResolver.forVisionTasks(MPV+'/wasm');
+      const mk=async(C,url,extra)=>{ for(const delegate of ['GPU','CPU']){ try{ return await C.createFromOptions(F,Object.assign({baseOptions:{modelAssetPath:url,delegate},runningMode:'VIDEO'},extra||{})); }catch(e){ if(delegate==='CPU') throw e; } } };
+      this.gest=await mk(M.GestureRecognizer,MPM+'gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task',{numHands:2});
+      this.pose=await mk(M.PoseLandmarker,MPM+'pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',{numPoses:2});
+      try{ this.obj=await mk(M.ObjectDetector,MPM+'object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite',{scoreThreshold:.45,maxResults:8}); }catch(e){}
+      try{ this.emb=await mk(M.ImageEmbedder,MPM+'image_embedder/mobilenet_v3_small/float32/1/mobilenet_v3_small.tflite',{quantize:true,l2Normalize:true}); }catch(e){}
+      this.estado='listo'; this.t=setInterval(()=>this.tick(),280); }
+    catch(e){ console.warn('Vista:',e); this.estado='fallo'; } },
+  ts:0, n:0,
+  tick(){ if(this.estado!=='listo'||!Modo.robot()||!Cam.on||document.hidden) return; const v=$('video'); if(!v.videoWidth||v.readyState<2) return;
+    let t=performance.now(); if(t<=this.ts) t=this.ts+1; this.ts=t; this.n++;
+    try{ if(this.n%2===0){ const r=this.pose.detectForVideo(v,t); this.cuerpo(r); }
+      else { const r=this.gest.recognizeForVideo(v,t); this.manos(r); }
+      if(this.obj&&this.n%35===0){ const r=this.obj.detectForVideo(v,t); this.objetos(r); } }
+    catch(e){ if(!this._err){ this._err=1; console.warn('Vista tick:',e); } } },
+  /* ---- manos ---- */
+  NOMBRES:{Thumb_Up:'pulgar arriba',Thumb_Down:'pulgar abajo',Victory:'victoria (dos dedos)',ILoveYou:'«te quiero» con la mano',Open_Palm:'la palma abierta',Closed_Fist:'el puño cerrado',Pointing_Up:'señalando hacia arriba'},
+  manos(r){ const g=(r.gestures||[]).map(x=>x[0]).filter(x=>x&&x.categoryName!=='None'&&x.score>.6), hl=r.landmarks||[]; const ahora=Date.now();
+    if(hl[0]){ const x=hl[0][0].x; this.hist.push({t:ahora,x}); } this.hist=this.hist.filter(h=>ahora-h.t<1600);
+    const top=g[0]; this.ahoraGesto=top?this.NOMBRES[top.categoryName]||'':'';
+    if(!top) return; const c=top.categoryName;
+    /* saludar: palma abierta moviéndose de lado a lado */
+    if(c==='Open_Palm'&&this.hist.length>=4){ const xs=this.hist.map(h=>h.x); let cambios=0; for(let i=2;i<xs.length;i++){ if((xs[i]-xs[i-1])*(xs[i-1]-xs[i-2])<0&&Math.abs(xs[i]-xs[i-1])>.015) cambios++; }
+      if(cambios>=2&&Math.max(...xs)-Math.min(...xs)>.06) return this.reaccion('saluda','te está saludando con la mano',()=>{ const q=Personas.quien(); return rnd([`¡Hola${q?', '+q:''}!`,`¡Holaaa${q?' '+q:''}! Yo también te saludo.`]); },'feliz',60000); }
+    const R={Thumb_Up:[()=>rnd(['¡Genial!','¡Eso es!','¡Bien!']),'feliz'],Thumb_Down:[()=>rnd(['Vaya… ¿qué pasa?','Uy, eso no mola. ¿Qué ha pasado?']),'triste'],
+      Victory:[()=>rnd(['¡Paz y amor!','¡Victoria! ¿Hemos ganado algo?']),'feliz'],ILoveYou:[()=>rnd(['¡Y yo a ti!','¡Yo también te quiero!']),'carinoso'],Pointing_Up:[()=>'¿Qué hay ahí arriba?','curioso']};
+    if(R[c]&&this.estable(c)) this.reaccion(c,'hace '+this.NOMBRES[c],R[c][0],R[c][1],45000); },
+  cuenta:{}, estable(c){ const a=Date.now(); const k=this.cuenta[c]; if(k&&a-k.t<900){ k.n++; k.t=a; } else this.cuenta[c]={n:1,t:a}; return this.cuenta[c].n>=3; },
+  /* ---- cuerpo ---- */
+  pc:[], cuerpo(r){ const P=(r.landmarks||[])[0]; const ahora=Date.now(); if(!P){ this.hecho=''; return; }
+    const nariz=P[0], mi=P[15], md=P[16], hi=P[23], hd=P[24], hom=[P[11],P[12]];
+    /* los ojos siguen a la persona */
+    try{ face.tx=-(nariz.x*2-1)*1.1; face.ty=(nariz.y*2-1)*.8; face.lastInput=performance.now(); }catch(e){}
+    const centro={x:(hi.x+hd.x)/2,y:(hi.y+hd.y)/2,t:ahora,tam:Math.abs(hom[0].x-hom[1].x)}; this.pc.push(centro); this.pc=this.pc.filter(p=>ahora-p.t<4000);
+    let hecho='';
+    const arriba=mi.y<nariz.y-.05&&md.y<nariz.y-.05&&mi.visibility>.5&&md.visibility>.5;
+    if(arriba){ hecho='tiene los brazos arriba'; if(this.estable('arriba')) this.reaccion('arriba',hecho,()=>rnd(['¡Bieeen!','¡Toma ya!','¡Hurraaa!']),'feliz',60000); }
+    if(this.pc.length>10){ const xs=this.pc.map(p=>p.x), ys=this.pc.map(p=>p.y); let cx=0,cy=0; for(let i=2;i<xs.length;i++){ if((xs[i]-xs[i-1])*(xs[i-1]-xs[i-2])<0&&Math.abs(xs[i]-xs[i-1])>.01) cx++; if((ys[i]-ys[i-1])*(ys[i-1]-ys[i-2])<0&&Math.abs(ys[i]-ys[i-1])>.01) cy++; }
+      if(cx+cy>=8&&Math.max(...xs)-Math.min(...xs)>.05){ hecho='está bailando'; this.reaccion('baila',hecho,()=>rnd(['¡Qué bien bailas! Yo también bailo.','¡Eso, eso! ¡A bailar!']),'feliz',120000); try{ squash(.25); }catch(e){} }
+      const ult=this.pc.slice(-6), antes=this.pc.slice(0,6), dy=Math.min(...ult.map(p=>p.y))-Math.min(...antes.map(p=>p.y));
+      const tam0=antes.reduce((a,p)=>a+p.tam,0)/antes.length, tam1=ult.reduce((a,p)=>a+p.tam,0)/ult.length;
+      if(!hecho&&tam1>tam0*1.5&&tam1>.25) hecho='se está acercando a ti';
+      if(!hecho&&tam1<tam0*.6) hecho='se está alejando'; }
+    this.hecho=hecho||(this.ahoraGesto?'hace '+this.ahoraGesto:''); },
+  /* ---- objetos ---- */
+  ES:{person:'persona',couch:'sofá',chair:'silla',tv:'tele','dining table':'mesa',bed:'cama',dog:'perro',cat:'gato',laptop:'portátil','cell phone':'móvil',book:'libro',bottle:'botella',cup:'taza',refrigerator:'nevera',oven:'horno',microwave:'microondas',sink:'fregadero',toilet:'váter','potted plant':'planta',clock:'reloj',remote:'mando',keyboard:'teclado',mouse:'ratón',backpack:'mochila',umbrella:'paraguas',handbag:'bolso','teddy bear':'peluche',vase:'jarrón',bowl:'cuenco',car:'coche',bicycle:'bici','sports ball':'pelota',scissors:'tijeras',toothbrush:'cepillo de dientes'},
+  objetos(r){ const L=[...new Set((r.detections||[]).map(d=>d.categories[0]).filter(c=>c&&c.score>.45).map(c=>this.ES[c.categoryName]||c.categoryName).filter(n=>n!=='persona'))]; this.cosas=L;
+    const s=Mapa.aqui(); if(s&&L.length){ s.cosas=[...new Set([...(s.cosas||[]),...L])].slice(-20); } },
+  /* ---- reaccionar (sin agobiar) ---- */
+  reaccion(k,hecho,frase,emo,cada){ const a=Date.now(); this.hecho=hecho; if(a-(this.ult[k]||0)<cada||busy||Voice.playing||Voice.cur) return; if(a-(this.ult._any||0)<15000) return; this.ult[k]=a; this.ult._any=a;
+    if(Mas.silencio()) return; try{ setEmotion(emo,4000); }catch(e){} Robot.decir(typeof frase==='function'?frase():frase,emo); },
+  /* ---- huella de un sitio (vector de 1024 números, guardado en pequeño) ---- */
+  huella(){ if(this.estado!=='listo'||!this.emb) return null; try{ let t=performance.now(); if(t<=this.ts) t=this.ts+1; this.ts=t; const r=this.emb.embedForVideo($('video'),t); const e=r.embeddings[0]; return e.quantizedEmbedding?btoa(String.fromCharCode(...Uint8Array.from(e.quantizedEmbedding,v=>v&255))):null; }catch(e){ return null; } },
+  parecido(a,b){ const A=atob(a), B=atob(b); if(A.length!==B.length) return 0; let s=0,na=0,nb=0; for(let i=0;i<A.length;i++){ let x=A.charCodeAt(i), y=B.charCodeAt(i); if(x>127) x-=256; if(y>127) y-=256; s+=x*y; na+=x*x; nb+=y*y; } return s/Math.sqrt((na||1)*(nb||1)); }
+};
+/* el mapa usa la huella buena cuando la hay */
+const _hu143=Mapa.huella.bind(Mapa); Mapa.huella=function(){ const f=_hu143(); if(f){ const e=Vista.huella(); if(e) f.e=e; } return f; };
+const _pa143=Mapa.parecido.bind(Mapa); Mapa.parecido=function(a,b){ const p=_pa143(a,b); if(a.e&&b.e){ const c=Vista.parecido(a.e,b.e); return .75*Math.max(0,(c-.3)/.7)+.25*p; } return p; };
+/* caras: el nombre no cambia por un fallo suelto */
+(()=>{ let _now=Faces.now||[], prev=[]; Object.defineProperty(Faces,'now',{configurable:true,get(){ return _now; },set(v){ v=v||[];
+    const conocidos=prev.filter(n=>n&&n!=='desconocido'); if(v.length===1&&v[0]==='desconocido'&&conocidos.length===1&&!this._dud){ this._dud=1; _now=[conocidos[0]]; return; }
+    this._dud=0; prev=v.slice(); _now=v; }}); })();
+/* arrancar en modo robot */
+setInterval(()=>{ if(Modo.robot()&&Cam.on&&Vista.estado==='off') Vista.cargar(); },4000);
+/* lo que ve, para el cerebro */
+const _sys143=systemPrompt; systemPrompt=function(){ const b=_sys143.apply(this,arguments); if(!Modo.robot()||Vista.estado!=='listo') return b; const s=Mapa.aqui();
+  return b+`\n${Vista.hecho?'LO QUE ESTÁ HACIENDO AHORA quien tienes delante: '+Vista.hecho+'. ':''}${Vista.cosas.length?'COSAS QUE VES ALREDEDOR: '+Vista.cosas.join(', ')+'. ':''}${s&&s.cosas&&s.cosas.length?'En '+s.nombre+' sueles ver: '+s.cosas.slice(-10).join(', ')+'.':''}`; };
+/* «¿qué estoy haciendo?» con la foto */
+const _send143=send; send=async function(text,opts={}){ const t=String(text||''); if(Modo.robot()&&t&&!(opts&&opts.event)&&/\b(qu[eé] (estoy haciendo|hago)|qu[eé] gesto|qu[eé] hago con la mano|me ves bailar)\b/i.test(t)&&opts.image===undefined){ opts=Object.assign({},opts,{image:Cam.snapshot()}); } return _send143(text,opts); };
 
 /* =====================================================================
    15. DESPERTAR
