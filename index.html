@@ -799,7 +799,7 @@ const sleep=ms=>Reloj(ms);
 const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',gemFails:0,warned:false,an:null,buf:null,cur:null,curText:'',lastSpoken:{t:'',at:0},q:[],acc:'',budget:VOZ_MAX,playing:false,gen:0,
   // ¿lo que ha oído el micro es su propia voz? (para no hacerse caso a sí mismo)
   isEcho(t){ const hw=words(t); if(!hw.length) return false; const ref=norm(this.curText+' '+(this.recent||[]).filter(x=>Date.now()-x.at<15000).map(x=>x.t).join(' ')+' '+(this.q||[]).map(x=>x.text).join(' '));
-    if(!ref.trim()) return false; const hit=hw.filter(w=>ref.includes(w)).length; return hit/hw.length>=.45; },
+    if(!ref.trim()) return false; if(!(this.playing||this.cur||Date.now()-(this.finAt||0)<2500)) return false; const hit=hw.filter(w=>ref.includes(w)).length; return hw.length>=2?hit/hw.length>=.6:hit===1&&this.playing; },
   // Piper: carga en segundo plano; mientras tanto se usan las otras voces
   async loadPiper(){
     if(this.piperState!=='off') return; this.piperState='loading';
@@ -1286,7 +1286,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v71</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v72</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1450,7 +1450,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v71 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v72 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6643,7 +6643,7 @@ addEventListener('devicemotion',e=>Sentidos.movimiento(e));
 Robot.sentidos=()=>Sentidos.sentidos();
 const _send126=send; send=async function(text,opts={}){ const t=String(text||'');
   if(Modo.robot()&&t&&!(opts&&opts.event)&&t.length<80){
-    if(/\b(mira el suelo|d[oó]nde est[aá]s|qu[eé] (suelo|terreno) (es|hay)|te gusta (este|el) suelo)\b/i.test(t)){ logChat('u',t); Sentidos.mirarSuelo(); return; }
+    if(/\b(mira el suelo|qu[eé] (suelo|terreno) (es|hay)|te gusta (este|el) suelo)\b/i.test(t)){ logChat('u',t); Sentidos.mirarSuelo(); return; }
     if(/\b(as[ií] est[aá]s (de pie|derecho)|esta es tu postura)\b/i.test(t)){ logChat('u',t); Sentidos.recalibrar(); Robot.decir('Vale, así estoy derecho.','feliz'); return; } }
   return _send126(text,opts); };
 const _sys126=systemPrompt; systemPrompt=function(){ const b=_sys126.apply(this,arguments); if(!Modo.robot()) return b; const S=Sentidos.sentidos();
@@ -6961,13 +6961,13 @@ const Mas={
     try{ const r=await Faces.api.detectAllFaces($('video'),Faces.opts()).withFaceLandmarks(true).withFaceExpressions().withFaceDescriptors(); const ahora=Date.now();
       for(const f of r){ const p=Faces.match(f.descriptor); const n=p?p.name:null; if(!n) continue;
         /* dormido: ojos cerrados un buen rato */
-        const e=this.ear(f.landmarks.positions); if(e<.2){ this.ojosCerrados[n]=(this.ojosCerrados[n]||0)+1; if(this.ojosCerrados[n]>=4&&!this.dormidos[n]){ this.dormidos[n]=ahora; Vida.apuntar(`${n} se quedó dormido`); } }
+        const e=this.ear(f.landmarks.positions); if(e<.16){ this.ojosCerrados[n]=(this.ojosCerrados[n]||0)+1; if(this.ojosCerrados[n]>=10&&!this.dormidos[n]&&Date.now()-ultimaPalabra>10*60000){ this.dormidos[n]=ahora; Vida.apuntar(`${n} se quedó dormido`); } }
         else { this.ojosCerrados[n]=0; if(this.dormidos[n]) delete this.dormidos[n]; }
         /* triste */
         const tr=f.expressions.sad||0; if(tr>.55){ this.tristes[n]=(this.tristes[n]||0)+1; if(this.tristes[n]>=2&&!busy&&!this.silencio()&&ahora-(this['tr_'+n]||0)>30*60000){ this['tr_'+n]=ahora; this.tristes[n]=0;
             send(null,{event:`${n.toUpperCase()} PARECE TRISTE (se le nota en la cara). Pregúntale con mucho cariño si está bien y si quiere hablar o que le cuentes un chiste. Una o dos frases, sin exagerar.`,image:null}); } } else this.tristes[n]=0; } }
     catch(e){} },
-  silencio(){ return Object.keys(this.dormidos).length>0; },
+  silencio(){ const t=Date.now(); for(const n in this.dormidos){ if(!(Faces.now||[]).includes(n)&&t-this.dormidos[n]>120000) delete this.dormidos[n]; } return Object.keys(this.dormidos).length>0; },
   /* ---------- batería ---------- */
   bateria(){ if(!navigator.getBattery) return; navigator.getBattery().then(b=>{ const f=()=>{ if(!Modo.robot()||b.charging) { this.avisoBat=null; return; } const p=Math.round(b.level*100);
       for(const u of [20,10,5]) if(p<=u&&(this.avisoBat==null||this.avisoBat>u)){ this.avisoBat=u; Robot.decir(u===5?'Me queda muy poquita batería… ¿me enchufas, por favor? Me voy a dormir.':`Me queda un ${p} por ciento de batería. ¿Me enchufas cuando puedas?`,'cansado'); break; } };
@@ -7425,6 +7425,21 @@ const _apr136=Vida.aprender.bind(Vida); Vida.aprender=async function(n){ const r
 const _um136=updateMemory; updateMemory=async function(t,r){ if(typeof Modo!=='undefined'&&Modo.robot()&&t&&!/^\[/.test(t)) return Personas.aprender(t,r); return _um136(t,r); };
 const _sys136=systemPrompt; systemPrompt=function(){ const b=_sys136.apply(this,arguments); if(!Modo.robot()) return b; return b+Personas.forPrompt(ultimoTexto); };
 CMDS.splice(2,0,['/personas','Lo que Mor sabe de cada persona de la familia',()=>Personas.panel()]);
+
+/* =====================================================================
+   137. QUE SIEMPRE VEA Y SIEMPRE CONTESTE (modo robot)
+   - Si la cámara delantera no se abre o se cierra, lo vuelve a intentar.
+   - Cuando alguien le habla, nadie está dormido: se acaba el silencio.
+   - Las respuestas a lo que le dicen nunca se callan (solo lo que dice él solo).
+   ===================================================================== */
+const Ojos={ fallos:0, ultimo:0, async revisar(){ if(!Modo.robot()||document.hidden) return; const ok=Cam.on&&Cam.stream&&Cam.stream.active&&Cam.stream.getVideoTracks().some(t=>t.readyState==='live');
+    if(ok){ this.fallos=0; return; } if(Date.now()-this.ultimo<8000) return; this.ultimo=Date.now();
+    try{ if(Cam.stream) Cam.stream.getTracks().forEach(t=>t.stop()); }catch(e){} Cam.on=false; localStorage.setItem('mor_cam','user');
+    try{ const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false}); const v=$('video'); v.srcObject=s; await v.play(); Cam.stream=s; Cam.on=true; Cam.track(); this.fallos=0; Faces.load(); }
+    catch(e){ this.fallos++; console.warn('Cámara:',e.name,e.message); if(this.fallos===3) Robot.decir('No consigo abrir mi cámara de delante. ¿Me das permiso para la cámara?','triste'); } } };
+setInterval(()=>Ojos.revisar(),3000);
+const _send137=send; send=async function(text,opts={}){ if(Modo.robot()&&text&&!(opts&&opts.event)){ Mas.dormidos={}; ultimaPalabra=Date.now(); } return _send137(text,opts); };
+const _decir137=Robot.decir; Robot.decir=function(t,e){ if(Date.now()-(Ears.ultimaCharla||0)<8000) Mas.dormidos={}; return _decir137.call(Robot,t,e); };
 
 /* =====================================================================
    15. DESPERTAR
