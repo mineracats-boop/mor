@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v89</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v90</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v89 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v90 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1796,7 +1796,7 @@ const Faces={api:null,state:'off',people:[],seen:{},now:[],busyDet:false,last:0,
     try{
       const r=await this.describe($('video')); const names=[];
       for(const f of (r||[])){ const p=this.match(f.descriptor); names.push(p?p.name:'desconocido'); }
-      this.now=names;
+      this.now=names; try{ const vw=$('video').videoWidth||640; this.cajas=(r||[]).map((f,i)=>({n:names[i],x:(f.detection.box.x+f.detection.box.width/2)/vw,at:Date.now()})); }catch(e){}
       for(const n of names){ if(n==='desconocido') continue; const p=this.people.find(x=>x.name===n);
         if(!this.seen[n]||Date.now()-this.seen[n]>15*60000){ const first=!this.seen[n]; this.seen[n]=Date.now();
           if(Live.on) Live.note(`ahora mismo ves por la cámara a ${n}${p&&p.rel?' ('+p.rel+')':''}`);
@@ -8023,6 +8023,7 @@ const Cuerpo={ dev:null, rx:null, on:false, dist:400, mv:0, l:0, r:0, hasta:0, m
 setInterval(()=>Cuerpo.tick(),200);
 /* al ir sobre ruedas tiembla: que no crea que le levantan */
 const _reac149=Sentidos.reaccion.bind(Sentidos); Sentidos.reaccion=function(tipo,...r){ if(Cuerpo.on&&(Cuerpo.l||Cuerpo.r||Cuerpo.modo||Date.now()-(Cuerpo._mov||0)<1500)&&/^(arriba|abajo|baches)$/.test(tipo)) return; return _reac149(tipo,...r); };
+CMDS.splice(2,0,['/ninos','Activar o quitar el modo niños',()=>{ const on=!Ninos.on(); if(on) localStorage.setItem('mor_ninos','1'); else localStorage.removeItem('mor_ninos'); toast('Modo niños '+(on?'activado':'desactivado')); }]);
 CMDS.splice(2,0,['/cuerpo','Conectar y probar las ruedas de Mor (Bluetooth)',()=>Cuerpo.panel()]);
 const _salirM149=Salir.mostrar.bind(Salir); Salir.mostrar=function(){ _salirM149(); const d=$('morSalir'); if(!d||d.querySelector('[data-cu]')) return; const b=document.createElement('button'); b.dataset.cu=1; b.textContent=Cuerpo.on?'Ruedas conectadas ✓':'Conectar el cuerpo (ruedas)';
   b.style.cssText='min-width:240px;padding:12px;border-radius:18px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#cfefff;font-size:15px'; b.onclick=()=>{ d.remove(); Cuerpo.conectar(); }; d.appendChild(b); };
@@ -8136,6 +8137,48 @@ setInterval(()=>{ if(Modo.robot()) Pantalla.pedir(); else if(Pantalla.lock){ try
 addEventListener('touchstart',()=>Pantalla.pedir(),{passive:true});
 let _ultGente=Date.now();
 const _vtick153=Vista.tick.bind(Vista); Vista.tick=function(){ if((Faces.now||[]).length||Vista.hecho) _ultGente=Date.now(); const ahorro=Date.now()-_ultGente>10*60000; if(ahorro&&(this._sk=(this._sk||0)+1)%8) return; return _vtick153(); };
+
+/* =====================================================================
+   154. MODO TRANQUILO, QUIÉN HABLA CUANDO HAY VARIOS Y MODO NIÑOS
+   - Tranquilo: con poca batería (menos del 30 % y sin cargar) mira mucho
+     más despacio, reconoce caras cada 10 s y casi no mira la escena.
+   - Quién habla: si hay dos o más personas delante, mira a quién se le
+     mueve la boca mientras se oye la frase y se lo apunta a esa persona.
+   - Modo niños («Mor, activa el modo niños»): palabras sencillas, nada
+     de temas de mayores, no busca en internet cosas no aptas y nunca
+     pide datos personales. Solo lo quita un adulto de la familia.
+   ===================================================================== */
+const Ahorro={ bat:1, carga:true, tranquilo(){ return this.bat<.3&&!this.carga; } };
+if(navigator.getBattery) navigator.getBattery().then(b=>{ const f=()=>{ Ahorro.bat=b.level; Ahorro.carga=b.charging; }; f(); b.addEventListener('levelchange',f); b.addEventListener('chargingchange',f); });
+const _vtick154=Vista.tick.bind(Vista); Vista.tick=function(){ if(Ahorro.tranquilo()&&(this._sk2=(this._sk2||0)+1)%4) return; return _vtick154(); };
+const _ftick154=Faces.tick.bind(Faces); Faces.tick=function(){ if(Ahorro.tranquilo()&&Date.now()-this.last<10000) return; return _ftick154(); };
+const _etick154=Escena.tick.bind(Escena); Escena.tick=function(){ if(Ahorro.tranquilo()&&Date.now()-this.ult<15*60000) return; return _etick154(); };
+/* ---- quién habla: la boca que se mueve ---- */
+const Habla={ fl:null, estado:'off', h:{},
+  async cargar(){ if(this.estado!=='off'||Vista.estado!=='listo') return; this.estado='cargando';
+    try{ const F=await Vista.M.FilesetResolver.forVisionTasks(MPV+'/wasm');
+      const opt=d=>({baseOptions:{modelAssetPath:MPM+'face_landmarker/face_landmarker/float16/1/face_landmarker.task',delegate:d},runningMode:'VIDEO',numFaces:4,outputFaceBlendshapes:true});
+      try{ this.fl=await Vista.M.FaceLandmarker.createFromOptions(F,opt('GPU')); }catch(e){ this.fl=await Vista.M.FaceLandmarker.createFromOptions(F,opt('CPU')); }
+      this.estado='listo'; }catch(e){ this.estado='fallo'; Diag.ap('habla-error',e.message); } },
+  tick(){ const vistos=(Faces.now||[]).filter(n=>n&&n!=='desconocido'); if(vistos.length<2||!Modo.robot()||!Cam.on||document.hidden) return; if(this.estado==='off'){ this.cargar(); return; } if(this.estado!=='listo') return;
+    const v=$('video'); if(!v.videoWidth) return; let t=performance.now(); if(t<=Vista.ts) t=Vista.ts+1; Vista.ts=t;
+    let r; try{ r=this.fl.detectForVideo(v,t); }catch(e){ return; } const ahora=Date.now(), C=(Faces.cajas||[]).filter(c=>c.n&&c.n!=='desconocido'&&ahora-c.at<8000);
+    (r.faceLandmarks||[]).forEach((lm,i)=>{ const x=lm.reduce((a,p)=>a+p.x,0)/lm.length; let best=null,bd=.15; for(const c of C){ const d=Math.abs(c.x-x); if(d<bd){ bd=d; best=c.n; } } if(!best) return;
+      const bs=(r.faceBlendshapes||[])[i], jaw=bs?((bs.categories||[]).find(c=>c.categoryName==='jawOpen')||{}).score||0:0;
+      (this.h[best]=this.h[best]||[]).push({t:ahora,v:jaw}); this.h[best]=this.h[best].filter(p=>ahora-p.t<3000); }); },
+  quien(){ let best=null,bv=.035; for(const [n,L] of Object.entries(this.h)){ if(L.length<4) continue; const m=L.reduce((a,p)=>a+p.v,0)/L.length, sd=Math.sqrt(L.reduce((a,p)=>a+(p.v-m)**2,0)/L.length); if(sd>bv){ bv=sd; best=n; } } return best; } };
+setInterval(()=>Habla.tick(),220);
+const _heard154=Ears.heard.bind(Ears); Ears.heard=function(t){ if(Modo.robot()&&(Faces.now||[]).filter(n=>n&&n!=='desconocido').length>=2){ const q=Habla.quien(); if(q){ Vida.ultimoQuien={n:q,at:Date.now()}; Diag.ap('quién habla',q+' (por la boca)'); } } return _heard154(t); };
+/* ---- modo niños ---- */
+const Ninos={ on(){ return localStorage.getItem('mor_ninos')==='1'; } };
+const _sys154=systemPrompt; systemPrompt=function(){ const b=_sys154.apply(this,arguments); if(!Modo.robot()||!Ninos.on()) return b;
+  return b+`\nMODO NIÑOS (manda sobre todo lo demás): hablas con niños. Palabras sencillas y frases cortas, siempre amable y paciente. Nada de violencia, miedo, sustos fuertes, sexo, drogas, alcohol, apuestas ni temas de mayores: si te preguntan algo así, di con cariño que eso es mejor preguntárselo a papá o a mamá. Nunca pidas ni guardes direcciones, teléfonos, contraseñas ni fotos para nadie de fuera de la familia. Si un niño dice que está mal, que le han hecho daño o que tiene miedo, dile que se lo cuente ya a un adulto de casa.`; };
+const _send154=send; send=async function(text,opts={}){ const t=String(text||''); if(Modo.robot()&&t&&!(opts&&opts.event)){ const n=Vida.norm(t);
+    const adulto=()=>{ const q=Personas.quien(), f=q&&Personas.buscar(q), yo=localStorage.getItem('mor_yo')||''; return !!q&&(Vida.norm(q)===Vida.norm(yo)||/padre|madre|papa|mama|abuel/.test(Vida.norm(f&&f.rel||''))); };
+    if(/\b(activa|pon|enciende) (el )?modo (ninos|infantil)\b/.test(n)){ logChat('u',t); localStorage.setItem('mor_ninos','1'); Casa.decir('Modo niños activado.','feliz'); return; }
+    if(/\b(desactiva|quita|apaga) (el )?modo (ninos|infantil)\b/.test(n)){ logChat('u',t); if(!adulto()){ Casa.decir('Eso solo lo puede quitar un adulto de la familia. Que se ponga delante de mí y me lo pida.','pensativo'); return; } localStorage.removeItem('mor_ninos'); Casa.decir('Modo niños desactivado.','neutral'); return; }
+    if(Ninos.on()&&/\b(sexo|porno|desnud|drogas?|matar|armas?|pistola|apuestas|casino|alcohol|borrach)\b/.test(n)){ logChat('u',t); Casa.decir('Eso es mejor que se lo preguntes a papá o a mamá.','carinoso'); return; } }
+  return _send154(text,opts); };
 
 /* =====================================================================
    15. DESPERTAR
