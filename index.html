@@ -1215,7 +1215,7 @@ async function send(text,opts={}){
   }
   const coding=/c[oó]digo|program|html|\bweb\b|p[aá]gina web|juego|script|funci[oó]n|archivo|\bzip\b|css|javascript|python|\bapp\b|three\.?js|luau|ejercicio/i.test((text||'')+' '+(opts.event||''))||!!MEM.course&&/c[oó]digo|ejercicio|lecci/i.test(text||'');
   if(opts.extra) extra+='\n'+opts.extra;
-  const contents=(_rb?MEM.history.filter(h=>h.at&&h.at>Date.now()-3*3600e3).slice(-14):MEM.history.slice(-40)).map(h=>({role:h.r==='u'?'user':'model',parts:[{text: h.r==='u'&&/^\[/.test(h.t) ? '(nota del sistema, NO lo ha dicho él: '+h.t.slice(1,-1)+')' : h.t}]}));
+  const contents=(_rb?MEM.history.filter(h=>h.at&&h.at>Date.now()-3*3600e3).slice(-10):MEM.history.slice(-40)).map(h=>({role:h.r==='u'?'user':'model',parts:[{text: h.r==='u'&&/^\[/.test(h.t) ? '(nota del sistema, NO lo ha dicho él: '+h.t.slice(1,-1)+')' : h.t}]}));
   const parts=[]; if(img) parts.push({inline_data:{mime_type:'image/jpeg',data:img}});
   const att=attach.splice(0); renderAttach();
   att.forEach(a=>{ if(a.kind==='img') parts.push({inline_data:{mime_type:'image/jpeg',data:a.data}}); else if(a.kind==='pdf') parts.push({inline_data:{mime_type:'application/pdf',data:a.data}}); else parts.push({text:`ARCHIVO ADJUNTO «${a.name}»:\n\`\`\`\n${a.data}\n\`\`\``}); });
@@ -1230,7 +1230,7 @@ async function send(text,opts={}){
         if(inF){ fbuf+=t.slice(0,i); inF=false; const f=parseFence(fbuf,ffiles.length+1); ffiles.push(f); fbuf=''; out+=' (te dejo el archivo '+f.name+') '; }
         else { out+=t.slice(0,i); inF=true; fbuf=''; }
         t=t.slice(i+3); } return out; };
-    await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:coding?.5:.85,maxOutputTokens:coding?65536:8192}},chunk=>{
+    await geminiStream({systemInstruction:{parts:[{text:systemPrompt(extra)}]},contents,generationConfig:{temperature:coding?.5:.85,maxOutputTokens:coding?65536:(_rb?700:8192)}},chunk=>{
       lastStreamHadText=true; raw+=chunk; pending+=chunk;
       // el CÓDIGO (entre ```) pasa intacto; las caras, etiquetas y el formato solo se quitan del texto normal
       let clean=''; { let w=pending; pending=''; const tk=w.match(/`{1,2}$/); if(tk){ pending=tk[0]; w=w.slice(0,-tk[0].length); }
@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v86</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v87</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v86 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v87 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6553,7 +6553,7 @@ NO INVENTAR: nunca digas que alguien dijo o hizo algo que no está aquí. Las l�
 VISIÓN: si recibes una imagen, es lo que ven tus ojos ahora mismo. Coméntala solo si viene al caso o te preguntan.
 AHORA: ${fecha}. Batería ${Math.round(energy*100)}%${charging?' (cargando)':''}.${MEM.ciudad?' Vivís en '+MEM.ciudad+'.':''}
 LO QUE SABES DE LA FAMILIA (úsalo solo cuando venga a cuento, no lo saques porque sí):
-${(()=>{ let t='',L=MEM.facts.slice().reverse(); for(const f of L){ if(t.length>3500) break; t='- '+f+'\n'+t; } return t.trim()||'(nada todavía)'; })()}
+${(()=>{ let t='',L=MEM.facts.slice().reverse(); for(const f of L){ if(t.length>2000) break; t='- '+f+'\n'+t; } return t.trim()||'(nada todavía)'; })()}
 ${Faces.forPrompt()}
 ${Agenda.forPrompt()}
 ${Timers.list.length?'TEMPORIZADORES EN MARCHA: '+Timers.list.map(t=>t.why+' (quedan '+Math.ceil((t.end-Date.now())/60000)+' min)').join('; '):''}
@@ -7387,12 +7387,12 @@ const Personas={
   olvidar(n,dato){ const f=this.buscar(n); if(!f) return; const low=Vida.norm(dato).slice(0,30); f.datos=f.datos.filter(d=>!Vida.norm(d.t).includes(low)); },
   texto(f,completo){ const fecha=t=>new Date(t).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
     if(!completo) return `- ${f.nombre}${f.rel?' ('+f.rel+')':''}${f.datos.length?': '+f.datos.slice(-3).map(d=>d.t).join('; '):''}`;
-    return `«${f.nombre}»${f.rel?' ('+f.rel+')':''}:\n${f.datos.map(d=>'  · '+d.t).join('\n')||'  (aún no sabes nada)'}${f.charlas.length?'\n  Últimas veces que hablasteis: '+f.charlas.slice(-5).map(c=>fecha(c.at)+': '+c.t).join(' | '):''}`; },
+    return `«${f.nombre}»${f.rel?' ('+f.rel+')':''}:\n${f.datos.slice(-40).map(d=>'  · '+d.t).join('\n')||'  (aún no sabes nada)'}${f.charlas.length?'\n  Últimas veces que hablasteis: '+f.charlas.slice(-5).map(c=>fecha(c.at)+': '+c.t).join(' | '):''}`; },
   forPrompt(ultimo){ const P=Object.values(this.todas()); if(!P.length) return ''; const quien=this.quien(), vistos=(Faces.now||[]).filter(n=>n&&n!=='desconocido'), txt=Vida.norm(ultimo||'');
     const cerca=new Set(); [quien,...vistos].forEach(n=>{ const f=n&&this.buscar(n); if(f) cerca.add(f); });
     P.forEach(f=>{ if(txt&&(txt.includes(this.k(f.nombre))||(f.rel&&txt.includes(this.k(f.rel))))) cerca.add(f); });
     const otros=P.filter(f=>!cerca.has(f));
-    return `\nFICHAS DE LA FAMILIA (lo que sabes de cada uno; úsalo con naturalidad cuando venga a cuento, sin recitarlo):\n${[...cerca].map(f=>this.texto(f,true)).join('\n')}${otros.length?'\nOtras personas que conoces: \n'+otros.map(f=>this.texto(f,false)).join('\n'):''}\n${quien?'TE ESTÁ HABLANDO '+quien.toUpperCase()+'.':'No sabes seguro quién te habla: si no ves a nadie conocido y hace falta, pregunta «¿quién eres?».'}`; },
+    return `\nFICHAS DE LA FAMILIA (lo que sabes de cada uno; úsalo con naturalidad cuando venga a cuento, sin recitarlo):\n${[...cerca].map(f=>this.texto(f,true)).join('\n')}${otros.length?'\nOtras personas que conoces: \n'+otros.slice(-8).map(f=>this.texto(f,false)).join('\n'):''}\n${quien?'TE ESTÁ HABLANDO '+quien.toUpperCase()+'.':'No sabes seguro quién te habla: si no ves a nadie conocido y hace falta, pregunta «¿quién eres?».'}`; },
   SCHEMA:{type:'OBJECT',properties:{
     datos:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},dato:{type:'STRING'}},required:['persona','dato']}},
     olvidar:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},dato:{type:'STRING'}},required:['persona','dato']}},
@@ -7897,7 +7897,7 @@ Devuelve: escena (una frase), personas (quién y qué hace cada uno: «cocinando
 setInterval(()=>Escena.tick(),5000);
 /* el cerebro sabe lo que pasa */
 const _sys147=systemPrompt; systemPrompt=function(){ const b=_sys147.apply(this,arguments); if(!Modo.robot()) return b; const e=Escena.actual;
-  const hoy=Escena.log().filter(x=>Date.now()-x.at<6*3600000).slice(-5,-1);
+  const hoy=Escena.log().filter(x=>Date.now()-x.at<6*3600000).slice(-3,-1);
   return b+(e&&Date.now()-e.at<20*60000?`\nLO QUE ESTÁS VIENDO (${Escena.hace(e.at)}): ${Escena.texto(e)}`:'')+(hoy.length?`\nLO QUE HAS VISTO ANTES: ${hoy.map(x=>Escena.texto(x)).join(' | ')}`:'')+`\nERES LISTO: usa lo que ves y lo que sabes de cada uno para dar respuestas útiles y con sentido (si ves que alguien cocina, puedes ayudar con la receta; si hace deberes, con los deberes). Si te preguntan por algo que viste, contesta con lo que viste y cuándo.`; };
 /* preguntas sobre lo que ha visto: le pasa todo el registro del día; y «piensa más» en las difíciles */
 const _send147=send; send=async function(text,opts={}){ const t=String(text||'');
@@ -7954,18 +7954,18 @@ const _send148=send; send=async function(text,opts={}){ const t=String(text||'')
   const hecho=r=>{ logChat('u',t); MEM.history.push({r:'u',t,at:Date.now()}); MEM.history.push({r:'m',t:r,at:Date.now()}); saveMem(); Casa.decir(r,'feliz'); };
   /* ---- lista de la compra ---- */
   let m=t.match(/^(?:mor[, ]+)?(?:apunta|a[ñn]ade|pon|mete)\s+(.+?)\s+(?:a|en)\s+la\s+lista(?:\s+de\s+la\s+compra)?\s*[.!]*$/i)||t.match(/^(?:mor[, ]+)?(?:hay que comprar|tenemos que comprar|nos hemos quedado sin|se ha acabado (?:el|la)?|se han acabado (?:los|las)?)\s+(.+?)[.!]*$/i);
-  if(m){ const L=Casa.compra(), nuevos=Casa.items(m[1]).filter(x=>!L.some(y=>Vida.norm(y.t)===Vida.norm(x))); nuevos.forEach(x=>L.push({t:x,quien:q,at:Date.now()})); return hecho(nuevos.length?`Apuntado: ${nuevos.join(', ')}. Ya hay ${L.length} cosas en la lista.`:'Eso ya estaba en la lista.'); }
+  if(m){ const L=Casa.compra(), nuevos=Casa.items(m[1]).filter(x=>!L.some(y=>Vida.norm(y.t)===Vida.norm(x))); nuevos.forEach(x=>L.push({t:x,quien:q,at:Date.now()})); return hecho(nuevos.length?`Apuntado: ${nuevos.join(', ')}.`:'Ya estaba apuntado.'); }
   if(/\b(que (hay|tenemos|falta|pone) en la lista|que (hay que|tengo que|tenemos que) comprar|lista de la compra|que falta por comprar)\b/.test(n)&&!/(apunta|anade|quita|borra)/.test(n)){ const L=Casa.compra(); return hecho(L.length?`En la lista hay: ${L.map(x=>x.t).join(', ')}.`:'La lista de la compra está vacía.'); }
   m=t.match(/(?:quita|borra|tacha)\s+(.+?)\s+de la lista/i)||t.match(/^(?:mor[, ]+)?ya (?:he|hemos) comprado\s+(.+?)[.!]*$/i);
-  if(m){ const fuera=Casa.items(m[1]).map(Vida.norm); const L=Casa.compra(), antes=L.length; MEM.compra=L.filter(x=>!fuera.some(f=>Vida.norm(x.t).includes(f)||f.includes(Vida.norm(x.t)))); return hecho(MEM.compra.length<antes?`Quitado. Quedan ${MEM.compra.length} cosas.`:'Eso no estaba en la lista.'); }
+  if(m){ const fuera=Casa.items(m[1]).map(Vida.norm); const L=Casa.compra(), antes=L.length; MEM.compra=L.filter(x=>!fuera.some(f=>Vida.norm(x.t).includes(f)||f.includes(Vida.norm(x.t)))); return hecho(MEM.compra.length<antes?'Quitado.':'Eso no estaba en la lista.'); }
   if(/\b(borra|vacia|limpia) (toda )?la lista( de la compra)?\b|\bya (he|hemos) hecho la compra\b/.test(n)){ MEM.compra=[]; return hecho('Lista de la compra vacía.'); }
   /* ---- recordatorio para otra persona con hora ---- */
   m=t.match(/^(?:mor[, ]+)?(?:recu[eé]rdale|recordarle|dile|av[ií]sale|av[ií]sa a)\s+(?:a\s+)?(?:mi\s+\w+\s+)?([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\s+(.+?)\s+que\s+(.+)$/i);
   if(m&&Casa.hora(m[2])){ const cuando=Casa.hora(m[2]), para=m[1], txt=m[3].replace(/[.!]+$/,''); Casa.avisos().push({para,txt,at:cuando,de:q,hecho:false}); saveMem();
-    const d=new Date(cuando); return hecho(`Vale. ${d.toDateString()===new Date().toDateString()?'Hoy':'Mañana'} a las ${d.toTimeString().slice(0,5)} buscaré a ${para} para recordárselo.`); }
+    const d=new Date(cuando); return hecho(`Vale, ${d.toDateString()===new Date().toDateString()?'':'mañana '}a las ${d.toTimeString().slice(0,5)} se lo recuerdo a ${para}.`); }
   /* ---- dónde están las cosas ---- */
   m=t.match(/^(?:mor[, ]+)?(?:he dejado|he puesto|he guardado|dejo|pongo|guardo|las? he dejado|los? he dejado)\s+(?:las?|los?|mis?|el|tus?)?\s*([a-záéíóúñ ]{2,30}?)\s+(en|encima de|debajo de|dentro de|detr[aá]s de|al lado de|junto a)\s+(.{2,60}?)[.!]*$/i);
-  if(m){ const cosa=m[1].trim(), donde=m[2]+' '+m[3]; Casa.cosas()[Vida.norm(cosa).trim()]={cosa,donde,quien:q,at:Date.now()}; return hecho(`Vale, ${cosa}: ${donde}. Me acuerdo.`); }
+  if(m){ const cosa=m[1].trim(), donde=m[2]+' '+m[3]; Casa.cosas()[Vida.norm(cosa).trim()]={cosa,donde,quien:q,at:Date.now()}; return hecho('Vale, me acuerdo.'); }
   m=n.match(/donde (?:estan|esta|he dejado|deje|puse|he puesto|tengo|habia dejado) (?:las?|los?|mis?|el|tus?)?\s*([a-zñ ]{2,30})$/);
   if(m){ const k=m[1].trim(), C=Casa.cosas(), hit=C[k]||Object.values(C).find(x=>Vida.norm(x.cosa).includes(k)||k.includes(Vida.norm(x.cosa).trim()));
     if(hit) return hecho(`${hit.cosa[0].toUpperCase()+hit.cosa.slice(1)}: ${hit.donde}${hit.quien?' (lo dijo '+hit.quien:' ('}, ${Casa.hace(hit.at)}).`); }
@@ -7991,7 +7991,7 @@ const Cuerpo={ dev:null, rx:null, on:false, dist:400, mv:0, l:0, r:0, hasta:0, m
       const g=await this.dev.gatt.connect(), sv=await g.getPrimaryService(S); this.rx=await sv.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
       const tx=await sv.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); await tx.startNotifications(); let b='';
       tx.addEventListener('characteristicvaluechanged',e=>{ b+=new TextDecoder().decode(e.target.value); let i; while((i=b.indexOf('\n'))>=0){ const l=b.slice(0,i); b=b.slice(i+1); if(l[0]==='D') this.dist=+l.split(',')[1]||400; if(l[0]==='V') this.mv=+l.split(',')[1]||0; } });
-      this.on=true; localStorage.setItem('mor_cuerpo','1'); Diag.ap('cuerpo','conectado'); Casa.decir('¡Ya tengo ruedas! Dime «Mor, ven» y voy.','feliz'); }
+      this.on=true; localStorage.setItem('mor_cuerpo','1'); Diag.ap('cuerpo','conectado'); Casa.decir('¡Ruedas listas!','feliz'); }
     catch(e){ Diag.ap('cuerpo-error',e.message); if(!/cancel/i.test(e.message)) Casa.decir('No he podido conectar con mis ruedas.','triste'); } },
   async enviar(s){ if(!this.on||!this.rx) return; if(this._env) return; this._env=true; try{ await this.rx.writeValueWithoutResponse(new TextEncoder().encode(s+'\n')); }catch(e){} finally{ this._env=false; } },
   mover(l,r,ms){ this.l=l; this.r=r; this.hasta=ms?Date.now()+ms:0; },
@@ -8010,7 +8010,7 @@ const Cuerpo={ dev:null, rx:null, on:false, dist:400, mv:0, l:0, r:0, hasta:0, m
       if(this.modo==='ir'&&A&&Date.now()-A.at>15000){ this.modo=null; Robot.accion=null; } }
     if(this.modo==='baile'){ const k=Math.floor((Date.now()-this._baile)/400)%4; [l,r]=[[40,-40],[-40,40],[30,30],[-30,-30]][k]; if(Date.now()-this._baile>6000){ this.modo=null; l=r=0; } }
     /* obstáculo delante */
-    if((l>0||r>0)&&this.dist<20){ l=Math.min(l,0); r=Math.min(r,0); if(Date.now()-(this._obs||0)>8000){ this._obs=Date.now(); Casa.decir('¡Uy, tengo algo delante!','asustado'); } }
+    if((l>0||r>0)&&this.dist<20){ l=Math.min(l,0); r=Math.min(r,0); try{ setEmotion('sorprendido',1500); }catch(e){} }
     const lim=x=>Math.max(-this.VMAX,Math.min(this.VMAX,Math.round(x)));
     if(l||r) this._mov=Date.now(); l=lim(l)*(I.izq?-1:1); r=lim(r)*(I.der?-1:1); this.enviar(l||r?`M,${l},${r}`:'S'); },
   panel(){ const I=this.inv(); const c=chatCard(`<div class="ctit">Cuerpo de Mor (ruedas)</div><small>${this.on?'Conectado · obstáculo a '+this.dist+' cm · batería '+(this.mv/1000).toFixed(1)+' V':'Sin conectar. Las piezas y el programa de la placa están en lib/cuerpo del repositorio.'}</small>
@@ -8028,8 +8028,8 @@ const _salirM149=Salir.mostrar.bind(Salir); Salir.mostrar=function(){ _salirM149
   b.style.cssText='min-width:240px;padding:12px;border-radius:18px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#cfefff;font-size:15px'; b.onclick=()=>{ d.remove(); Cuerpo.conectar(); }; d.appendChild(b); };
 const _send149=send; send=async function(text,opts={}){ const t=String(text||''); if(Cuerpo.on&&t&&!(opts&&opts.event)&&t.length<60){ const n=Vida.norm(t).replace(/[^a-zñ ]/g,'').replace(/^mor /,'').trim();
     const ok=r=>{ logChat('u',t); if(r) Casa.decir(r,'feliz'); };
-    if(/^(para|parate|stop|quieto|alto|frena)( ya)?$/.test(n)){ Cuerpo.parar(); return ok('Parado.'); }
-    if(/^(sigueme|ven conmigo|acompaname)$/.test(n)){ if(Cuerpo.seguro()) return ok('Ahora no puedo moverme.'); Cuerpo.modo='seguir'; return ok('¡Te sigo! Dime «para» cuando quieras.'); }
+    if(/^(para|parate|stop|quieto|alto|frena)( ya)?$/.test(n)){ Cuerpo.parar(); return ok(''); }
+    if(/^(sigueme|ven conmigo|acompaname)$/.test(n)){ if(Cuerpo.seguro()) return ok('Ahora no puedo moverme.'); Cuerpo.modo='seguir'; return ok('¡Te sigo!'); }
     if(/^(adelante|avanza|ve para adelante|tira para adelante)$/.test(n)){ Cuerpo.modo='paso'; Cuerpo.mover(45,45,1200); return ok(''); }
     if(/^(atras|marcha atras|ve para atras|retrocede)$/.test(n)){ Cuerpo.modo='paso'; Cuerpo.mover(-45,-45,1000); return ok(''); }
     if(/^gira (a la )?izquierda$/.test(n)){ Cuerpo.modo='paso'; Cuerpo.mover(-40,40,550); return ok(''); }
@@ -8071,7 +8071,7 @@ Di: si hay un obstáculo en su camino; qué es (en pocas palabras: «un montón 
   async resolver(hablar){ if(this.ocupado) return; this.ocupado=true; const prev=Cuerpo.modo; Cuerpo.mover(0,0);
     try{ const o=await this.mirar(), d=this.decidir(o); this.apuntar(o); Diag.ap('navegar',(o.que||'nada')+' → '+d);
       const frase=(o.explica&&o.explica.length<160?o.explica+' ':'')+(Cuerpo.on?this.TXT[d]:'Si tuviera ruedas: '+this.TXT[d].charAt(0).toLowerCase()+this.TXT[d].slice(1));
-      if(hablar||d!=='seguir') Casa.decir(frase,d==='vuelta'?'pensativo':'curioso');
+      if(hablar||d==='vuelta') Casa.decir(hablar?frase:'Por aquí no puedo pasar.',d==='vuelta'?'pensativo':'curioso');
       if(Cuerpo.on&&d!=='seguir'){ await sleep(400); await this.ejecutar(d); if(prev==='seguir'||prev==='ir') Cuerpo.modo=prev; }
       return {o,d}; }
     catch(e){ if(hablar) Casa.decir('No he podido mirarlo bien: '+e.message,'triste'); Cuerpo.parar(); }
@@ -8086,6 +8086,42 @@ const _send151=send; send=async function(text,opts={}){ const t=String(text||'')
 /* el mapa recuerda los obstáculos del día */
 const _sys151=systemPrompt; systemPrompt=function(){ const b=_sys151.apply(this,arguments); if(!Modo.robot()) return b; const s=Mapa.aqui(), L=(s&&s.obstaculos||[]).filter(x=>Date.now()-x.at<864e5);
   return b+(L.length?`\nOBSTÁCULOS QUE HAS VISTO HOY EN ${String(s.nombre).toUpperCase()}: ${L.map(x=>x.que+' ('+Escena.hace(x.at)+')').join(', ')}.`:''); };
+
+/* =====================================================================
+   152. AHORRAR: MENOS CEREBRO Y MENOS CHARLA
+   Lo que dice la voz del móvil no gasta nada; lo que gasta es preguntar
+   al cerebro (Groq/Gemini). Así que:
+   - Saludos, caras nuevas, recados, mensajes, cumpleaños y «¿estás
+     triste?» los dice Mor solo, con frases hechas, sin cerebro.
+   - Ya no habla por hablar cuando estáis callados.
+   - No dice en voz alta lo de por dentro: levantarle, dejarle, baches,
+     obstáculos que rodea, gestos sueltos, ayudas que nadie pidió.
+   - Confirmaciones cortas.
+   ===================================================================== */
+const TT=x=>String(x||'').trim().toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
+const _send152=send; send=async function(text,opts={}){
+  if(!text&&opts&&opts.event&&Modo.robot()){ const e=String(opts.event); let m; const D=(t,emo)=>{ Casa.decir(t,emo||'feliz'); };
+    if(/LLEVÁIS UN RATO SIN HABLAR/.test(e)) return;   // no habla por hablar
+    if((m=e.match(/^ACABAS DE APRENDER LA CARA DE ([^.(]+)/))) return D(`¡Ya me quedo con tu cara, ${TT(m[1])}!`);
+    if((m=e.match(/^VES A ALGUIEN CUYA CARA NO CONOCES/))) return D(rnd(['¡Hola! No te conozco. ¿Cómo te llamas?','¡Hola! ¿Quién eres? Así me acuerdo de ti.']),'curioso');
+    if((m=e.match(/^VES POR LA CÁMARA A ([^.(]+)/))){ const n=TT(m[1]); const f=Personas.buscar(n); const r=await Casa.buenosDias(f?f.nombre:n); return D(r||rnd([`¡Hola, ${n}!`,`¡Hey, ${n}!`])); }
+    if((m=e.match(/^PRIMERA VEZ QUE VES HOY A ([^ ]+(?: [^ ]+)?) Y ES POR LA MAÑANA/))){ const n=TT(m[1]); const r=await Casa.buenosDias(n); return D(r||`¡Buenos días, ${n}!`); }
+    if((m=e.match(/^ACABAS DE VER A ([^.]+)\. Salúdale por su nombre y dale este recado de parte de ([^:]+): «(.+)»\./))) return D(`¡Hola, ${TT(m[1])}! ${m[2]} me ha dicho que te diga: ${m[3]}.`,'carinoso');
+    if((m=e.match(/^¡HOY ES EL CUMPLEAÑOS DE ([^ ]+(?: [^ ]+)?) Y LE ACABAS DE VER/))){ const n=TT(m[1]); return D(`¡Feliz cumpleaños, ${n}! Cumpleaños feliz, cumpleaños feliz, te deseamos todos, cumpleaños feliz. ¡Muchas felicidades, ${n}!`); }
+    if((m=e.match(/^ACABAS DE VER A ([^.]+)\. Dentro de (\d+) días? es el cumpleaños de ([^.]+)\./))) return D(`Psst, ${TT(m[1])}: dentro de ${m[2]} ${m[2]==='1'?'día':'días'} es el cumple de ${m[3]}. ¿Le preparamos algo?`,'carinoso');
+    if((m=e.match(/^([^ ]+(?: [^ ]+)?) PARECE TRISTE/))) return D(`${TT(m[1])}, ¿estás bien? Si quieres hablar, aquí estoy.`,'carinoso');
+    if((m=e.match(/^TIENES UN MENSAJE DE (.+?) PARA (.+?), QUE ESTÁ DELANTE: «(.+)»/))) return D(`${TT(m[2])}, ${TT(m[1])} te dice: ${m[3]}.`,'carinoso');
+    if((m=e.match(/^TIENES UN MENSAJE DE (.+?) PARA (.+?): «(.+)»\. No encuentras a .+?, pero está ([^:]+?):/))) return D(`${TT(m[4])}, ${TT(m[2])} no está, así que te lo digo a ti: ${TT(m[1])} dice ${m[3]}.`,'carinoso');
+    if((m=e.match(/^TE PIDEN QUE LE DIGAS A (.+?) \(que está delante\): «(.+)»/))) return D(`${TT(m[1])}, te dicen: ${m[2]}.`,'carinoso');
+  }
+  return _send152(text,opts); };
+/* lo de por dentro, sin decirlo */
+const _reac152=Sentidos.reaccion.bind(Sentidos); Sentidos.reaccion=function(tipo,...r){ if(/^(arriba|abajo|baches|depie)$/.test(tipo)){ try{ setEmotion(tipo==='baches'?'enfadado':'sorprendido',1500); }catch(e){} return; } return _reac152(tipo,...r); };
+const _vr152=Vista.reaccion.bind(Vista); Vista.reaccion=function(k,hecho,frase,emo,cada){ if(!/^(saluda|Thumb_Up|ILoveYou)$/.test(k)){ this.hecho=hecho; try{ setEmotion(emo,2500); }catch(e){} return; } return _vr152(k,hecho,frase,emo,cada); };
+/* la escena solo habla si pasa algo importante */
+const _mirar152=Escena.mirar.bind(Escena); Escena.mirar=function(m){ this.ultComentario=Date.now(); return _mirar152(m); };
+/* «¿quién eres?» como mucho cada media hora */
+const _send152b=send; send=async function(text,opts={}){ const r=await _send152b(text,opts); if(Quien.pend&&Date.now()-Quien.pend.at<2000) Quien.ultimaPregunta=Date.now()+20*60000; return r; };
 
 /* =====================================================================
    15. DESPERTAR
