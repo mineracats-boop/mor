@@ -858,8 +858,8 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
   // recibe texto en trozos y lo corta en frases para empezar a hablar cuanto antes
   feed(t){ this.acc+=t;
     while(true){ const m=this.acc.match(/[\s\S]*?(?:[.!?…:;](?=\s)|\n)/); if(!m) break;
-      let s=m[0]; const minLen=VOZ_MODO==='telefono'?14:(this.gem&&!this.eleven&&this.piperState!=='ready')?110:28;
-      if(s.trim().length<minLen && this.acc.length<s.length+(VOZ_MODO==='telefono'?12:40)) break;   // junta frases cortas
+      let s=m[0]; const minLen=(VOZ_MODO==='telefono'||VOZ_MODO==='nube')?14:(this.gem&&!this.eleven&&this.piperState!=='ready')?110:28;
+      if(s.trim().length<minLen && this.acc.length<s.length+((VOZ_MODO==='telefono'||VOZ_MODO==='nube')?12:40)) break;   // junta frases cortas
       this.acc=this.acc.slice(s.length); this.push(s); } },
   end(){ if(this.acc.trim()) this.push(this.acc); this.acc=''; },
   push(s){
@@ -878,13 +878,13 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
   async play(it,g){
     this.curText=it.text;
     try{
-      const res=it.audio? await withTimeout(it.audio,this.piperState==='loading'?300000:25000) : null; if(g!==this.gen) return;
+      const res=it.audio? await withTimeout(it.audio,(this.piperState==='loading'||false)?300000:25000) : null; if(g!==this.gen) return;
       if(res&&AC&&AC.state!=='running'){ await withTimeout(AC.resume(),800); if(AC.state!=='running'){ this.lastErr='audio bloqueado'; if(!this.warnTap){ this.warnTap=true; toast('Toca la pantalla para que Mor pueda hablar',4000); } } }
       if(res&&(res.mp3||res.wav)){
         this.ensure(); const url=URL.createObjectURL(res.mp3||res.wav), a=new Audio(url);
-        a.preservesPitch=false; a.webkitPreservesPitch=false; a.playbackRate=res.mp3?VOZ_TONO:VOZ_PIPER_TONO;
+        a.preservesPitch=false; a.webkitPreservesPitch=false; a.playbackRate=res.mp3&&VOZ_MODO==='eleven'?VOZ_TONO:VOZ_PIPER_TONO;
         const src=AC.createMediaElementSource(a), hp=AC.createBiquadFilter(), pk=AC.createBiquadFilter();
-        hp.type='highpass'; hp.frequency.value=80; pk.type='peaking'; pk.frequency.value=3000; pk.Q.value=1; pk.gain.value=res.mp3?4:1;
+        hp.type='highpass'; hp.frequency.value=80; pk.type='peaking'; pk.frequency.value=3000; pk.Q.value=1; pk.gain.value=res.mp3&&VOZ_MODO==='eleven'?4:0;
         src.connect(hp); hp.connect(pk); pk.connect(this.an); this.cur=a;
         let failed=false; await withTimeout(new Promise(r=>{ a.onended=r; a.onerror=()=>{failed=true;r();}; a.onpause=r; a.play().catch(e=>{ failed=true; this.lastErr='play: '+e.name; r(); }); }), 4000+it.text.length*120);
         if(failed){ URL.revokeObjectURL(url); if(this.cur===a) this.cur=null; throw new Error(this.lastErr||'audio'); }
@@ -1285,7 +1285,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v68</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v69</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1449,7 +1449,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v68 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v69 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7310,6 +7310,55 @@ const _send134=send; send=async function(text,opts={}){ opts=opts||{}; const t=S
   return _send134(text,opts); };
 /* si alguien nuevo no ha dicho su nombre, se lo pregunta otra vez (una vez) */
 setInterval(()=>{ if(!Modo.robot()||!Vida.pendiente||busy) return; const P=Vida.pendiente; if(!P.repetida&&Date.now()-P.at>45000&&(Faces.now||[]).includes('desconocido')){ P.repetida=true; Robot.decir(rnd(['Perdona, no te he oído bien. ¿Cómo te llamas?','Oye, ¿cómo te llamas? Así me acuerdo de ti.']),'curioso'); } },5000);
+
+/* =====================================================================
+   135. VOZ BONITA EN LA NUBE (UNA SOLA) Y QUE OIGA SIEMPRE
+   - Voz bonita: Google Cloud Text-to-Speech con su clave, una sola voz fija.
+   - Modo robot: contesta sin tener que decir «Mor» cuando hay alguien
+     delante o estáis hablando; si está ocupado, lo apunta y contesta.
+   - En el móvil el micro lo usa solo el oído (antes otro uso del micro
+     lo dejaba sordo).
+   ===================================================================== */
+/* Voz bonita: Google Cloud Text-to-Speech (voz neuronal Chirp 3 HD), una sola voz fija.
+   Necesita una clave suya (cupo gratis mensual). Sin clave, la voz del aparato. */
+const NUBE_VOZ='es-ES-Chirp3-HD-Puck';
+const VozNube={ key(){ return localStorage.getItem('mor_ttskey')||''; }, fallos:0,
+  async decir(t){ const k=this.key(); if(!k) return null; const cacheK='nube|'+NUBE_VOZ+'|'+t; const hit=await Cache.get(cacheK); if(hit) return {mp3:hit};
+    const ac=new AbortController(), to=setTimeout(()=>ac.abort(),12000);
+    try{ const r=await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key='+encodeURIComponent(k),{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({input:{text:String(t).slice(0,4000)},voice:{languageCode:'es-ES',name:NUBE_VOZ},audioConfig:{audioEncoding:'MP3',speakingRate:1.05}})});
+      clearTimeout(to); if(!r.ok){ Voice.lastErr='voz nube '+r.status+' '+((await r.text()).slice(0,120)); this.fallos++; return null; }
+      const j=await r.json(), bin=atob(j.audioContent), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+      const blob=new Blob([u],{type:'audio/mpeg'}); if(t.length<80) Cache.put(cacheK,blob); this.fallos=0; return {mp3:blob}; }
+    catch(e){ clearTimeout(to); Voice.lastErr='voz nube: '+e.message; this.fallos++; return null; } },
+  panel(){ const c=chatCard(`<div class="ctit">Voz bonita de Mor</div><small>Pega aquí tu clave de Google Cloud Text-to-Speech. Mor usará siempre la misma voz neuronal (${NUBE_VOZ}). La clave solo se guarda en este aparato.</small>
+      <div class="row" style="margin-top:6px"><input type="password" data-k placeholder="AIza…" style="flex:1" autocomplete="off"><button class="tbtn on" data-g>Guardar</button></div><div data-o style="font-size:13px;margin-top:6px"></div>`);
+    c.querySelector('[data-g]').onclick=async()=>{ const v=c.querySelector('[data-k]').value.trim(); if(!v) return; localStorage.setItem('mor_ttskey',v); const o=c.querySelector('[data-o]'); o.textContent='Probando…';
+      const r=await VozNube.decir('¡Hola! Esta es mi voz de verdad.'); if(r){ VOZ_MODO='nube'; o.textContent='¡Funciona! Desde ahora Mor habla siempre con esta voz.'; Voice.reset(); Voice.push('¡Hola! Esta es mi voz de verdad. Desde ahora hablo siempre así.'); Voice.end(); }
+      else { localStorage.removeItem('mor_ttskey'); o.textContent='No funciona: '+(Voice.lastErr||'error'); } }; }
+};
+if(VozNube.key()) VOZ_MODO='nube';
+const _synth135=Voice.synth.bind(Voice); Voice.synth=async function(t){ if(VOZ_MODO==='nube') return await VozNube.decir(t); return _synth135(t); };
+/* en modo nube no hay cola de una en una: se piden a la vez para que no haya pausas */
+VozElegir.abrir=function(){ if(Modo.robot()) Robot.decir('Tengo una sola voz y es siempre la misma.','carinoso'); else VozNube.panel(); };
+CMDS.splice(2,0,['/vozbonita','Voz bonita de Mor (clave de Google Cloud Text-to-Speech)',()=>VozNube.panel()]);
+const _salirM135=Salir.mostrar.bind(Salir); Salir.mostrar=function(){ _salirM135(); const d=$('morSalir'); if(d) [...d.querySelectorAll('button')].filter(b=>/Elegir la voz/.test(b.textContent)).forEach(b=>b.remove()); };
+/* ---------- oído del modo robot ---------- */
+const _heard135=Ears.heard.bind(Ears); Ears.heard=function(t){
+  if(!(typeof Modo!=='undefined'&&Modo.robot())) return _heard135(t);
+  $('hear').textContent='';
+  if(Voice.isEcho(t)) return;
+  if(Voice.cur||Voice.playing){ if(STOPW.test(t)&&!STOPW.test(Voice.curText)){ Voice.stop(); setEmotion('curioso',3000); this.listenFor(9000); } return; }
+  const conMor=WAKE.test(t), resto=conMor?t.replace(WAKE,'').trim():t;
+  const hayAlguien=(Faces.now||[]).length>0, charlando=Date.now()-(Ears.ultimaCharla||0)<45000;
+  if(!conMor&&!hayAlguien&&!charlando&&!(this.mode==='cmd'&&Date.now()<this.until)) return;   // nadie delante ni hablando con él: no se mete
+  if(conMor&&resto.length<=2){ Life.touch(); Sfx.play('hola'); setEmotion('curioso',4000); squash(.15); this.listenFor(9000); return; }
+  Ears.ultimaCharla=Date.now(); Life.touch(); this.mode='idle'; send(resto||t); };
+const _send135=send; send=async function(text,opts={}){ const r=await _send135(text,opts); if(Modo.robot()&&text&&!(opts&&opts.event)) Ears.ultimaCharla=Date.now(); return r; };
+/* en el móvil, el micro solo para el oído */
+const _iv135=Vida.iniciarVoz.bind(Vida); Vida.iniciarVoz=async function(){ if(MOVIL){ this.voz.tried=true; return; } return _iv135(); };
+/* si el oído se cae, que vuelva solo */
+setInterval(()=>{ if(Modo.robot()&&SR&&!Ears.running){ Ears.on=true; Ears.run(); } },4000);
 
 /* =====================================================================
    15. DESPERTAR
