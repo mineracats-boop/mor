@@ -1276,7 +1276,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v63</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v64</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1440,7 +1440,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v63 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v64 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7048,6 +7048,79 @@ const _open130=Mapa.open.bind(Mapa); Mapa.open=function(){ _open130(); const c=[
   c.querySelector('small').after(d);
   d.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ if(b.dataset.m==='+'){ const n=prompt('Nombre del mapa (casa de Retama, hotel, calle…)'); if(!n) return; const id='m'+Date.now().toString(36); Mas.mapas.lista[id]={nombre:n,sitios:[],actual:null}; Mas.cambiarMapa(id); } else Mas.cambiarMapa(b.dataset.m); c.remove(); Mapa.open(); }); };
 CMDS.splice(2,0,['/familia','Cuenta de la familia (misma cuenta en todos los aparatos) y mensajes a través de Mor',()=>Mas.panelFamilia()]);
+
+/* =====================================================================
+   131. TODO MOR EN DATABASEPRO (misma cuenta en todos los aparatos)
+   Si hay cuenta de la familia (/familia), la sincronización va a tu
+   DatabasePro en vez de a GitHub: chats, conversaciones, memoria, apuntes,
+   tarjetas, personas, archivos de texto y el código de los proyectos.
+   Todo CIFRADO con la contraseña de sincronizar: en DatabasePro solo hay
+   datos ilegibles. Va por partes: solo se suben las que han cambiado
+   (DatabasePro gratis tiene unas 1.000 escrituras al día).
+   Las imágenes y modelos de los proyectos no se suben (pesan demasiado).
+   ===================================================================== */
+const SyncDBP={ TROZO:88000,
+  async claveIV(){ const r=localStorage.getItem('mor_synckey'); if(!r) return null; return crypto.subtle.importKey('raw',b64d(r),{name:'HMAC',hash:'SHA-256'},false,['sign']); },
+  async cifrar(obj){ const txt=JSON.stringify(obj), raw=new TextEncoder().encode(txt);
+    const gz=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+    const iv=new Uint8Array(await crypto.subtle.sign('HMAC',await this.claveIV(),raw)).slice(0,12);   /* mismo contenido → mismo cifrado (así no se resube lo que no cambia) */
+    const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},await Sync.key(),gz)); return b64e(iv)+'.'+b64e(ct); },
+  async descifrar(s){ const [iv,ct]=s.split('.'); const gz=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(iv)},await Sync.key(),b64d(ct));
+    return JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text()); },
+  async hash(s){ return b64e(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).slice(0,16); },
+  url(k){ return `/api/estado/${Mas.codigo()}/${k}`; },
+  async leer(k){ return (await Mas.api(this.url(k))).valor; },
+  async escribir(k,v){ return Mas.api(this.url(k),{method:'PUT',body:JSON.stringify({valor:v,reemplazar:true})}); },
+  async partes(){ const P=await Sync.paquete(), partes={};
+    partes.mem={mem:P.mem,convs:P.convs,cproj:P.cproj,hist:P.hist,claves:P.claves,con:P.con};
+    const porMes={}; for(const c of P.chats){ const k='chats_'+new Date(c.at||0).toISOString().slice(0,7); (porMes[k]=porMes[k]||[]).push(c); } Object.assign(partes,porMes);
+    partes.docs=P.docs; partes.cards=P.cards; partes.people=P.people;
+    const files=(await DB.all('files')).filter(f=>f.code!=null&&String(f.code).length<400000).map(({data,...f})=>f); partes.files=files;
+    for(const p of await DB.all('projects')){ const t={...p,files:(p.files||[]).filter(f=>!f.bin&&f.code!=null),versiones:undefined,_bins:(p.files||[]).filter(f=>f.bin).map(f=>f.ruta)}; partes['proj_'+p.id]=t; }
+    return partes; },
+  async subir(estado){ const idxR=(await this.leer('sync_idx'))||{partes:{}}, idx={at:Date.now(),de:localStorage.getItem('mor_yo')||'',partes:{}}; let escritos=0;
+    const partes=await this.partes();
+    for(const [nombre,val] of Object.entries(partes)){ const c=await this.cifrar(val), h=await this.hash(c), n=Math.ceil(c.length/this.TROZO);
+      idx.partes[nombre]={h,n};
+      if(idxR.partes[nombre]&&idxR.partes[nombre].h===h) continue;
+      estado('Subiendo '+nombre+'…'); for(let i=0;i<n;i++){ await this.escribir('sync_'+nombre+'_'+i,c.slice(i*this.TROZO,(i+1)*this.TROZO)); escritos++; } }
+    /* lo que ya no existe aquí pero sí allí (otro aparato) se mantiene en el índice */
+    for(const [nombre,v] of Object.entries(idxR.partes||{})) if(!idx.partes[nombre]) idx.partes[nombre]=v;
+    if(escritos||JSON.stringify(Object.keys(idx.partes).sort())!==JSON.stringify(Object.keys(idxR.partes||{}).sort())){ await this.escribir('sync_idx',idx); escritos++; }
+    localStorage.setItem('mor_dbp_idx',JSON.stringify(idx.partes)); return escritos; },
+  async bajar(estado){ const idx=await this.leer('sync_idx'); if(!idx||!idx.partes) return false; const mio=JSON.parse(localStorage.getItem('mor_dbp_idx')||'{}');
+    const cambian=Object.entries(idx.partes).filter(([n,v])=>!mio[n]||mio[n].h!==v.h); if(!cambian.length) return false;
+    const R={at:idx.at,mem:MEM,convs:[],cproj:[],hist:{},chats:[],docs:[],cards:[],people:[],claves:{},con:{}}; let tocaMem=false; const proys=[], files=[];
+    for(const [nombre,v] of cambian){ estado('Bajando '+nombre+'…'); let s=''; for(let i=0;i<v.n;i++) s+=await this.leer('sync_'+nombre+'_'+i);
+      let val; try{ val=await this.descifrar(s); }catch(e){ throw new Error('la contraseña de sincronizar no coincide con la de los otros aparatos'); }
+      if(nombre==='mem'){ Object.assign(R,val); tocaMem=true; } else if(nombre.startsWith('chats_')) R.chats.push(...val); else if(nombre.startsWith('proj_')) proys.push(val); else if(nombre==='files') files.push(...val); else R[nombre]=val; }
+    if(!tocaMem) R.mem=Object.assign({},MEM);
+    await Sync.unir(R);
+    for(const q of proys){ const L=await DB.all('projects'), p=L.find(x=>x.id===q.id);
+      if(!p){ const {_bins,...n}=q; n.files=n.files||[]; n.versiones=[]; await DB.put('projects',n); }
+      else if((q.at||0)>(p.at||0)){ const bins=p.files.filter(f=>f.bin); const {_bins,...n}=q; await DB.put('projects',Object.assign({},p,n,{files:[...(n.files||[]),...bins.filter(b=>!(n.files||[]).some(f=>f.ruta===b.ruta))],versiones:p.versiones})); } }
+    if(files.length){ const ya=new Set((await DB.all('files')).map(f=>f.id)); for(const f of files) if(!ya.has(f.id)) await DB.put('files',f); }
+    for(const [n,v] of cambian) mio[n]=v; localStorage.setItem('mor_dbp_idx',JSON.stringify(mio)); return true; }
+};
+const _ahora131=Sync.ahora.bind(Sync);
+Sync.ahora=async function(silencio){ if(!Mas.codigo()) return _ahora131(silencio);
+  if(this.busy) return; if(silencio&&Date.now()-(+localStorage.getItem('mor_sync_at')||0)<15*60000) return;   /* para no gastar las escrituras de DatabasePro */ if(!localStorage.getItem('mor_synckey')){ if(!silencio) this.pedirClave(); return; }
+  this.busy=true; this.estado('Sincronizando con DatabasePro…');
+  try{ const hubo=await SyncDBP.bajar(t=>this.estado(t)); const n=await SyncDBP.subir(t=>this.estado(t));
+    localStorage.setItem('mor_sync_at',String(Date.now())); this.dirty=false; this.estado('✓ Sincronizado con DatabasePro '+new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+(n?` (${n} subidas)`:''));
+    if(hubo){ try{ renderFeed(); renderSide(); }catch(e){} } }
+  catch(e){ this.estado(''+e.message); if(!silencio) toast('Sincronizar: '+e.message,6000); }
+  this.busy=false; };
+/* cada 15 minutos si ha cambiado algo, al abrir Mor y al salir de él */
+setInterval(()=>{ if(Mas.codigo()&&localStorage.getItem('mor_synckey')&&Sync.dirty) Sync.ahora(true); },15*60000);
+setTimeout(()=>{ if(Mas.codigo()&&localStorage.getItem('mor_synckey')) Sync.ahora(true); },8000);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&Mas.codigo()&&localStorage.getItem('mor_synckey')&&Sync.dirty&&Date.now()-(+localStorage.getItem('mor_sync_at')||0)>5*60000) Sync.ahora(true); });
+/* en el panel de la familia: contraseña de sincronizar y botón */
+const _pf131=Mas.panelFamilia.bind(Mas); Mas.panelFamilia=function(){ _pf131(); const k=[...document.querySelectorAll('.ctit')].filter(x=>x.textContent==='Cuenta de la familia').pop().parentElement; if(!Mas.codigo()) return;
+  const d=document.createElement('div'); d.style.marginTop='10px';
+  d.innerHTML=`<b style="font-size:13px">Todo Mor en todos los aparatos</b><small style="display:block">Chats, memoria, apuntes, personas y proyectos se guardan cifrados en tu DatabasePro. Pon la MISMA contraseña en todos los aparatos (no se guarda en ningún sitio: si la olvidas, no se puede recuperar).</small>
+    <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><input class="inp" type="password" placeholder="${localStorage.getItem('mor_synckey')?'Contraseña puesta (escribe otra para cambiarla)':'Contraseña de sincronizar'}" style="flex:1;min-width:140px;border-radius:10px;padding:6px 10px"><button class="tbtn on">Sincronizar ahora</button></div><div class="se" style="font-size:13px;margin-top:4px">${esc(Sync.ult||'')}</div>`;
+  k.appendChild(d); d.querySelector('button').onclick=async()=>{ const p=d.querySelector('input').value; if(p){ await Sync.clave(p); d.querySelector('input').value=''; } const se=d.querySelector('.se'); const old=Sync.estado.bind(Sync); Sync.estado=t=>{ old(t); se.textContent=t; }; await Sync.ahora(); Sync.estado=old; }; };
 
 /* =====================================================================
    15. DESPERTAR
