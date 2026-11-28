@@ -623,11 +623,11 @@ const VOZ_TONO = 1.35;                    // versión "peque"
 // Voces de Gemini para elegir (se prueban en «Más → Voz»)
 const VOCES_G=[['Fenrir','nervioso y emocionado'],['Leda','juvenil'],['Sadachbia','vivaracho'],['Achird','simpático'],['Laomedeia','alegre'],
   ['Zephyr','luminoso'],['Aoede','ligero'],['Puck','animado'],['Umbriel','tranquilo'],['Sulafat','cálido']];
-let VOZ_MODO = localStorage.getItem('mor_vozmodo')||'piper';   // UNA voz fija: piper | g:Nombre | eleven | telefono
+let VOZ_MODO = 'piper';   /* v58: UNA sola voz para siempre (la de Mor); no se cambia nunca */ localStorage.setItem('mor_vozmodo','piper'); localStorage.removeItem('mor_piper_voz');   // UNA voz fija: piper | g:Nombre | eleven | telefono
 if(VOZ_MODO==='gemini'||VOZ_MODO==='auto') VOZ_MODO='piper';
-function fijarVoz(m,aviso){ VOZ_MODO=m; localStorage.setItem('mor_vozmodo',m); if(aviso) toast(aviso,6000); }
+function fijarVoz(m,aviso){ VOZ_MODO='piper'; }   /* una sola voz: no se cambia */
 const vozGemini=()=>VOZ_MODO.startsWith('g:')?VOZ_MODO.slice(2):(localStorage.getItem('mor_vozg')||'Fenrir');
-const VOZ_PIPER = localStorage.getItem('mor_piper_voz')||'es_ES-davefx-medium';  // voz ilimitada dentro del dispositivo (se descarga una vez, ~60 MB)
+const VOZ_PIPER = 'es_ES-davefx-medium';  // voz ilimitada dentro del dispositivo (se descarga una vez, ~60 MB)
 const VOZ_PIPER_TONO = 1.0;
 const MOVIL = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);           // >1 más aguda pero también más rápida                // voz de respaldo de Gemini si ElevenLabs no tiene créditos
 const VOZ_MAX = 1e9;                      // lee la respuesta entera
@@ -810,7 +810,8 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
     // voz fija de Mor (Piper): se descarga una vez y es ilimitada
     if(this.piperState==='off') this.loadPiper(); while(this.piperState==='loading') await sleep(300);
     if(this.piperState==='ready'){ for(let i=0;i<2;i++){ try{ return {wav:await this.piper.predict(t)}; }catch(e){ this.lastErr='piper: '+e.message; } } }
-    this.sesionTel=true; if(!this.avisoTel){ this.avisoTel=true; toast('No se ha podido usar la voz fija de Mor: hasta que recargues uso la del teléfono (siempre la misma)',6000); } return null;
+    /* sin otra voz de repuesto: si la de Mor aún no está, habla en subtítulos y vuelve a intentar cargarla */
+    if(this.piperState==='fail'){ this.piperState='off'; if(!this.avisoTel){ this.avisoTel=true; toast('La voz de Mor no ha podido cargarse (¿sin internet la primera vez?). Mientras, contesta en subtítulos.',6000); } } return null;
   },
   async gtts(text){
     const VG=vozGemini(); const key='gem|'+VG+'|'+text; let hit=await Cache.get(key);
@@ -890,7 +891,7 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
         if(this.cur===handle) this.cur=null; return this.done(it);
       }
     }catch(e){ console.warn('Voz:',e.message); this.lastErr=e.message; }
-    if('speechSynthesis' in window && g===this.gen){ const u=new SpeechSynthesisUtterance(it.text); u.lang='es-ES'; u.pitch=1; u.rate=1.05;
+    if(false && 'speechSynthesis' in window && g===this.gen){ const u=new SpeechSynthesisUtterance(it.text); u.lang='es-ES'; u.pitch=1; u.rate=1.05;
       const vs=speechSynthesis.getVoices(), fija=localStorage.getItem('mor_voztel'); let v=vs.find(v=>v.name===fija)||vs.find(v=>/^es[-_]ES/i.test(v.lang)&&/google|natural|online/i.test(v.name))||vs.find(v=>/^es[-_]ES/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang)); if(v){ u.voice=v; if(!fija) localStorage.setItem('mor_voztel',v.name); }
       this.cur={pause(){ speechSynthesis.cancel(); }};
       speechSynthesis.cancel(); const ka=setInterval(()=>{ try{ speechSynthesis.pause(); speechSynthesis.resume(); }catch(e){} },9000);   // fallo conocido de Chrome
@@ -1275,7 +1276,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v57</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v58</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1408,7 +1409,7 @@ function vozModoUI(){
     Voice.gem=true; Voice.gemOffUntil=0; Voice.sesionTel=false; Voice.eleven=!!ELEVEN_KEY; vozModoUI(); Voice.stop();
     localSay('Hola, soy Mor, la inteligencia artificial de Rocket Jam. Esta es mi voz.','neutral'); });
 }
-$('bVozModo').onclick=()=>{ const l=$('vozList'); l.style.display=l.style.display==='none'?'flex':'none'; vozModoUI(); };
+$('bVozModo').onclick=()=>toast('Mor tiene una sola voz, la suya, siempre la misma');
 $('bVoice').onclick=()=>{ MEM.voice=!MEM.voice; Voice.on=MEM.voice; saveMem(); $('bVoice').textContent='Voz: '+(MEM.voice?'sí':'no'); if(!MEM.voice) Voice.stop(); };
 $('face').addEventListener('pointerdown',e=>{ if(!awake) return; lookAtClient(e.clientX,e.clientY); squash(.3);
   if(Life.asleep){ Life.wake(); Life.touch(); localSay(rnd(['¿Eh? MOR no dormir. MOR descansar ojos.','¡Uy! Despierto, despierto.']),'sorprendido','susto'); return; }
@@ -1439,7 +1440,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v57 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v58 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -5571,6 +5572,8 @@ send=async function(text,opts={}){ opts=opts||{}; if(text&&!opts.event&&!busy){ 
     else if(!visible&&!Cola.huboAccion){ const m='No me ha llegado respuesta del cerebro'+(Cola.cerebro?' ('+Cola.cerebro+')':'')+(window._lastErr?': '+window._lastErr:'')+'. Vuelve a pedírmelo; si sigue igual, mira la barra de uso.';
       showSub(m,text); toast(m,6000); } }
   return r; };
+/* una sola voz: la conversación en directo de Gemini habla con otra voz, así que no se usa */
+Live.start=async function(){ toast('Mor habla siempre con su voz: usa el micrófono normal (HABLA)',4000); return false; }; try{ $('bLive').style.display='none'; }catch(e){}
 /* micrófono: solo en el modo conversación (no se enciende solo al abrir Mor) */
 if(MEM.listen&&!document.body.classList.contains('vozFull')){ MEM.listen=false; saveMem(); }
 const _modoVoz108=modoVoz; modoVoz=function(on){ _modoVoz108(on); if(!on&&Ears.on&&!(typeof Live!=='undefined'&&Live.on)) Ears.stop(); };
@@ -6489,8 +6492,7 @@ const Modo={
   ajustes(){ const r=this.robot(), v=localStorage.getItem('mor_piper_voz')||'es_ES-davefx-medium';
     const c=chatCard(`<div class="ctit">Ajustes de Mor</div>
       <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><b style="font-size:13px;flex-basis:100%">Modo</b><button class="tbtn ${r?'on':''}" data-a="robot">Modo robot (familia)</button><button class="tbtn ${r?'':'on'}" data-a="ia">Modo IA (estudio)</button></div>
-      <b style="font-size:13px">Voz de Mor</b><small style="display:block">Es la misma en todos los aparatos: se descarga una vez (unos 60 MB) y funciona sin internet.</small>
-      ${this.VOCES.map(([id,n])=>`<div class="row" style="gap:6px;align-items:center;margin-top:4px"><span style="flex:1;font-size:13px">${esc(n)}${id===v?' · <b>la que tiene</b>':''}</span><button class="tbtn" data-o="${id}">Escuchar</button>${id===v?'':`<button class="tbtn" data-u="${id}">Usar esta</button>`}</div>`).join('')}
+      <b style="font-size:13px">Voz</b><small style="display:block">Mor tiene una sola voz, la suya, siempre la misma en todos los aparatos.</small>
       <div data-a="out" style="font-size:13px;margin-top:6px"></div>${r?'<div class="row" style="margin-top:8px"><button class="tbtn on" data-a="listo">Listo: volver a la cara de Mor</button></div>':''}
       ${r?`<b style="font-size:13px;display:block;margin-top:8px">Familia</b><small style="display:block">Para que te conozca: «Mor, te presento a Lucía, mi hermana» delante de la cámara, o con el botón. Conoce a: ${esc(Faces.people.map(p=>p.name).join(', ')||'nadie todavía')}.</small><div class="row" style="margin-top:6px"><button class="tbtn" data-a="pres">Presentarle a alguien</button></div>`:''}`);
     const out=c.querySelector('[data-a=out]'); const li=c.querySelector('[data-a=listo]'); if(li) li.onclick=()=>modoVoz(true);
@@ -6550,8 +6552,8 @@ const _send125=send; send=async function(text,opts={}){ const t=String(text||'')
     if(pm&&t.length<90){ logChat('u',t); const n=pm[1][0].toUpperCase()+pm[1].slice(1).toLowerCase(); Faces.enroll(n,(pm[2]||'').trim()); return; } }
   return _send125(text,opts); };
 (()=>{ const st=document.createElement('style'); st.textContent='body.modoRobot #usoBar,body.modoRobot #camBox,body.modoRobot #appMorAviso{display:none!important}body.modoRobot.vozFull #face{max-height:72vh}'; document.head.appendChild(st); })();
-CMDS.splice(2,0,['/modo','Ajustes: modo robot (familia) o modo IA (estudio), y la voz de Mor',()=>Modo.ajustes()],['/ajustes','Ajustes de Mor',()=>Modo.ajustes()]);
-SIDE.find(g=>g[0]==='CREAR')[1].unshift(['Ajustes: modo robot o IA, y voz',()=>Modo.ajustes()]);
+CMDS.splice(2,0,['/modo','Ajustes: modo robot (familia) o modo IA (estudio)',()=>Modo.ajustes()],['/ajustes','Ajustes de Mor',()=>Modo.ajustes()]);
+SIDE.find(g=>g[0]==='CREAR')[1].unshift(['Ajustes: modo robot o IA',()=>Modo.ajustes()]);
 setTimeout(()=>{ if(!Modo.get()) Modo.elegir(); else if(Modo.robot()) Modo.aplicar(false); },2500);
 
 /* =====================================================================
