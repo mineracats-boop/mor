@@ -1276,7 +1276,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v65</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v66</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1440,7 +1440,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v65 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v66 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6485,7 +6485,7 @@ const Modo={
         <button data-m="robot" style="flex:1;min-width:240px;max-width:380px;padding:22px;border-radius:22px;border:2px solid rgba(127,216,255,.5);background:rgba(127,216,255,.1);color:#fff;text-align:left;cursor:pointer"><div style="font-size:22px;font-weight:800">Modo robot</div><div style="margin-top:8px;font-size:14px;opacity:.9">Uno más de la familia. Habla contigo, te conoce de cara, te recuerda las cosas y se siente vivo. Usa siempre la cámara y el micro del aparato.</div></button>
         <button data-m="ia" style="flex:1;min-width:240px;max-width:380px;padding:22px;border-radius:22px;border:2px solid rgba(255,138,61,.5);background:rgba(255,138,61,.1);color:#fff;text-align:left;cursor:pointer"><div style="font-size:22px;font-weight:800">Modo IA</div><div style="margin-top:8px;font-size:14px;opacity:.9">La IA del estudio Rocket Jam: crea y arregla videojuegos, modelos 3D, publica… Lo de siempre.</div></button></div>`;
     document.body.appendChild(d); d.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ d.remove(); this.poner(b.dataset.m,true); }); },
-  poner(m,nuevo){ localStorage.setItem('mor_modo',m); this.aplicar(true); if(m==='robot'&&nuevo) setTimeout(()=>{ modoVoz(false); this.ajustes(); },900); },
+  poner(m,nuevo){ localStorage.setItem('mor_modo',m); this.aplicar(true); },
   async aplicar(gesto){ const r=this.robot(); document.body.classList.toggle('modoRobot',r);
     if(r){ MEM.voice=true; Voice.on=true; saveMem(); modoVoz(true); if(!Cam.on) await Cam.start(); Faces.load(); Robot.iniciar(); }
     else { Robot.parar(); } },
@@ -6512,7 +6512,7 @@ const Robot={ on:false, t:null, oscuro:0, linterna:false, ultimaFrase:0, ultimoV
     const d=x.getImageData(0,0,32,24).data; let s=0; for(let i=0;i<d.length;i+=4) s+=d[i]*.3+d[i+1]*.59+d[i+2]*.11; return s/(d.length/4); },
   decir(t,emo){ ultimaPalabra=Date.now(); localSay(t,emo||'neutral'); },
   async luz(on){ if(on===this.linterna) return; this.linterna=on; let ov=$('morLinterna');
-    if(on){ if(!ov){ ov=document.createElement('div'); ov.id='morLinterna'; ov.style.cssText='position:fixed;inset:0;z-index:8000;background:#fff;display:flex;align-items:flex-end;justify-content:center;padding-bottom:18px;color:#999;font-size:13px'; ov.textContent='Linterna · toca para apagar'; ov.onclick=()=>{ this.luz(false); this.oscuro=-30; }; document.body.appendChild(ov); }
+    if(on){ if(!ov){ ov=document.createElement('div'); ov.id='morLinterna'; ov.style.cssText='position:fixed;inset:0;z-index:8000;background:#fff;display:flex;align-items:flex-end;justify-content:center;padding-bottom:18px;color:#999;font-size:13px';  ov.onclick=()=>{ this.luz(false); this.oscuro=-30; }; document.body.appendChild(ov); }
       try{ const tr=Cam.stream&&Cam.stream.getVideoTracks()[0]; if(tr&&tr.getCapabilities&&tr.getCapabilities().torch) await tr.applyConstraints({advanced:[{torch:true}]}); }catch(e){}
       this.luzHasta=Date.now()+10*60000; }
     else { if(ov) ov.remove(); try{ const tr=Cam.stream&&Cam.stream.getVideoTracks()[0]; if(tr&&tr.getCapabilities&&tr.getCapabilities().torch) await tr.applyConstraints({advanced:[{torch:false}]}); }catch(e){} } },
@@ -7166,6 +7166,40 @@ const _open132=Mapa.open.bind(Mapa); Mapa.open=function(){ _open132(); if(!Fuera
   c.querySelectorAll('svg,[data-s]').forEach(e=>e.remove()); const sm=c.querySelector('small'); if(sm) sm.textContent='Mapa de fuera: el GPS del móvil va apuntando por dónde vais y los sitios por los que pasáis.'; Fuera.panel(c); };
 const _sys132=systemPrompt; systemPrompt=function(){ const b=_sys132.apply(this,arguments); if(!Modo.robot()||!Fuera.esExterior()) return b; const l=Fuera.aqui();
   return b+`\nESTÁIS FUERA (mapa ${Mas.mapas.lista[Mas.mapas.actual].nombre}).${l?' Ahora estáis por '+l.nombre+(l.ciudad?' ('+l.ciudad+')':'')+'.':''} Sitios por los que habéis pasado: ${(Fuera.mapa().lugares||[]).slice(-10).map(x=>x.nombre).join(', ')||'ninguno todavía'}.`; };
+
+/* =====================================================================
+   133. MODO ROBOT = SOLO LOS OJOS Y LA VOZ
+   En modo robot no hay chat ni textos: la pantalla son los ojos de Mor y
+   se habla con la voz. Nada de subtítulos, avisos escritos ni paneles.
+   Para salir: «Mor, modo IA», o mantener pulsada la pantalla 3 segundos.
+   ===================================================================== */
+(()=>{ const st=document.createElement('style'); st.textContent=`
+  body.modoRobot #vozExit,body.modoRobot #sub,body.modoRobot #hear,body.modoRobot #toast,body.modoRobot .chatCard,body.modoRobot #chat,body.modoRobot #side,body.modoRobot .topbar,body.modoRobot #usoBar{display:none!important}
+  body.modoRobot{overflow:hidden}
+  #morBarra{position:fixed;left:30%;right:30%;bottom:22px;height:4px;border-radius:4px;background:rgba(127,216,255,.15);z-index:7000;display:none}
+  #morBarra i{display:block;height:100%;width:0;border-radius:4px;background:#7fd8ff;transition:width .3s}
+  body.modoRobot #morBarra.on{display:block}`; document.head.appendChild(st);
+  const b=document.createElement('div'); b.id='morBarra'; b.innerHTML='<i></i>'; document.body.appendChild(b); })();
+/* en modo robot, siempre la cara a pantalla completa */
+const _mv133=modoVoz; modoVoz=function(on){ if(!on&&typeof Modo!=='undefined'&&Modo.robot()) on=true; return _mv133(on); };
+/* textos fuera: lo que fuera a la pantalla, en modo robot se dice o se calla */
+const _toast133=toast; toast=function(t,ms){ if(typeof Modo!=='undefined'&&Modo.robot()){ /* la descarga de la voz: barrita sin texto */ const m=String(t).match(/Descargando la voz[^0-9]*(\d+)%/); const bar=$('morBarra');
+    if(m){ bar.classList.add('on'); bar.firstChild.style.width=m[1]+'%'; } else if(/Voz de Mor lista/.test(t)) bar.classList.remove('on'); return; } return _toast133(t,ms); };
+/* los paneles que se abren por voz: en modo robot lo cuenta hablando */
+const _mapaOpen133=Mapa.open.bind(Mapa); Mapa.open=function(){ if(Modo.robot()){ const L=Mapa.sitios; Robot.decir(L.length?`En ${Mas.mapas.lista[Mas.mapas.actual].nombre} conozco ${L.length} sitio${L.length>1?'s':''}: ${L.map(s=>s.nombre).join(', ')}.`:'Todavía no conozco ningún sitio aquí.','curioso'); return; } return _mapaOpen133(); };
+const _vig133=Vida.panelVigilar.bind(Vida); Vida.panelVigilar=function(){ if(Modo.robot()) return; return _vig133(); };
+const _aj133=Modo.ajustes.bind(Modo); Modo.ajustes=function(){ if(Modo.robot()){ Salir.mostrar(); return; } return _aj133(); };
+const _fam133=Mas.panelFamilia.bind(Mas); Mas.panelFamilia=function(){ if(Modo.robot()){ Robot.decir('La cuenta de la familia se prepara desde el modo IA, en el ordenador o el móvil.','pensativo'); return; } return _fam133(); };
+/* salir del modo robot: mantener pulsada la pantalla 3 segundos */
+const Salir={ t:null,
+  mostrar(){ if($('morSalir')) return; const d=document.createElement('div'); d.id='morSalir'; d.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(3,8,18,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
+    d.innerHTML='<button data-s="r" style="min-width:240px;padding:18px;border-radius:18px;border:2px solid rgba(127,216,255,.5);background:rgba(127,216,255,.12);color:#fff;font-size:20px;font-weight:700">Seguir en modo robot</button><button data-s="ia" style="min-width:240px;padding:18px;border-radius:18px;border:2px solid rgba(255,138,61,.5);background:rgba(255,138,61,.12);color:#fff;font-size:20px;font-weight:700">Cambiar a modo IA</button>';
+    document.body.appendChild(d); d.querySelector('[data-s=r]').onclick=()=>d.remove(); d.querySelector('[data-s=ia]').onclick=()=>{ d.remove(); Modo.poner('ia'); document.body.classList.remove('vozFull'); try{ _mv133(false); }catch(e){} };
+    setTimeout(()=>{ if($('morSalir')) d.remove(); },15000); } };
+addEventListener('pointerdown',e=>{ if(!Modo.robot()) return; clearTimeout(Salir.t); Salir.t=setTimeout(()=>Salir.mostrar(),3000); },true);
+['pointerup','pointercancel','pointermove'].forEach(ev=>addEventListener(ev,e=>{ if(ev==='pointermove'&&!(Math.abs(e.movementX)+Math.abs(e.movementY)>6)) return; clearTimeout(Salir.t); },true));
+/* al pasar a modo IA, que vuelva la pantalla normal */
+const _poner133=Modo.poner.bind(Modo); Modo.poner=function(m,nuevo){ _poner133(m,nuevo); if(m==='ia'){ document.body.classList.remove('modoRobot'); _mv133(false); } };
 
 /* =====================================================================
    15. DESPERTAR
