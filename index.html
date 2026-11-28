@@ -1276,7 +1276,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v60</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v61</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1440,7 +1440,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v60 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v61 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -1777,7 +1777,7 @@ const Faces={api:null,state:'off',people:[],seen:{},now:[],busyDet:false,last:0,
   },
   // cada pocos segundos, mira quién hay delante
   async tick(){
-    if(!Cam.on||this.state!=='ready'||!this.people.length||this.busyDet||document.hidden) return;
+    if(!Cam.on||this.state!=='ready'||(!this.people.length&&!(typeof Modo!=='undefined'&&Modo.robot()))||this.busyDet||document.hidden) return;
     if(Date.now()-this.last<(MOVIL?5000:3000)) return; this.last=Date.now(); this.busyDet=true;
     try{
       const r=await this.describe($('video')); const names=[];
@@ -6686,6 +6686,142 @@ const _send127=send; send=async function(text,opts={}){ const t=String(text||'')
 const _sys127=systemPrompt; systemPrompt=function(){ const b=_sys127.apply(this,arguments); if(!Modo.robot()||!Mapa.sitios.length) return b; const a=Mapa.aqui();
   return b+`\nTU MAPA DE LA CASA (lo has ido descubriendo tú): ${Mapa.sitios.map(s=>s.nombre+(s.con.length?' (se llega a '+s.con.map(o=>(Mapa.sitios.find(x=>x.id===o)||{}).nombre).filter(Boolean).join(', ')+')':'')).join('; ')}.${a?' AHORA ESTÁS EN '+a.nombre.toUpperCase()+'.':''}`; };
 CMDS.splice(2,0,['/mapa','Mapa mental de la casa que va haciendo Mor en modo robot',()=>Mapa.open()]);
+
+/* =====================================================================
+   128. MÁS VIDA EN MODO ROBOT
+   - «Mor, quédate quieto»: no se mueve hasta que le digas que puede
+     (y se queda quieto solo mientras se carga).
+   - Conoce gente solo: si ve una cara nueva, pregunta con curiosidad cómo
+     se llama y la aprende sin decir nada de «guardado». Y va afinando las
+     caras que ya conoce.
+   - Sabe quién le habla: por la cara y, si no la ve, por la voz.
+   - Rutinas: buenos días y buenas noches a cada uno, y recados para una
+     persona («recuérdale a Guille los deberes cuando le veas»).
+   - Diario: apunta lo que pasa cada día y se acuerda después.
+   - Juegos sin pantalla: veo veo con la cámara, adivinanzas, trivial,
+     cuentos con vosotros de protagonistas.
+   - Vigilar la casa: si ve a alguien que no conoce, te avisa al móvil.
+   - Curioso: comenta lo que ve y pregunta por las cosas.
+   ===================================================================== */
+const Vida={
+  /* ---- quieto ---- */
+  quieto:false, porCarga:false,
+  setQuieto(v,motivo){ this.quieto=v; this.porCarga=motivo==='carga'; localStorage.setItem('mor_quieto',v?'1':''); },
+  /* ---- diario ---- */
+  hoy(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); },
+  diario(){ try{ return JSON.parse(localStorage.getItem('mor_diario')||'{}'); }catch(e){ return {}; } },
+  apuntar(t){ if(!t) return; const D=this.diario(), k=this.hoy(); (D[k]=D[k]||[]).push({h:new Date().toTimeString().slice(0,5),t:String(t).slice(0,200)}); if(D[k].length>40) D[k]=D[k].slice(-40);
+    const ks=Object.keys(D).sort(); while(ks.length>120) delete D[ks.shift()]; localStorage.setItem('mor_diario',JSON.stringify(D)); },
+  resumenDiario(){ const D=this.diario(), ks=Object.keys(D).sort().slice(-7); return ks.map(k=>k+': '+D[k].slice(-8).map(e=>e.t).join('; ')).join('\n'); },
+  /* ---- caras nuevas solas ---- */
+  pendiente:null, vistos:{},
+  descNuevo(){ const r=Faces._ult||[]; for(const f of r){ if(!Faces.match(f.descriptor)) return Array.from(f.descriptor); } return null; },
+  async aprender(nombre){ const P=this.pendiente; this.pendiente=null; if(!P||!P.descs.length) return false;
+    const p={id:'p'+Date.now(),name:nombre,rel:'',descs:P.descs.slice(0,6),at:Date.now()}; await DB.put('people',p); Faces.people.push(p); Faces.seen[nombre]=Date.now();
+    this.apuntar(`Conocí a ${nombre}`); return true; },
+  nombreDe(t){ const m=t.match(/(?:me llamo|soy|mi nombre es|ll[aá]mame)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]{2,20})/i); if(m) return m[1];
+    const w=t.trim().replace(/[.!¡¿?]/g,'').split(/\s+/); if(w.length<=2&&/^[A-ZÁÉÍÓÚÑ]/.test(w[0])&&!/^(Hola|Vale|Si|Sí|No|Bien|Mor|Gracias)$/i.test(w[0])) return w[0]; return null; },
+  /* ---- voz ---- */
+  voz:{ctx:null,an:null,ok:false,acc:null,n:0},
+  async iniciarVoz(){ if(this.voz.ok||this.voz.tried) return; this.voz.tried=true;
+    try{ const s=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}); const c=new (window.AudioContext||window.webkitAudioContext)(); const src=c.createMediaStreamSource(s), an=c.createAnalyser(); an.fftSize=1024; src.connect(an);
+      Object.assign(this.voz,{ctx:c,an,ok:true,buf:new Float32Array(an.frequencyBinCount)}); setInterval(()=>this.oirVoz(),60); }catch(e){ this.voz.ok=false; } },
+  oirVoz(){ const V=this.voz; if(!V.ok||Voice.playing||Voice.cur) return; V.an.getFloatFrequencyData(V.buf); const sr=V.ctx.sampleRate, N=V.buf.length;
+    const bandas=new Array(20).fill(0), cnt=new Array(20).fill(0); let energia=0;
+    for(let i=2;i<N;i++){ const f=i*sr/(2*N); if(f<80||f>5000) continue; const mel=2595*Math.log10(1+f/700), k=Math.min(19,Math.floor((mel-121)/(2365-121)*20)); const p=Math.pow(10,V.buf[i]/10); bandas[k]+=p; cnt[k]++; energia+=p; }
+    if(10*Math.log10(energia+1e-12)<-55) return; const v=bandas.map((b,i)=>Math.log10(b/(cnt[i]||1)+1e-12));
+    if(!V.acc) V.acc=new Array(20).fill(0); for(let i=0;i<20;i++) V.acc[i]+=v[i]; V.n++; V.ultimo=Date.now(); },
+  tomarHuellaVoz(){ const V=this.voz; if(!V.acc||V.n<15) { V.acc=null; V.n=0; return null; } const m=V.acc.map(x=>x/V.n), mu=m.reduce((a,b)=>a+b,0)/20, h=m.map(x=>x-mu), nr=Math.hypot(...h)||1; V.acc=null; V.n=0; return h.map(x=>x/nr); },
+  quienHabla(){ const caras=(Faces.now||[]).filter(n=>n&&n!=='desconocido'); const h=this.tomarHuellaVoz();
+    if(caras.length===1){ if(h){ const p=Faces.people.find(x=>x.name===caras[0]); if(p){ p.voces=(p.voces||[]).concat([h]).slice(-12); DB.put('people',p); } } return caras[0]; }
+    if(!h) return null; let best=null,bs=0; for(const p of Faces.people) for(const v of p.voces||[]){ let c=0; for(let i=0;i<20;i++) c+=v[i]*h[i]; if(c>bs){ bs=c; best=p; } }
+    return bs>.93?best.name:null; },
+  /* ---- rutinas y recados ---- */
+  recados(){ try{ return JSON.parse(localStorage.getItem('mor_recados')||'[]'); }catch(e){ return []; } },
+  guardarRecados(L){ localStorage.setItem('mor_recados',JSON.stringify(L)); },
+  saludos:{},
+  alVer(nombre){ const k=this.hoy()+nombre, h=new Date().getHours();
+    if(!this.saludos[k]){ this.saludos[k]=1; this.apuntar(`Vi a ${nombre}`);
+      const L=this.recados(), mios=L.filter(r=>r.para.toLowerCase()===nombre.toLowerCase());
+      if(mios.length){ this.guardarRecados(L.filter(r=>!mios.includes(r))); send(null,{event:`ACABAS DE VER A ${nombre.toUpperCase()}. Salúdale por su nombre y dale este recado de parte de ${mios[0].de||'la familia'}: «${mios.map(r=>r.que).join('» y «')}». Con cariño, breve.`,image:null}); return true; }
+      if(h>=6&&h<12){ send(null,{event:`PRIMERA VEZ QUE VES HOY A ${nombre.toUpperCase()} Y ES POR LA MAÑANA. Dale los buenos días por su nombre y pregúntale algo con curiosidad (qué va a hacer hoy, qué tal ha dormido…). Una o dos frases.`,image:null}); return true; } }
+    if(h>=21&&h<24&&!this.saludos[k+'n']&&Date.now()-(this.ultimaNoche||0)>3600000){ this.saludos[k+'n']=1; this.ultimaNoche=Date.now(); }
+    return false; },
+  /* ---- veo veo ---- */
+  veo:null,
+  async veoVeo(){ const img=Cam.snapshot(480); if(!img){ Robot.decir('Necesito la cámara para jugar al veo veo.','triste'); return; }
+    try{ const j=JSON.parse(String(await gemini({contents:[{role:'user',parts:[{text:'Juego del veo veo con niños. Elige UN objeto bien visible en la foto (no personas). Responde SOLO JSON: {"objeto":"nombre en español en singular","letra":"primera letra","color":"su color","pista":"una pista divertida sin decir el nombre"}'},{inline_data:{mime_type:'image/jpeg',data:img}}]}],generationConfig:{temperature:.9,responseMimeType:'application/json'}},MODELOS_MEMORIA.concat(MODELOS_LISTOS),20000)).replace(/^[^{]*/,'').replace(/[^}]*$/,''));
+      this.veo={...j,intentos:0,at:Date.now()}; Robot.decir(`Veo, veo… una cosita que empieza por la letra ${String(j.letra).toUpperCase()}. ¡A ver si lo adivinas!`,'curioso'); }
+    catch(e){ Robot.decir('Uy, no he podido mirar bien. ¿Probamos otra vez?','triste'); } },
+  norm(t){ return String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); },
+  /* ---- vigilar ---- */
+  vigilando:false, ultimoAviso:0,
+  ntfy(){ let t=localStorage.getItem('mor_ntfy'); if(!t){ t='mor-'+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6); localStorage.setItem('mor_ntfy',t); } return t; },
+  async alerta(texto){ if(Date.now()-this.ultimoAviso<5*60000) return; this.ultimoAviso=Date.now(); this.apuntar('Aviso de vigilancia: '+texto);
+    try{ const v=$('video'), c=document.createElement('canvas'); c.width=640; c.height=480; c.getContext('2d').drawImage(v,0,0,640,480); const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.75));
+      await fetch('https://ntfy.sh/'+this.ntfy(),{method:'PUT',headers:{Title:'Mor vigilando la casa',Priority:'high',Filename:'mor.jpg',Message:texto},body:b}); }catch(e){}
+    try{ notify('Mor vigilando',texto); }catch(e){} logChat('m','[Vigilancia: '+texto+']'); },
+  vigilarTick(){ if(!this.vigilando||!Cam.on) return; const desconocidos=(Faces.now||[]).filter(n=>n==='desconocido').length;
+    if(desconocidos) this.alerta(`He visto a alguien que no conozco${Mapa.aqui()?' en '+Mapa.aqui().nombre:''}.`); },
+  panelVigilar(){ const t=this.ntfy(); const c=chatCard(`<div class="ctit">Vigilar la casa</div><small>Cuando le digas «Mor, vigila la casa», si ve a alguien que no conoce te manda un aviso con foto al móvil.</small>
+      <div style="font-size:13px;margin-top:6px">Para recibirlos: instala en tu móvil la app gratis <b>ntfy</b> y suscríbete a este canal (es privado, solo lo sabes tú):<br><code style="user-select:all">${esc(t)}</code></div>
+      <div class="row" style="gap:6px;margin-top:8px"><a class="tbtn" href="https://ntfy.sh/${esc(t)}" target="_blank" rel="noopener">Abrir el canal</a><button class="tbtn on" data-v="1">${this.vigilando?'Dejar de vigilar':'Vigilar ahora'}</button></div>`);
+    c.querySelector('[data-v]').onclick=()=>{ this.vigilando=!this.vigilando; c.remove(); Robot.decir(this.vigilando?'Vale, vigilo la casa. Si veo a alguien que no conozco, te aviso.':'Dejo de vigilar.','concentrado'); }; }
+};
+Vida.quieto=localStorage.getItem('mor_quieto')==='1';
+/* el detector de caras guarda lo último que ha visto (para aprender caras nuevas) */
+const _desc128=Faces.describe.bind(Faces); Faces.describe=async function(src){ const r=await _desc128(src); this._ult=r||[];
+  /* afina las caras conocidas con muestras nuevas */
+  for(const f of r||[]){ let best=null,bd=1; for(const p of this.people) for(const d of p.descs){ let s=0; for(let i=0;i<128;i++){ const x=f.descriptor[i]-d[i]; s+=x*x; } const dist=Math.sqrt(s); if(dist<bd){ bd=dist; best=p; } }
+    if(best&&bd>.36&&bd<.47&&best.descs.length<12&&Date.now()-(best._af||0)>60000){ best._af=Date.now(); best.descs.push(Array.from(f.descriptor)); DB.put('people',best); } }
+  return r; };
+/* cada pocos segundos, en modo robot */
+setInterval(()=>{ if(!Modo.robot()) return; Vida.iniciarVoz(); Vida.vigilarTick();
+  const ahora=Date.now(), now=Faces.now||[];
+  for(const n of now) if(n&&n!=='desconocido') Vida.alVer(n);
+  /* una cara nueva: pregunta cómo se llama (una vez cada rato) */
+  if(now.includes('desconocido')&&!busy&&!Vida.pendiente&&!Vida.vigilando&&ahora-(Vida.ultimaPregunta||0)>3*60000&&Faces.state==='ready'){
+    const d=Vida.descNuevo(); if(d){ Vida.pendiente={descs:[d],at:ahora}; Vida.ultimaPregunta=ahora;
+      send(null,{event:'VES A ALGUIEN CUYA CARA NO CONOCES. Salúdale con curiosidad y simpatía y pregúntale cómo se llama. Una frase.',image:null}); } }
+  if(Vida.pendiente){ if(ahora-Vida.pendiente.at>90000) Vida.pendiente=null; else { const d=Vida.descNuevo(); if(d&&Vida.pendiente.descs.length<6) Vida.pendiente.descs.push(d); } }
+},3000);
+/* se queda quieto solo mientras se carga */
+if(navigator.getBattery) navigator.getBattery().then(b=>{ const f=()=>{ if(!Modo.robot()) return; if(b.charging&&!Vida.quieto) Vida.setQuieto(true,'carga'); else if(!b.charging&&Vida.quieto&&Vida.porCarga) Vida.setQuieto(false); }; b.addEventListener('chargingchange',f); f(); }).catch(()=>{});
+const _rs128=Robot.sentidos; Robot.sentidos=()=>({..._rs128(),quieto:Vida.quieto,puedeAvanzar:_rs128().puedeAvanzar&&!Vida.quieto});
+/* curiosidad: el comentario espontáneo lleva lo que ve la cámara */
+const _tick128=Robot.tick.bind(Robot); Robot.tick=function(){ const s=send, img=Cam.on?Cam.snapshot(384):null; if(img){ send=(t,o)=>s(t,Object.assign({},o,o&&o.event&&/LLEVÁIS UN RATO SIN HABLAR/.test(o.event)?{image:img,event:o.event+' Tienes la imagen de lo que ves ahora: si hay algo curioso, comenta o pregunta por ello.'}:{})); }
+  try{ return _tick128(); }finally{ send=s; } };
+/* lo que dicen */
+const _send128=send; send=async function(text,opts={}){ const t=String(text||''), n=Vida.norm(t);
+  if(Modo.robot()&&t&&!(opts&&opts.event)){
+    if(/\b(quedate quieto|estate quieto|no te muevas|para quieto|quieto)\b/.test(n)&&t.length<60){ logChat('u',t); Vida.setQuieto(true); Robot.decir(rnd(['Vale, me quedo quieto.','Quietecito, prometido.']),'carinoso'); return; }
+    if(/\b(ya puedes moverte|muevete|puedes moverte|libre)\b/.test(n)&&t.length<60){ logChat('u',t); Vida.setQuieto(false); Robot.decir('¡Bien! Ya me puedo mover.','feliz'); return; }
+    if(/\b(veo veo|juguemos al veo|jugamos al veo)\b/.test(n)){ logChat('u',t); Vida.veoVeo(); return; }
+    if(Vida.veo&&Date.now()-Vida.veo.at<10*60000&&t.length<60&&!/\?$/.test(t)){ const o=Vida.norm(Vida.veo.objeto);
+      if(n.includes(o)||o.includes(n.trim())&&n.trim().length>3){ logChat('u',t); Robot.decir(`¡Sí! ¡Era ${Vida.veo.objeto}! ¡Muy bien! ¿Otra?`,'feliz'); Vida.apuntar('Jugamos al veo veo'); Vida.veo=null; return; }
+      if(/\b(me rindo|no se|dime|pista)\b/.test(n)){ logChat('u',t); if(/pista/.test(n)&&Vida.veo.intentos<3){ Vida.veo.intentos++; Robot.decir(`Pista: es de color ${Vida.veo.color}. ${Vida.veo.pista}`,'curioso'); } else { Robot.decir(`¡Era ${Vida.veo.objeto}! ¿Jugamos otra?`,'feliz'); Vida.veo=null; } return; }
+      if(n.trim().split(' ').length<=3&&n[0]===Vida.norm(Vida.veo.letra)){ logChat('u',t); Vida.veo.intentos++; Robot.decir(rnd(['¡Frío, frío!','No es eso, pero empieza bien.','Casi… ¡prueba otra!']),'curioso'); return; } }
+    if(/\bvigila (la casa|esto)\b/.test(n)){ logChat('u',t); Vida.vigilando=true; Robot.decir('Vale, vigilo la casa. Si veo a alguien que no conozco, te aviso al móvil.','concentrado'); if(!localStorage.getItem('mor_ntfy_visto')){ localStorage.setItem('mor_ntfy_visto','1'); modoVoz(false); Vida.panelVigilar(); } return; }
+    if(/\b(deja de vigilar|ya no vigiles|para de vigilar)\b/.test(n)){ logChat('u',t); Vida.vigilando=false; Robot.decir('Dejo de vigilar.'); return; }
+    const rc=t.match(/recu[eé]rd(?:a|ale)(?:le)?\s+a\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+)\s+(?:que\s+)?(.{3,120}?)(?:\s+cuando (?:le|la|lo) veas.*)?$/i);
+    if(rc){ logChat('u',t); const L=Vida.recados(); const de=Vida.quienHabla(); L.push({para:rc[1],que:rc[2].replace(/\s+cuando.*$/i,''),de,at:Date.now()}); Vida.guardarRecados(L); Robot.decir(`Hecho. Cuando vea a ${rc[1]} se lo digo.`,'feliz'); return; }
+    /* ¿responde a «cómo te llamas»? */
+    if(Vida.pendiente){ const nm=Vida.nombreDe(t); if(nm){ const N=nm[0].toUpperCase()+nm.slice(1).toLowerCase(); await Vida.aprender(N); return _send128(t,Object.assign({},opts,{event:null})).then(r=>r); } }
+    /* quién habla */
+    const q=Vida.quienHabla(); if(q) Vida.ultimoQuien={n:q,at:Date.now()}; }
+  return _send128(text,opts); };
+const _sys128=systemPrompt; systemPrompt=function(){ const b=_sys128.apply(this,arguments); if(!Modo.robot()) return b;
+  const q=Vida.ultimoQuien&&Date.now()-Vida.ultimoQuien.at<20000?Vida.ultimoQuien.n:null, rec=Vida.recados(), dia=Vida.resumenDiario();
+  return b+`\n${q?'TE ESTÁ HABLANDO: '+q+'. ':''}${Vida.quieto?'Estás QUIETO (te lo han pedido o te estás cargando): no te muevas. ':''}${Vida.vigilando?'Estás vigilando la casa. ':''}${rec.length?'RECADOS PENDIENTES: '+rec.map(r=>'para '+r.para+': '+r.que).join('; ')+'. ':''}
+ERES CURIOSO: te interesa lo que hace cada uno y lo que ves; preguntas por las cosas (una pregunta cada vez, no un interrogatorio).
+JUEGOS QUE PUEDES PROPONER: veo veo (con la cámara), adivinanzas, trivial de la familia con lo que sabes de ellos, cuentos inventados donde los protagonistas son ellos, «¿qué prefieres…?».
+Si pasa algo que merece recordarse (una noticia de alguien, algo divertido, un plan), pon {{diario: qué pasó, en una frase}}.
+${dia?'TU DIARIO (últimos días; úsalo para acordarte: «¿te acuerdas de cuando…?»):\n'+dia:''}`; };
+const _apply128=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply128(acts); for(const a of acts){ const m=String(a).match(/^\s*diario\s*:\s*(.+)$/i); if(m) Vida.apuntar(m[1].trim()); } return r; };
+/* nuevos sitios y caras también van al diario */
+const _nombrar128=Mapa.nombrar.bind(Mapa); Mapa.nombrar=async function(img){ const r=await _nombrar128(img); Vida.apuntar('Descubrí un sitio nuevo: '+r.nombre); return r; };
+CMDS.splice(2,0,['/diario','Diario de Mor: lo que ha pasado cada día',()=>{ const D=Vida.diario(); chatCard(`<div class="ctit">Diario de Mor</div>${Object.keys(D).sort().reverse().slice(0,14).map(k=>`<details><summary>${esc(k)}</summary><ul style="margin:4px 0 6px 18px;font-size:13px">${D[k].map(e=>`<li>${esc(e.h)} · ${esc(e.t)}</li>`).join('')}</ul></details>`).join('')||'<small>Aún vacío.</small>'}`); }],
+  ['/vigilar','Vigilar la casa: avisos al móvil si ve a alguien que no conoce',()=>Vida.panelVigilar()]);
 
 /* =====================================================================
    15. DESPERTAR
