@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v76</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v77</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v76 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v77 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7632,6 +7632,28 @@ SyncDBP.subir=async function(estado){ const hoy=new Date().toDateString(); let g
   const mio={}; for(const [k,v] of Object.entries(idx.partes)) mio[k]=v; localStorage.setItem('mor_dbp_idx',JSON.stringify(mio));
   if(faltan) estado(`Subido lo importante. Quedan ${faltan} partes (proyectos y chats antiguos) que se subirán los próximos días para no gastar el cupo de DatabasePro.`);
   return escritos; };
+
+/* =====================================================================
+   142. SALIR DEL MODO ROBOT FÁCIL
+   - Botón ⚙ pequeño en la esquina de arriba a la derecha.
+   - Tocar la pantalla 4 veces seguidas.
+   - Mantener pulsado 2 s (aunque se mueva un poco el dedo).
+   - Por voz: «modo IA», «sal del modo robot», «abre los ajustes».
+   ===================================================================== */
+(()=>{ const st=document.createElement('style'); st.textContent='#morGear{display:none;position:fixed;top:10px;right:10px;z-index:9400;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:rgba(255,255,255,.75);font-size:22px;line-height:42px;text-align:center;padding:0;cursor:pointer}body.modoRobot #morGear{display:block}'; document.head.appendChild(st);
+  const g=document.createElement('button'); g.id='morGear'; g.textContent='⚙'; g.setAttribute('aria-label','Ajustes'); g.onclick=e=>{ e.stopPropagation(); Salir.mostrar(); }; document.body.appendChild(g); })();
+let _toques=[], _lp=null, _lpXY=null;
+addEventListener('touchstart',e=>{ if(!Modo.robot()||$('morSalir')) return; const t=e.touches[0]; _lpXY=[t.clientX,t.clientY]; clearTimeout(_lp); _lp=setTimeout(()=>Salir.mostrar(),2000);
+  const ahora=Date.now(); _toques=_toques.filter(x=>ahora-x<1500); _toques.push(ahora); if(_toques.length>=4){ _toques=[]; Salir.mostrar(); } },{passive:true,capture:true});
+addEventListener('touchmove',e=>{ if(!_lpXY) return; const t=e.touches[0]; if(Math.hypot(t.clientX-_lpXY[0],t.clientY-_lpXY[1])>30) clearTimeout(_lp); },{passive:true,capture:true});
+['touchend','touchcancel'].forEach(ev=>addEventListener(ev,()=>{ clearTimeout(_lp); _lpXY=null; },{passive:true,capture:true}));
+addEventListener('contextmenu',e=>{ if(Modo.robot()){ e.preventDefault(); Salir.mostrar(); } },true);
+/* en la pantalla de salir, también Ajustes */
+const _salirM142=Salir.mostrar.bind(Salir); Salir.mostrar=function(){ const ya=!!$('morSalir'); _salirM142(); const d=$('morSalir'); if(d&&!ya){ d.style.pointerEvents='none'; setTimeout(()=>d.style.pointerEvents='',700); } if(!d||d.querySelector('[data-aj]')) return; const b=document.createElement('button'); b.dataset.aj=1; b.textContent='Ajustes';
+  b.style.cssText='min-width:240px;padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font-size:17px'; b.onclick=()=>{ d.remove(); Modo.poner('ia'); setTimeout(()=>{ try{ Modo.ajustes(); }catch(e){} },300); }; d.appendChild(b); };
+const _send142=send; send=async function(text,opts={}){ const t=String(text||''); if(Modo.robot()&&t&&!(opts&&opts.event)&&t.length<70){ const n=Vida.norm(t);
+    if(/\b(sal(te|ir)? del modo robot|quita el modo robot|abre (los )?ajustes|ve a ajustes|ajustes)\b/.test(n)){ logChat('u',t); Robot.decir('Vale, te abro el menú.','neutral'); Salir.mostrar(); return; } }
+  return _send142(text,opts); };
 
 /* =====================================================================
    15. DESPERTAR
