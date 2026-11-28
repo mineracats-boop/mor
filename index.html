@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v78</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v79</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v78 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v79 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7742,6 +7742,34 @@ const _sys143=systemPrompt; systemPrompt=function(){ const b=_sys143.apply(this,
   return b+`\n${Vista.hecho?'LO QUE ESTÁ HACIENDO AHORA quien tienes delante: '+Vista.hecho+'. ':''}${Vista.cosas.length?'COSAS QUE VES ALREDEDOR: '+Vista.cosas.join(', ')+'. ':''}${s&&s.cosas&&s.cosas.length?'En '+s.nombre+' sueles ver: '+s.cosas.slice(-10).join(', ')+'.':''}`; };
 /* «¿qué estoy haciendo?» con la foto */
 const _send143=send; send=async function(text,opts={}){ const t=String(text||''); if(Modo.robot()&&t&&!(opts&&opts.event)&&/\b(qu[eé] (estoy haciendo|hago)|qu[eé] gesto|qu[eé] hago con la mano|me ves bailar)\b/i.test(t)&&opts.image===undefined){ opts=Object.assign({},opts,{image:Cam.snapshot()}); } return _send143(text,opts); };
+
+/* =====================================================================
+   144. VER LO QUE VE MOR (modo robot)
+   Abajo, la imagen de su cámara con quién reconoce, qué gesto ve y qué
+   cosas hay. Se quita y se pone con el botón 👁 (al lado del ⚙), tocando
+   la imagen, o por voz: «enséñame lo que ves» / «quita la cámara».
+   ===================================================================== */
+(()=>{ const st=document.createElement('style'); st.textContent=`#morVe{display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:9300;width:min(46vw,260px);border-radius:16px;overflow:hidden;border:2px solid rgba(127,216,255,.45);background:#000;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+  body.modoRobot.verCam #morVe{display:block} #morVe video{display:block;width:100%;transform:scaleX(-1)} #morVe canvas{position:absolute;inset:0;width:100%;height:calc(100% - 24px)}
+  #morVe .lbl{font-size:12px;color:#cfefff;padding:4px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(5,15,30,.9);height:24px;box-sizing:border-box}
+  #morOjo{display:none;position:fixed;top:10px;right:62px;z-index:9400;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:rgba(255,255,255,.75);font-size:20px;line-height:42px;text-align:center;padding:0}
+  body.modoRobot #morOjo{display:block} body.modoRobot.verCam #morOjo{background:rgba(127,216,255,.25)}`; document.head.appendChild(st);
+  const d=document.createElement('div'); d.id='morVe'; d.innerHTML='<video muted playsinline autoplay></video><canvas></canvas><div class="lbl">…</div>'; document.body.appendChild(d);
+  const o=document.createElement('button'); o.id='morOjo'; o.textContent='👁'; o.setAttribute('aria-label','Ver lo que ve Mor'); document.body.appendChild(o);
+  o.onclick=e=>{ e.stopPropagation(); VerCam.poner(!VerCam.on()); }; d.onclick=e=>{ e.stopPropagation(); VerCam.poner(false); };
+  ['touchstart','pointerdown'].forEach(ev=>{ o.addEventListener(ev,e=>e.stopPropagation()); d.addEventListener(ev,e=>e.stopPropagation()); }); })();
+const VerCam={ on(){ return localStorage.getItem('mor_vercam')==='1'; },
+  poner(v){ localStorage.setItem('mor_vercam',v?'1':''); document.body.classList.toggle('verCam',v); this.enlazar(); },
+  enlazar(){ const vid=document.querySelector('#morVe video'); if(!vid) return; const s=this.on()&&Cam.on?Cam.stream:null; if(vid.srcObject!==s){ vid.srcObject=s; if(s) vid.play().catch(()=>{}); } },
+  pinta(){ if(!this.on()||!Modo.robot()) return; this.enlazar(); const d=$('morVe'); if(!d) return; const caras=(Faces.now||[]).map(n=>n==='desconocido'?'alguien nuevo':n);
+    const partes=[caras.length?caras.join(', '):'nadie', Vista.hecho||'', Vista.cosas&&Vista.cosas.length?Vista.cosas.slice(0,4).join(', '):'', Mapa.aqui()?'📍 '+Mapa.aqui().nombre:''].filter(Boolean);
+    d.querySelector('.lbl').textContent=partes.join(' · '); } };
+document.body.classList.toggle('verCam',VerCam.on());
+setInterval(()=>VerCam.pinta(),800);
+const _send144=send; send=async function(text,opts={}){ const t=String(text||''); if(Modo.robot()&&t&&!(opts&&opts.event)&&t.length<70){ const n=Vida.norm(t);
+    if(/\b(ensen(a|ame)|muestra(me)?|pon) (lo que ves|tu camara|la camara)\b/.test(n)){ logChat('u',t); VerCam.poner(true); Robot.decir('Mira, esto es lo que veo.','feliz'); return; }
+    if(/\b(quita|oculta|esconde) (la camara|lo que ves|tu camara)\b/.test(n)){ logChat('u',t); VerCam.poner(false); Robot.decir('Vale, la quito.','neutral'); return; } }
+  return _send144(text,opts); };
 
 /* =====================================================================
    15. DESPERTAR
