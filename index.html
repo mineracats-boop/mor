@@ -1276,7 +1276,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v62</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v63</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1440,7 +1440,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v62 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v63 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6887,6 +6887,167 @@ const _open129=Mapa.open.bind(Mapa); Mapa.open=function(){ _open129(); const c=[
   c.querySelectorAll('[data-s]').forEach(el=>{ const s=Mapa.sitios.find(x=>x.id===el.dataset.s); const pr=s.prohibido&&s.prohibido>Date.now(); const b=document.createElement('button'); b.className='tbtn'+(pr?' on':'');
     b.textContent=pr?'Prohibido hasta '+new Date(s.prohibido).toTimeString().slice(0,5)+' · quitar':'Prohibir 1 h'; b.onclick=()=>{ s.prohibido=pr?0:Date.now()+3600000; Mapa.guardar(); c.remove(); Mapa.open(); }; el.appendChild(b); });
   c.querySelectorAll('circle').forEach((ci,i)=>{ const s=Mapa.sitios[i]; if(s&&s.prohibido>Date.now()) ci.setAttribute('fill','#ff5c5c'); }); };
+
+/* =====================================================================
+   130. MÁS COSAS DEL MODO ROBOT
+   - «Mor, ven»: va hacia quien le llama (con ruedas; ahora mira y contesta).
+   - Avisa cuando le queda poca batería.
+   - Ánimo propio: contento si le hacéis caso, aburrido si nadie le habla,
+     un poco celoso si habláis mucho entre vosotros sin contar con él.
+   - Cumpleaños: los aprende, felicita y canta, y avisa a los demás antes
+     (sin que se entere el del cumple).
+   - Nota si alguien está triste por su cara.
+   - Música de la radio y baila con los ojos.
+   - Si alguien duerme, no le despierta: no habla solo ni saluda.
+   - Varios mapas: casa, casa de Retama, calle, hotel… y cambia solo.
+   - Cuenta de la familia y mensajes con DatabasePro: misma cuenta en el
+     ordenador, el móvil y el robot; «dile a mamá que llego tarde» desde
+     fuera, y si mamá no está se lo dice a quien esté.
+   ===================================================================== */
+const Mas={
+  /* ---------- ánimo ---------- */
+  animo:(()=>{ try{ return JSON.parse(localStorage.getItem('mor_animo'))||{alegria:.6,aburrido:.2,celos:0,t:Date.now()}; }catch(e){ return {alegria:.6,aburrido:.2,celos:0,t:Date.now()}; } })(),
+  guardarAnimo(){ localStorage.setItem('mor_animo',JSON.stringify(this.animo)); },
+  ajustarAnimo(){ const A=this.animo, ahora=Date.now(), min=(ahora-A.t)/60000; A.t=ahora; if(min<=0) return;
+    const sinHablar=(ahora-ultimaPalabra)/60000, hayGente=(Faces.now||[]).length>0, ruido=Vida.voz.ultimo&&ahora-Vida.voz.ultimo<5000;
+    A.aburrido=Math.min(1,A.aburrido+min*(sinHablar>30?(hayGente?.02:.006):-.05)); A.alegria=Math.max(0,Math.min(1,A.alegria-min*.003+(sinHablar<5?min*.01:0)));
+    A.celos=Math.max(0,Math.min(1,A.celos+min*(hayGente&&ruido&&sinHablar>10?.02:-.03))); this.guardarAnimo(); },
+  alHablarle(){ const A=this.animo; A.alegria=Math.min(1,A.alegria+.08); A.aburrido=Math.max(0,A.aburrido-.25); A.celos=Math.max(0,A.celos-.3); this.guardarAnimo(); },
+  textoAnimo(){ const A=this.animo, L=[]; if(A.alegria>.75) L.push('contento'); if(A.aburrido>.6) L.push('aburrido (nadie te ha hecho caso en un buen rato)'); if(A.celos>.5) L.push('un poco celoso (hablan mucho entre ellos y no contigo)'); if(A.alegria<.3) L.push('algo triste'); return L.join(', ')||'tranquilo'; },
+  emocionBase(){ const A=this.animo; if(A.celos>.6) return 'celoso'; if(A.aburrido>.7) return 'cansado'; if(A.alegria>.8) return 'feliz'; return null; },
+  /* ---------- cumpleaños ---------- */
+  cumples(){ return MEM.cumples=(MEM.cumples||{}); },
+  MESES:['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'],
+  fechaDe(t){ const m=t.match(/(\d{1,2})\s+de\s+([a-záéíóú]+)/i); if(!m) return null; const mes=this.MESES.indexOf(m[2].toLowerCase()); if(mes<0) return null; return String(mes+1).padStart(2,'0')+'-'+String(+m[1]).padStart(2,'0'); },
+  mmdd(off=0){ const d=new Date(Date.now()+off*864e5); return String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); },
+  revisarCumples(nombre){ const C=this.cumples(), hoy=this.mmdd(), y=new Date().getFullYear();
+    if(C[nombre]===hoy&&MEM.felicitado!==nombre+y){ MEM.felicitado=nombre+y; saveMem(); Vida.apuntar(`Cumpleaños de ${nombre}`);
+      send(null,{event:`¡HOY ES EL CUMPLEAÑOS DE ${nombre.toUpperCase()} Y LE ACABAS DE VER! Felicítale con muchísima ilusión por su nombre y cántale «Cumpleaños feliz, cumpleaños feliz, te deseamos todos, cumpleaños feliz» con su nombre. Luego pregúntale qué va a hacer para celebrarlo.`,image:null}); return true; }
+    for(const [quien,f] of Object.entries(C)){ if(quien===nombre) continue; for(const dd of [3,2,1]) if(f===this.mmdd(dd)&&MEM['aviso_'+quien+y+nombre]!==1){ MEM['aviso_'+quien+y+nombre]=1; saveMem();
+        send(null,{event:`ACABAS DE VER A ${nombre.toUpperCase()}. Dentro de ${dd} día${dd>1?'s':''} es el cumpleaños de ${quien}. Díselo bajito, como un secreto, y propón preparar algo (que ${quien} no se entere).`,image:null}); return true; } }
+    return false; },
+  /* ---------- caras: tristeza y sueño ---------- */
+  exprCargado:false, tristes:{}, ojosCerrados:{}, dormidos:{},
+  async cargarExpr(){ if(this.exprCargado||Faces.state!=='ready') return; try{ await Faces.api.nets.faceExpressionNet.loadFromUri('./lib/models'); this.exprCargado=true; }catch(e){ this.exprCargado='no'; } },
+  ear(pts){ const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y); const e=o=>(d(pts[o+1],pts[o+5])+d(pts[o+2],pts[o+4]))/(2*d(pts[o],pts[o+3])||1); return (e(36)+e(42))/2; },
+  async mirarCaras(){ if(!Modo.robot()||!Cam.on||Faces.state!=='ready') return; await this.cargarExpr(); if(this.exprCargado!==true) return;
+    try{ const r=await Faces.api.detectAllFaces($('video'),Faces.opts()).withFaceLandmarks(true).withFaceExpressions().withFaceDescriptors(); const ahora=Date.now();
+      for(const f of r){ const p=Faces.match(f.descriptor); const n=p?p.name:null; if(!n) continue;
+        /* dormido: ojos cerrados un buen rato */
+        const e=this.ear(f.landmarks.positions); if(e<.2){ this.ojosCerrados[n]=(this.ojosCerrados[n]||0)+1; if(this.ojosCerrados[n]>=4&&!this.dormidos[n]){ this.dormidos[n]=ahora; Vida.apuntar(`${n} se quedó dormido`); } }
+        else { this.ojosCerrados[n]=0; if(this.dormidos[n]) delete this.dormidos[n]; }
+        /* triste */
+        const tr=f.expressions.sad||0; if(tr>.55){ this.tristes[n]=(this.tristes[n]||0)+1; if(this.tristes[n]>=2&&!busy&&!this.silencio()&&ahora-(this['tr_'+n]||0)>30*60000){ this['tr_'+n]=ahora; this.tristes[n]=0;
+            send(null,{event:`${n.toUpperCase()} PARECE TRISTE (se le nota en la cara). Pregúntale con mucho cariño si está bien y si quiere hablar o que le cuentes un chiste. Una o dos frases, sin exagerar.`,image:null}); } } else this.tristes[n]=0; } }
+    catch(e){} },
+  silencio(){ return Object.keys(this.dormidos).length>0; },
+  /* ---------- batería ---------- */
+  bateria(){ if(!navigator.getBattery) return; navigator.getBattery().then(b=>{ const f=()=>{ if(!Modo.robot()||b.charging) { this.avisoBat=null; return; } const p=Math.round(b.level*100);
+      for(const u of [20,10,5]) if(p<=u&&(this.avisoBat==null||this.avisoBat>u)){ this.avisoBat=u; Robot.decir(u===5?'Me queda muy poquita batería… ¿me enchufas, por favor? Me voy a dormir.':`Me queda un ${p} por ciento de batería. ¿Me enchufas cuando puedas?`,'cansado'); break; } };
+    b.addEventListener('levelchange',f); b.addEventListener('chargingchange',f); f(); }).catch(()=>{}); },
+  /* ---------- música ---------- */
+  radio:null,
+  async ponerMusica(q){ try{ const tag=encodeURIComponent((q||'pop').toLowerCase().replace(/^(de |del |la |el )/,'').trim()||'pop');
+      let L=await (await fetch(`https://de1.api.radio-browser.info/json/stations/search?tag=${tag}&hidebroken=true&order=clickcount&reverse=true&limit=15`)).json();
+      if(!L.length) L=await (await fetch(`https://de1.api.radio-browser.info/json/stations/search?name=${tag}&hidebroken=true&order=clickcount&reverse=true&limit=15`)).json();
+      L=L.filter(x=>/^https/.test(x.url_resolved||'')); if(!L.length) return Robot.decir('No encuentro una radio de eso. ¿Pruebo con otra música?','pensativo');
+      this.pararMusica(); const st=L[Math.floor(Math.random()*Math.min(5,L.length))]; const a=new Audio(st.url_resolved); a.volume=.6; await a.play(); this.radio=a;
+      Robot.decir(`¡Música! Pongo ${st.name.trim()}.`,'feliz'); this.baile=setInterval(()=>{ if(!this.radio) return; try{ squash(.12); }catch(e){} if(Math.random()<.3){ face.tx=(Math.random()*2-1)*.7; face.lastInput=performance.now(); } },480); setEmotion('feliz',8000); }
+    catch(e){ Robot.decir('No he podido poner la música: '+e.message,'triste'); } },
+  pararMusica(){ if(this.radio){ try{ this.radio.pause(); }catch(e){} this.radio=null; } clearInterval(this.baile); },
+  /* ---------- varios mapas ---------- */
+  mapas:null,
+  cargarMapas(){ try{ this.mapas=JSON.parse(localStorage.getItem('mor_mapas')||'null'); }catch(e){ this.mapas=null; }
+    if(!this.mapas){ this.mapas={actual:'casa',lista:{casa:{nombre:'Casa',sitios:Mapa.sitios,actual:Mapa.actual}}}; }
+    const m=this.mapas.lista[this.mapas.actual]; Mapa.sitios=m.sitios; Mapa.actual=m.actual; },
+  guardarMapas(){ const m=this.mapas.lista[this.mapas.actual]; m.sitios=Mapa.sitios; m.actual=Mapa.actual; try{ localStorage.setItem('mor_mapas',JSON.stringify(this.mapas)); }catch(e){} },
+  cambiarMapa(id,silencio){ this.guardarMapas(); this.mapas.actual=id; const m=this.mapas.lista[id]; Mapa.sitios=m.sitios; Mapa.actual=m.actual||null; this.guardarMapas(); if(!silencio) toast('Mapa: '+m.nombre); },
+  mapaPorNombre(t){ const n=Vida.norm(t).replace(/^(la |el |en |en la |en el )/,''), E=Object.entries(this.mapas.lista); return (E.find(([k,m])=>Vida.norm(m.nombre)===n)||E.find(([k,m])=>Vida.norm(m.nombre).replace(/^(la |el )/,'')===n.replace(/^(la |el )/,'')))?.[0]||null; },
+  /* ---------- cuenta y mensajes (DatabasePro) ---------- */
+  codigo(){ return localStorage.getItem('mor_familia')||''; },
+  base(){ return (Conn.get().dbpUrl||'https://databasepro.guidavilagri.workers.dev').replace(/\/+$/,''); },
+  async api(ruta,o={}){ const r=await fetch(this.base()+ruta,Object.assign({headers:{'Content-Type':'application/json'}},o)); const j=await r.json().catch(()=>null); if(!r.ok) throw new Error((j&&j.error)||('DatabasePro '+r.status)); return j; },
+  async subirCuenta(){ const c=this.codigo(); if(!c) return; const quien=Faces.people.map(p=>({name:p.name,rel:p.rel||'',descs:(p.descs||[]).slice(0,8).map(d=>Array.from(d).map(x=>+x.toFixed(4))),voces:(p.voces||[]).slice(-6)}));
+    const v={people:quien,cumples:this.cumples(),reglas:MEM.reglasEstudio||[],recados:Vida.recados(),at:Date.now(),de:localStorage.getItem('mor_dev_nombre')||(Modo.robot()?'robot':'aparato')};
+    const txt=JSON.stringify({valor:v}); if(txt.length>95000) v.people.forEach(p=>{ p.descs=p.descs.slice(0,3); p.voces=[]; });
+    if(JSON.stringify(v.people)+JSON.stringify(v.cumples)===this._firma) return; this._firma=JSON.stringify(v.people)+JSON.stringify(v.cumples);
+    try{ await this.api(`/api/estado/${c}/cuenta`,{method:'PUT',body:JSON.stringify({valor:v,reemplazar:true})}); }catch(e){} },
+  async bajarCuenta(){ const c=this.codigo(); if(!c) return; try{ const v=(await this.api(`/api/estado/${c}/cuenta`)).valor; if(!v) return;
+      for(const q of v.people||[]){ let p=Faces.people.find(x=>x.name===q.name); if(!p){ p={id:'p'+Date.now()+Math.random().toString(36).slice(2,5),name:q.name,rel:q.rel,descs:q.descs,voces:q.voces||[],at:Date.now()}; Faces.people.push(p); await DB.put('people',p); }
+        else if((q.descs||[]).length>(p.descs||[]).length){ p.descs=q.descs; await DB.put('people',p); } }
+      Object.assign(this.cumples(),v.cumples||{}); if(v.reglas&&v.reglas.length&&(!MEM.reglasEstudio||MEM.reglasEstudio.length<v.reglas.length)) MEM.reglasEstudio=v.reglas; saveMem(); }catch(e){} },
+  async mandar(para,texto){ const c=this.codigo(); if(!c) throw new Error('falta la cuenta de la familia (/familia)');
+    const de=(Vida.quienHabla&&Vida.quienHabla())||localStorage.getItem('mor_yo')||'alguien de la familia';
+    const r=await this.api(`/api/datos/${c}/mensajes`,{method:'POST',body:JSON.stringify({de,para,texto,estado:'pendiente'})}); const L=JSON.parse(localStorage.getItem('mor_enviados')||'[]'); L.push(r.registro&&r.registro.id||r.id); localStorage.setItem('mor_enviados',JSON.stringify(L.slice(-30))); return r; },
+  async revisarMensajes(){ const c=this.codigo(); if(!c) return; let L; try{ L=(await this.api(`/api/datos/${c}/mensajes?limite=50`)).registros||[]; }catch(e){ return; } const ahora=Date.now();
+    /* los míos: ¿ya los ha entregado el robot? */
+    const mios=JSON.parse(localStorage.getItem('mor_enviados')||'[]'), vistos=JSON.parse(localStorage.getItem('mor_avisados')||'[]');
+    for(const m of L) if(mios.includes(m.id)&&m.estado!=='pendiente'&&!vistos.includes(m.id)){ vistos.push(m.id); localStorage.setItem('mor_avisados',JSON.stringify(vistos.slice(-50))); const t=m.estado==='entregado'?`Mor ya se lo ha dicho a ${m.para}.`:`${m.para} no estaba: Mor se lo ha dicho a ${m.entregadoA}.`; toast(t,8000); notify('Mensaje de Mor',t); logChat('m','['+t+']'); }
+    if(!Modo.robot()) return;
+    /* el robot entrega */
+    const presentes=(Faces.now||[]).filter(n=>n&&n!=='desconocido');
+    for(const m of L.filter(x=>x.estado==='pendiente')){ const para=Vida.norm(m.para).replace(/^(a |la |el )/,''); const aqui=presentes.find(n=>Vida.norm(n)===para||(Faces.people.find(p=>p.name===n)||{}).rel&&Vida.norm((Faces.people.find(p=>p.name===n)||{}).rel).includes(para));
+      if(aqui){ send(null,{event:`TIENES UN MENSAJE DE ${String(m.de).toUpperCase()} PARA ${aqui.toUpperCase()}, QUE ESTÁ DELANTE: «${m.texto}». Díselo con naturalidad (de parte de ${m.de}).`,image:null}); await this.api(`/api/datos/${c}/mensajes/${m.id}`,{method:'PUT',body:JSON.stringify({estado:'entregado',entregadoA:aqui,entregadoEn:ahora})}).catch(()=>{}); Vida.apuntar(`Le di a ${aqui} un mensaje de ${m.de}`); return; }
+      if(ahora-m.creado>8*60000&&presentes.length){ const otro=presentes[0]; send(null,{event:`TIENES UN MENSAJE DE ${String(m.de).toUpperCase()} PARA ${String(m.para).toUpperCase()}: «${m.texto}». No encuentras a ${m.para}, pero está ${otro}: dile «${m.para} no está, te lo digo a ti» y dale el mensaje.`,image:null});
+        await this.api(`/api/datos/${c}/mensajes/${m.id}`,{method:'PUT',body:JSON.stringify({estado:'otro',entregadoA:otro,entregadoEn:ahora})}).catch(()=>{}); return; } } },
+  panelFamilia(){ const c=this.codigo(); const k=chatCard(`<div class="ctit">Cuenta de la familia</div>
+      <small>Con la misma cuenta en el ordenador, el móvil y el robot, Mor comparte a quién conoce, los cumpleaños y las reglas, y os podéis mandar mensajes a través de él («dile a mamá que llego tarde»). Se guarda en tu DatabasePro.</small>
+      ${c?`<div style="margin-top:8px;font-size:13px">Código de la familia (ponlo igual en los demás aparatos): <code style="user-select:all">${esc(c)}</code></div>`:''}
+      <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap">${c?'':'<button class="tbtn on" data-f="crear">Crear la cuenta</button>'}<input class="inp" data-f="cod" placeholder="Unirse con el código" style="flex:1;min-width:140px;border-radius:10px;padding:6px 10px"><button class="tbtn" data-f="unir">Unirse</button></div>
+      <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><input class="inp" data-f="yo" placeholder="¿Quién usa este aparato? (papá, Guille…)" value="${esc(localStorage.getItem('mor_yo')||'')}" style="flex:1;min-width:140px;border-radius:10px;padding:6px 10px"><button class="tbtn" data-f="okyo">Guardar</button></div>
+      <div data-f="o" style="font-size:13px;margin-top:6px"></div>`);
+    const q=x=>k.querySelector('[data-f='+x+']'), o=t=>{ q('o').textContent=t; };
+    if(q('crear')) q('crear').onclick=async()=>{ const cod='mor-'+Array.from(crypto.getRandomValues(new Uint8Array(9))).map(b=>b.toString(36).padStart(2,'0')).join('').slice(0,16); localStorage.setItem('mor_familia',cod); this._firma=''; await this.subirCuenta(); k.remove(); this.panelFamilia(); };
+    q('unir').onclick=async()=>{ const v=q('cod').value.trim().toLowerCase(); if(!/^mor-[a-z0-9]{8,30}$/.test(v)) return o('Ese código no vale: es como mor-abc123…'); localStorage.setItem('mor_familia',v); o('Uniendo…'); await this.bajarCuenta(); k.remove(); this.panelFamilia(); toast('Cuenta de la familia conectada'); };
+    q('okyo').onclick=()=>{ localStorage.setItem('mor_yo',q('yo').value.trim()); o('Guardado.'); }; }
+};
+Mas.cargarMapas();
+const _guardar130=Mapa.guardar.bind(Mapa); Mapa.guardar=function(){ _guardar130(); Mas.guardarMapas(); };
+/* reconocer el sitio en todos los mapas: si es de otro mapa, cambia solo */
+const _mejor130=Mapa.mejor.bind(Mapa); Mapa.mejor=function(f){ const r=_mejor130(f); if(r.p>.8) return r;
+  for(const [id,m] of Object.entries(Mas.mapas.lista)){ if(id===Mas.mapas.actual) continue; let bs=0,b=null; for(const s of m.sitios) for(const q of s.fps){ const p=this.parecido(f,q); if(p>bs){ bs=p; b=s; } }
+    if(bs>.86){ Mas.cambiarMapa(id,true); Vida.apuntar('Llegamos a '+m.nombre); return {s:b,p:bs}; } } return r; };
+/* bucles */
+Mas.bateria();
+setInterval(()=>{ if(!Modo.robot()) return; Mas.ajustarAnimo(); const e=Mas.emocionBase(); if(e&&!busy&&face.emo==='neutral'&&Math.random()<.25) setEmotion(e,5000); },20000);
+setInterval(()=>Mas.mirarCaras(),10000);
+setInterval(()=>Mas.revisarMensajes(),30000);
+setInterval(()=>Mas.subirCuenta(),5*60000); setTimeout(()=>Mas.bajarCuenta(),5000);
+/* al ver a alguien: cumpleaños antes que los buenos días */
+const _alVer130=Vida.alVer.bind(Vida); Vida.alVer=function(n){ if(Mas.silencio()) return false; if(!this['cu_'+Vida.hoy()+n]){ this['cu_'+Vida.hoy()+n]=1; if(Mas.revisarCumples(n)) return true; } return _alVer130(n); };
+/* si alguien duerme: nada de hablar solo */
+const _send130b=send; send=function(text,opts){ if(opts&&opts.event&&!text&&Modo.robot()&&Mas.silencio()&&!/MENSAJE/.test(opts.event)) return Promise.resolve(); return _send130b.apply(this,arguments); };
+const _say130=Robot.decir.bind(Robot); Robot.decir=function(t,e){ if(Mas.silencio()&&!/batería/.test(t)) { showSub(t); return; } if(Mas.radio) Mas.radio.volume=.15; _say130(t,e); setTimeout(()=>{ if(Mas.radio) Mas.radio.volume=.6; },4000); };
+const _send130=send; send=async function(text,opts={}){ const t=String(text||''), n=Vida.norm(t);
+  if(t&&!(opts&&opts.event)){ if(Modo.robot()) Mas.alHablarle();
+    /* mensajes: «busca a mamá y dile que…», «dile a mamá que…» */
+    const mm=t.match(/busca a\s+(?:mi\s+)?(\S+?)\s+y\s+d[ií]le(?:\s+a\s+\S+)?\s+que\s+(.{2,200})$/i)||t.match(/d[ií]le a\s+(?:mi\s+)?(\S+?)[,]?\s+que\s+(.{2,200})$/i);
+    if(mm){ const para=mm[1].replace(/[.,]$/,''), texto=mm[2]; logChat('u',t);
+      const delante=Modo.robot()&&(Faces.now||[]).find(x=>Vida.norm(x)===Vida.norm(para));
+      if(delante){ return _send130(null,{event:`TE PIDEN QUE LE DIGAS A ${para.toUpperCase()} (que está delante): «${texto}». Díselo.`,image:null}); }
+      try{ await Mas.mandar(para,texto); const tx=Modo.robot()?`Vale, cuando vea a ${para} se lo digo.`:`Hecho: Mor buscará a ${para} en casa y se lo dirá. Si no está, se lo dirá a quien esté. Te aviso cuando se lo diga.`; Modo.robot()?Robot.decir(tx,'feliz'):(logChat('m',tx),showSub(tx),toast(tx,6000)); }
+      catch(e){ const tx='No puedo mandar mensajes todavía: '+e.message; Modo.robot()?Robot.decir(tx,'triste'):(logChat('m',tx),toast(tx,6000)); if(/familia/.test(e.message)) Mas.panelFamilia(); } return; }
+    if(Modo.robot()){
+      if(/^(mor[, ]+)?ven( aqui| conmigo| aca)?[.!]*$/.test(n.trim())){ logChat('u',t); const q=Vida.quienHabla(); Robot.accion={tipo:'ir',hacia:q||'voz',at:Date.now()}; face.tx=0; face.ty=0; face.lastInput=performance.now(); Robot.decir(Vida.quieto?'Me han pedido que me quede quieto… ¿voy igualmente?':rnd(['¡Voy!','¡Ya voy!','¡Allá voy!']),'feliz'); return; }
+      const cu=t.match(/(?:mi cumple(?:años)? es|cumplo años)\s+el\s+(\d{1,2}\s+de\s+[a-záéíóú]+)/i), cu2=t.match(/el cumple(?:años)? de\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+)\s+es\s+el\s+(\d{1,2}\s+de\s+[a-záéíóú]+)/i);
+      if(cu||cu2){ const quien=cu2?cu2[1]:(Vida.quienHabla()||localStorage.getItem('mor_yo')), f=Mas.fechaDe(cu2?cu2[2]:cu[1]);
+        if(quien&&f){ logChat('u',t); Mas.cumples()[quien[0].toUpperCase()+quien.slice(1)]=f; saveMem(); Mas._firma=''; Robot.decir(`¡Apuntado! El ${(cu2?cu2[2]:cu[1])} es el cumple de ${quien}.`,'feliz'); return; } }
+      if(/\b(pon|ponme|pon algo de) (musica|la radio|radio)\b/.test(n)||/\bpon musica\b/.test(n)){ logChat('u',t); const g=t.match(/(?:m[uú]sica|radio)\s+(?:de\s+)?(.+)$/i); Mas.ponerMusica(g?g[1]:'pop'); return; }
+      if(/\b(para|quita|apaga) la (musica|radio)\b/.test(n)){ logChat('u',t); Mas.pararMusica(); Robot.decir('Música fuera.'); return; }
+      if(Mas.radio&&/\bmas (alto|fuerte)\b/.test(n)){ Mas.radio.volume=Math.min(1,Mas.radio.volume+.2); return; } if(Mas.radio&&/\bmas (bajo|flojo)\b/.test(n)){ Mas.radio.volume=Math.max(.05,Mas.radio.volume-.2); return; }
+      const em=t.match(/estamos en (?:la |el )?(casa de \S+|casa \d|casa|calle|el hotel|hotel|el cole|colegio|la playa|playa|\S+)(?:[.!]|$)/i);
+      if(em&&t.length<60){ logChat('u',t); const nombre=em[1].replace(/^el |^la /i,''); let id=Mas.mapaPorNombre(nombre); if(!id){ id='m'+Date.now().toString(36); Mas.mapas.lista[id]={nombre:nombre[0].toUpperCase()+nombre.slice(1),sitios:[],actual:null}; }
+        Mas.cambiarMapa(id,true); Robot.decir(`Vale, estamos en ${Mas.mapas.lista[id].nombre}. Voy apuntando los sitios.`,'curioso'); return; } } }
+  return _send130(text,opts); };
+const _sys130=systemPrompt; systemPrompt=function(){ const b=_sys130.apply(this,arguments); if(!Modo.robot()) return b; const dorm=Object.keys(Mas.dormidos);
+  return b+`\nTU ÁNIMO AHORA: ${Mas.textoAnimo()} (que se note un poco al hablar, sin exagerar ni quejarte).${dorm.length?' HAY ALGUIEN DURMIENDO ('+dorm.join(', ')+'): habla bajito y poco, no le despiertes.':''}${Object.keys(Mas.cumples()).length?' CUMPLEAÑOS QUE SABES: '+Object.entries(Mas.cumples()).map(([k,v])=>k+' '+v.split('-').reverse().join('/')).join(', ')+'.':''} MAPA ACTUAL: ${Mas.mapas.lista[Mas.mapas.actual].nombre}.${Mas.radio?' Está sonando música.':''}`; };
+/* el mapa con selector de mapas */
+const _open130=Mapa.open.bind(Mapa); Mapa.open=function(){ _open130(); const c=[...document.querySelectorAll('.ctit')].filter(x=>x.textContent==='Mapa de Mor').pop().parentElement;
+  const d=document.createElement('div'); d.className='row'; d.style.cssText='gap:6px;flex-wrap:wrap;margin:6px 0';
+  d.innerHTML=Object.entries(Mas.mapas.lista).map(([id,m])=>`<button class="tbtn${id===Mas.mapas.actual?' on':''}" data-m="${id}">${esc(m.nombre)} (${m.sitios.length})</button>`).join('')+'<button class="tbtn" data-m="+">+ Mapa nuevo</button>';
+  c.querySelector('small').after(d);
+  d.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ if(b.dataset.m==='+'){ const n=prompt('Nombre del mapa (casa de Retama, hotel, calle…)'); if(!n) return; const id='m'+Date.now().toString(36); Mas.mapas.lista[id]={nombre:n,sitios:[],actual:null}; Mas.cambiarMapa(id); } else Mas.cambiarMapa(b.dataset.m); c.remove(); Mapa.open(); }); };
+CMDS.splice(2,0,['/familia','Cuenta de la familia (misma cuenta en todos los aparatos) y mensajes a través de Mor',()=>Mas.panelFamilia()]);
 
 /* =====================================================================
    15. DESPERTAR
