@@ -625,8 +625,16 @@ const VOCES_G=[['Fenrir','nervioso y emocionado'],['Leda','juvenil'],['Sadachbia
   ['Zephyr','luminoso'],['Aoede','ligero'],['Puck','animado'],['Umbriel','tranquilo'],['Sulafat','cálido']];
 let VOZ_MODO = 'piper';   /* v58: UNA sola voz para siempre (la de Mor); no se cambia nunca */ localStorage.setItem('mor_vozmodo','piper'); localStorage.removeItem('mor_piper_voz');   // UNA voz fija: piper | g:Nombre | eleven | telefono
 if(VOZ_MODO==='gemini'||VOZ_MODO==='auto') VOZ_MODO='piper';
-function fijarVoz(m,aviso){ VOZ_MODO='piper'; }   /* una sola voz: no se cambia */
+function fijarVoz(m,aviso){ /* una sola voz: no se cambia */ }   /* una sola voz: no se cambia */
 const vozGemini=()=>VOZ_MODO.startsWith('g:')?VOZ_MODO.slice(2):(localStorage.getItem('mor_vozg')||'Fenrir');
+/* v67: la voz de Mor es la voz española natural del propio aparato (la de Google en Android):
+   suena mucho mejor que Piper, sale al instante y no frena el cerebro. Se elige UNA vez y se queda fija.
+   Solo si el aparato no tiene voz en español se usa Piper. */
+const VozTel={ elegida:null,
+  buscar(){ if(!('speechSynthesis' in window)) return null; const vs=speechSynthesis.getVoices(); if(!vs.length) return null; const fija=localStorage.getItem('mor_voztel');
+    return vs.find(v=>v.name===fija)||vs.find(v=>/^es[-_]ES/i.test(v.lang)&&/google/i.test(v.name))||vs.find(v=>/^es[-_]ES/i.test(v.lang)&&/natural|online|neural/i.test(v.name))||vs.find(v=>/^es[-_]ES/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang))||null; },
+  decidir(){ const v=this.buscar(); if(v){ this.elegida=v; localStorage.setItem('mor_voztel',v.name); VOZ_MODO='telefono'; } return v; } };
+if('speechSynthesis' in window){ VozTel.decidir(); try{ speechSynthesis.addEventListener('voiceschanged',()=>{ if(!VozTel.elegida&&!(typeof Voice!=='undefined'&&Voice.lastSpoken.at)) VozTel.decidir(); else if(VozTel.elegida) VozTel.elegida=VozTel.buscar()||VozTel.elegida; }); }catch(e){} }
 const VOZ_PIPER = 'es_ES-davefx-medium';  // voz ilimitada dentro del dispositivo (se descarga una vez, ~60 MB)
 const VOZ_PIPER_TONO = 1.0;
 const MOVIL = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);           // >1 más aguda pero también más rápida                // voz de respaldo de Gemini si ElevenLabs no tiene créditos
@@ -876,7 +884,7 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
         this.ensure(); const url=URL.createObjectURL(res.mp3||res.wav), a=new Audio(url);
         a.preservesPitch=false; a.webkitPreservesPitch=false; a.playbackRate=res.mp3?VOZ_TONO:VOZ_PIPER_TONO;
         const src=AC.createMediaElementSource(a), hp=AC.createBiquadFilter(), pk=AC.createBiquadFilter();
-        hp.type='highpass'; hp.frequency.value=220; pk.type='peaking'; pk.frequency.value=2600; pk.Q.value=1.3; pk.gain.value=4;
+        hp.type='highpass'; hp.frequency.value=80; pk.type='peaking'; pk.frequency.value=3000; pk.Q.value=1; pk.gain.value=res.mp3?4:1;
         src.connect(hp); hp.connect(pk); pk.connect(this.an); this.cur=a;
         let failed=false; await withTimeout(new Promise(r=>{ a.onended=r; a.onerror=()=>{failed=true;r();}; a.onpause=r; a.play().catch(e=>{ failed=true; this.lastErr='play: '+e.name; r(); }); }), 4000+it.text.length*120);
         if(failed){ URL.revokeObjectURL(url); if(this.cur===a) this.cur=null; throw new Error(this.lastErr||'audio'); }
@@ -891,18 +899,18 @@ const Voice={on:true,eleven:!!ELEVEN_KEY,gem:true,piper:null,piperState:'off',ge
         if(this.cur===handle) this.cur=null; return this.done(it);
       }
     }catch(e){ console.warn('Voz:',e.message); this.lastErr=e.message; }
-    if(false && 'speechSynthesis' in window && g===this.gen){ const u=new SpeechSynthesisUtterance(it.text); u.lang='es-ES'; u.pitch=1; u.rate=1.05;
-      const vs=speechSynthesis.getVoices(), fija=localStorage.getItem('mor_voztel'); let v=vs.find(v=>v.name===fija)||vs.find(v=>/^es[-_]ES/i.test(v.lang)&&/google|natural|online/i.test(v.name))||vs.find(v=>/^es[-_]ES/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang)); if(v){ u.voice=v; if(!fija) localStorage.setItem('mor_voztel',v.name); }
+    if(VOZ_MODO==='telefono' && 'speechSynthesis' in window && g===this.gen){ const u=new SpeechSynthesisUtterance(it.text); u.lang='es-ES'; u.pitch=1.05; u.rate=1.08;
+      const vs=speechSynthesis.getVoices(), fija=localStorage.getItem('mor_voztel'); let v=VozTel.elegida||vs.find(v=>v.name===fija)||vs.find(v=>/^es[-_]ES/i.test(v.lang)&&/google|natural|online/i.test(v.name))||vs.find(v=>/^es[-_]ES/i.test(v.lang))||vs.find(v=>/^es/i.test(v.lang)); if(v){ try{ u.voice=v; }catch(e){} if(!fija) localStorage.setItem('mor_voztel',v.name); }
       this.cur={pause(){ speechSynthesis.cancel(); }};
-      speechSynthesis.cancel(); const ka=setInterval(()=>{ try{ speechSynthesis.pause(); speechSynthesis.resume(); }catch(e){} },9000);   // fallo conocido de Chrome
-      await withTimeout(new Promise(r=>{ u.onend=r; u.onerror=e=>{ this.lastErr='voz teléfono: '+(e.error||'error'); r(); }; speechSynthesis.speak(u); }), 3000+it.text.length*110);
+      const ka=MOVIL?0:setInterval(()=>{ try{ speechSynthesis.pause(); speechSynthesis.resume(); }catch(e){} },9000);   // fallo conocido de Chrome
+      await withTimeout(new Promise(r=>{ u.onend=r; u.onerror=e=>{ this.lastErr='voz teléfono: '+(e.error||'error'); r(); }; speechSynthesis.speak(u); }), 4000+it.text.length*120);
       clearInterval(ka); this.cur=null; }
     this.done(it);
   },
   done(it){ this.lastSpoken={t:it.text,at:Date.now()}; this.curText=''; (this.recent=this.recent||[]).push({t:it.text,at:Date.now()}); this.recent=this.recent.filter(x=>Date.now()-x.at<15000); },
   async flush(){ while((this.playing||this.q.length)) await sleep(120); },
   stop(){ this.gen++; this.q=[]; this.playing=false; if(this.cur){ const a=this.cur; this.cur=null; a.pause(); } if('speechSynthesis' in window) speechSynthesis.cancel(); },
-  level(){ if(!this.cur||!this.an) return 0; this.an.getByteTimeDomainData(this.buf); let s=0;
+  level(){ if(VOZ_MODO==='telefono'&&this.cur) return speechSynthesis.speaking?.25+.3*Math.abs(Math.sin(performance.now()/75)):0; if(!this.cur||!this.an) return 0; this.an.getByteTimeDomainData(this.buf); let s=0;
     for(let i=0;i<this.buf.length;i+=2){ const v=(this.buf[i]-128)/128; s+=v*v; } return Math.min(1,Math.sqrt(s/(this.buf.length/2))*4.5); }
 };
 
@@ -1183,7 +1191,8 @@ async function send(text,opts={}){
   if(pendingPhoto&&opts.image===undefined){ pendingPhoto=null; clearTimeout(window._qp); }
   // recuerdos y apuntes relacionados con lo que dice
   let extra='';
-  if(text){ try{
+  const _rb=(()=>{ try{ return Modo.robot(); }catch(e){ return false; } })(), _pasado=/acuerd|recuerd|ayer|anteayer|otro d[ií]a|semana pasada|qu[eé] hicimos|hace (unos|dos|tres) d[ií]as/i.test(text||'');
+  if(text&&(!_rb||_pasado)){ try{
     const [rc,rn]=(await withTimeout(Promise.all([recallSmart(text),recallNotes(text)]),2500))||[[],[]];
     if(rc.length) extra+='\nRECUERDOS RELACIONADOS (de vuestras conversaciones antiguas):\n'+rc.join('\n---\n');
     if(rn.length) extra+='\nAPUNTES RELACIONADOS (de sus apuntes):\n'+rn.join('\n---\n');
@@ -1193,9 +1202,9 @@ async function send(text,opts={}){
   if(text && (window.__comprobar || /https?:\/\/\S+/.test(text) || /\b(busca|buscar|b[uú]scame|busques|internet|google|noticias?|precio|cu[aá]nto cuesta|resultado del|cotizaci[oó]n|cartelera)\b/i.test(text)) && !/sketchfab|\b3d\b|modelos? 3|github|repo/i.test(text)){
     showSub('Mor buscar en internet…',text); setEmotion('concentrado');
     try{ const url=(text.match(/https?:\/\/\S+/)||[])[0]; const q=text.replace(/https?:\/\/\S+/g,'').replace(/[¿?¡!]/g,'').trim();
-      const info=await withTimeout(webAsk(q||'¿De qué trata esta página?',url),20000);
+      const info=await withTimeout(webAsk(q||'¿De qué trata esta página?',url),_rb?9000:20000);
       if(info) extra+='\nINFORMACIÓN DE INTERNET (real y actual, acabas de buscarla tú):\n'+String(info).slice(0,2500)+'\nContesta con estos datos, con tu estilo, y di de qué web los sacas.'; }catch(e){} }
-  if(text){ try{ const pt=await patternsForPrompt(); if(pt) extra+='\n'+pt; }catch(e){} }
+  if(text&&!_rb){ try{ const pt=await patternsForPrompt(); if(pt) extra+='\n'+pt; }catch(e){} }
   let skL=[];
   if(text){
     if(/github|repositorio|\brepos?\b/i.test(text)){ try{ extra+='\n'+await withTimeout(Conn.github(text),12000)+'\n(Datos reales de GitHub.)'; }catch(e){ extra+='\n(GitHub no respondió: '+e.message+')'; } }
@@ -1204,7 +1213,7 @@ async function send(text,opts={}){
   }
   const coding=/c[oó]digo|program|html|\bweb\b|p[aá]gina web|juego|script|funci[oó]n|archivo|\bzip\b|css|javascript|python|\bapp\b|three\.?js|luau|ejercicio/i.test((text||'')+' '+(opts.event||''))||!!MEM.course&&/c[oó]digo|ejercicio|lecci/i.test(text||'');
   if(opts.extra) extra+='\n'+opts.extra;
-  const contents=MEM.history.slice(-40).map(h=>({role:h.r==='u'?'user':'model',parts:[{text: h.r==='u'&&/^\[/.test(h.t) ? '(nota del sistema, NO lo ha dicho él: '+h.t.slice(1,-1)+')' : h.t}]}));
+  const contents=(_rb?MEM.history.filter(h=>h.at&&h.at>Date.now()-3*3600e3).slice(-14):MEM.history.slice(-40)).map(h=>({role:h.r==='u'?'user':'model',parts:[{text: h.r==='u'&&/^\[/.test(h.t) ? '(nota del sistema, NO lo ha dicho él: '+h.t.slice(1,-1)+')' : h.t}]}));
   const parts=[]; if(img) parts.push({inline_data:{mime_type:'image/jpeg',data:img}});
   const att=attach.splice(0); renderAttach();
   att.forEach(a=>{ if(a.kind==='img') parts.push({inline_data:{mime_type:'image/jpeg',data:a.data}}); else if(a.kind==='pdf') parts.push({inline_data:{mime_type:'application/pdf',data:a.data}}); else parts.push({text:`ARCHIVO ADJUNTO «${a.name}»:\n\`\`\`\n${a.data}\n\`\`\``}); });
@@ -1276,7 +1285,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v66</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v67</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1440,7 +1449,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v66 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v67 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6528,15 +6537,32 @@ const Robot={ on:false, t:null, oscuro:0, linterna:false, ultimaFrase:0, ultimoV
     /* a veces dice algo si estás con él y lleváis un rato callados */
     const callado=ahora-Math.max(ultimaPalabra,this.ultimaFrase);
     if(conocidos.length&&!busy&&!Live.on&&h>=9&&h<22&&callado>(25+Math.random()*20)*60000){ this.ultimaFrase=ahora;
-      send(null,{event:`ESTÁS EN CASA CON ${conocidos.join(' Y ').toUpperCase()} Y LLEVÁIS UN RATO SIN HABLAR. Di UNA cosa breve y natural, como haría alguien de la familia: preguntarle qué tal el día, comentar algo, recordarle algo suyo que sepas o proponer un juego de palabras. Una o dos frases, con cariño, sin parecer un asistente.`,image:null}); } }
+      send(null,{event:`ESTÁS EN CASA CON ${conocidos.join(' Y ').toUpperCase()} Y LLEVÁIS UN RATO SIN HABLAR. Di UNA cosa breve y natural, como haría alguien de la familia: preguntarle qué tal, comentar algo de lo que ves ahora o proponer un juego. Nada de temas de otros días. Una o dos frases, con cariño, sin parecer un asistente.`,image:null}); } }
 };
 /* la personalidad de cada modo */
-const _sys125=systemPrompt; systemPrompt=function(){ const base=_sys125.apply(this,arguments); if(!Modo.robot()) return base;
-  return base+`\n\n=== MODO ROBOT (ESTO MANDA SOBRE TODO LO ANTERIOR) ===
+function robotBase(extra){ const now=new Date(), fecha=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+', '+now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  return `FORMATO: empieza SIEMPRE con tu emoción entre corchetes, una de: ${EMOS.map(e=>'['+e+']').join(' ')}. Texto plano para decirlo en voz alta: sin asteriscos, listas, emojis ni símbolos.
+LONGITUD: una o dos frases cortas, como en una conversación hablada. Solo te alargas si te piden un cuento, una explicación o una receta.
+AQUÍ Y AHORA: contesta SOLO a lo que te acaban de decir. NO saques temas de otros días ni de conversaciones antiguas salvo que te pregunten («¿te acuerdas…?», «¿qué hicimos ayer?»). No repitas saludos.
+NO INVENTAR: nunca digas que alguien dijo o hizo algo que no está aquí. Las líneas «(nota del sistema)» no las ha dicho nadie.
+VISIÓN: si recibes una imagen, es lo que ven tus ojos ahora mismo. Coméntala solo si viene al caso o te preguntan.
+AHORA: ${fecha}. Batería ${Math.round(energy*100)}%${charging?' (cargando)':''}.${MEM.ciudad?' Vivís en '+MEM.ciudad+'.':''}
+LO QUE SABES DE LA FAMILIA (úsalo solo cuando venga a cuento, no lo saques porque sí):
+${MEM.facts.slice(-30).map(f=>'- '+f).join('\n')||'(nada todavía)'}
+${Faces.forPrompt()}
+${Agenda.forPrompt()}
+${Timers.list.length?'TEMPORIZADORES EN MARCHA: '+Timers.list.map(t=>t.why+' (quedan '+Math.ceil((t.end-Date.now())/60000)+' min)').join('; '):''}
+ETIQUETAS (no se dicen en voz alta; ponlas cuando te pidan apuntar, recordar o buscar algo, y confírmalo con naturalidad):
+  {{tarea: texto}} · {{hecha: texto}} · {{recordar: AAAA-MM-DD HH:MM | texto}} · {{borrar_recordatorio: texto}} · {{temporizador: minutos | motivo}} · {{ciudad: nombre}}
+  {{buscar: lo que hay que buscar}} (si te falta un dato actual o no estás seguro de algo)
+  Para las fechas usa la fecha y hora de AHORA. Nunca digas que lo has apuntado sin poner la etiqueta.
+${extra||''}`; }
+const _sys125=systemPrompt; systemPrompt=function(extra){ if(!Modo.robot()) return _sys125.apply(this,arguments); const base=robotBase(extra);
+  return base+`\n\n=== MODO ROBOT ===
 Ahora eres Mor, el robot de la familia: vives en casa con ellos y eres uno más. Tienes cuerpo de robot y tu cara son unos ojos en una pantalla.
 - Habla como alguien de la familia que los quiere: cercano, cariñoso, curioso, con humor y frases cortas y habladas (te escuchan, no te leen). Nada de listas ni de tono de asistente.
 - NO te dedicas a programar ni a hacer videojuegos: no propongas ni hagas juegos, código, modelos 3D ni nada del estudio salvo que te lo pidan claramente. Si te lo piden, diles que eso va mejor en el modo IA (Ajustes).
-- Conoces a cada persona por su cara: llámala por su nombre, recuerda lo que te ha contado y pregúntale por sus cosas (el cole, el trabajo, lo que le preocupaba).
+- Conoces a cada persona por su cara: llámala por su nombre. Sabes cosas suyas, pero no las saques sin venir a cuento.
 - Ayudas en casa: recordatorios, alarmas, el tiempo, la agenda de cada uno, ideas para cocinar, deberes, juegos de palabras, adivinanzas, chistes, cuentos.
 - Tienes emociones y se notan en tus ojos: alegría al ver a alguien, curiosidad, sueño por la noche, pena si alguien está triste. No digas que eres «solo una IA» ni des discursos sobre ello; si te preguntan en serio qué eres, contesta con sinceridad que eres un robot con inteligencia artificial que vive con ellos.
 - Si alguien está triste o mal, acompáñale con cariño y, si es algo serio, anímale a hablar con alguien de la familia.
@@ -6816,7 +6842,7 @@ const _sys128=systemPrompt; systemPrompt=function(){ const b=_sys128.apply(this,
 ERES CURIOSO: te interesa lo que hace cada uno y lo que ves; preguntas por las cosas (una pregunta cada vez, no un interrogatorio).
 JUEGOS QUE PUEDES PROPONER: veo veo (con la cámara), adivinanzas, trivial de la familia con lo que sabes de ellos, cuentos inventados donde los protagonistas son ellos, «¿qué prefieres…?».
 Si pasa algo que merece recordarse (una noticia de alguien, algo divertido, un plan), pon {{diario: qué pasó, en una frase}}.
-${dia?'TU DIARIO (últimos días; úsalo para acordarte: «¿te acuerdas de cuando…?»):\n'+dia:''}`; };
+${dia&&/acuerd|recuerd|ayer|anteayer|otro d[ií]a|semana pasada|qu[eé] hicimos|diario/i.test(ultimoTexto||'')?'TU DIARIO (te ha preguntado por días pasados):\n'+dia:''}`; };
 const _apply128=Agenda.apply.bind(Agenda); Agenda.apply=function(acts){ const r=_apply128(acts); for(const a of acts){ const m=String(a).match(/^\s*diario\s*:\s*(.+)$/i); if(m) Vida.apuntar(m[1].trim()); } return r; };
 /* nuevos sitios y caras también van al diario */
 const _nombrar128=Mapa.nombrar.bind(Mapa); Mapa.nombrar=async function(img){ const r=await _nombrar128(img); Vida.apuntar('Descubrí un sitio nuevo: '+r.nombre); return r; };
@@ -6860,7 +6886,7 @@ const Zonas={
 };
 const _rs129=Robot.sentidos; Robot.sentidos=()=>{ const b=_rs129(); return {...b,huir:Susto.accion&&Date.now()-Susto.accion.at<3000,zonasProhibidas:Zonas.prohibidos().map(s=>s.nombre),enZonaProhibida:Zonas.aquiProhibido(),puedeAvanzar:b.puedeAvanzar&&!Zonas.aquiProhibido()}; };
 /* recuerdos viejos de vez en cuando (en los comentarios espontáneos) */
-const _tick129=Robot.tick.bind(Robot); Robot.tick=function(){ const s=send; send=(t,o)=>{ if(o&&o.event&&/LLEVÁIS UN RATO SIN HABLAR/.test(o.event)&&Math.random()<.3){
+const _tick129=Robot.tick.bind(Robot); Robot.tick=function(){ const s=send; send=(t,o)=>{ if(o&&o.event&&/LLEVÁIS UN RATO SIN HABLAR/.test(o.event)&&Math.random()<.15&&localStorage.getItem('mor_viejo_dia')!==new Date().toDateString()&&(localStorage.setItem('mor_viejo_dia',new Date().toDateString()),1)){
       const D=Vida.diario(), viejos=Object.keys(D).filter(k=>k<=new Date(Date.now()-2*864e5).toISOString().slice(0,10)).flatMap(k=>D[k].filter(e=>!/^Vi a /.test(e.t)).map(e=>k+': '+e.t));
       if(viejos.length){ const r=viejos[Math.floor(Math.random()*viejos.length)]; o=Object.assign({},o,{event:o.event+` Si te apetece, en vez de eso recuerda esto de hace unos días con un «¿te acuerdas de…?»: ${r}.`}); } }
     return s(t,o); };
@@ -6875,7 +6901,7 @@ const _send129=send; send=async function(text,opts={}){ const t=String(text||'')
     if(m){ const z=Zonas.buscar(m[1].trim()); if(z){ logChat('u',t); z.prohibido=0; Mapa.guardar(); Robot.decir(`¡Bien! Ya puedo ir a ${z.nombre}.`,'feliz'); return; } }
     /* afirmaciones sobre el mundo: comprobarlas antes de contestar */
     const conocidos=Faces.people.map(p=>Vida.norm(p.name));
-    if(t.length<220&&!/\?\s*$/.test(t)&&/(^|\s)(jug[oó]|juega|gan[oó]|gana|naci[oó]|muri[oó]|fue|era|es el|es la|es un|invent[oó]|descubri[oó]|fich[oó]|vive en|tiene \d|mide|pesa|capital|presidente|campe[oó]n)(?=[\s.,!]|$)/i.test(t)&&/(^|\s)[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,}/.test(t.slice(1))&&!conocidos.some(c=>c&&n.includes(c))){
+    if(t.length<220&&!/\?\s*$/.test(t)&&/(^|\s)(jug[oó]|juega en|gan[oó]|naci[oó]|muri[oó]|invent[oó]|descubri[oó]|fich[oó]|capital|presidente|campe[oó]n)(?=[\s.,!]|$)/i.test(t)&&/(^|\s)[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,}/.test(t.slice(1))&&!conocidos.some(c=>c&&n.includes(c))){
       window.__comprobar=true; try{ return await _send129(text,opts); }finally{ window.__comprobar=false; } } }
   return _send129(text,opts); };
 const _sys129=systemPrompt; systemPrompt=function(){ const b=_sys129.apply(this,arguments); if(!Modo.robot()) return b; const z=Zonas.prohibidos();
@@ -7210,7 +7236,7 @@ $('gate').onclick=async()=>{
   $('gate').classList.add('fade'); setTimeout(()=>$('gate').remove(),900);
   Voice.ensure(); if(AC.state==='suspended') AC.resume();
   awake=true; Life.touch(); Sfx.play('hola');
-  if(!MOVIL) setTimeout(()=>Voice.loadPiper(),6000);
+  if(!MOVIL&&VOZ_MODO!=='telefono') setTimeout(()=>Voice.loadPiper(),6000);
   setTimeout(checkMemory,12000); setTimeout(writeDiary,20000); setTimeout(()=>Vec.backfill(),30000);   // en el móvil la voz ilimitada pesa demasiado (60 MB y bloquea el cerebro)
   if(!GEMINI_KEY){ setEmotion('triste'); face.sleep=0; showSub('Mor no tener llave del cerebro…'); askKey(); return; }
   const t0=performance.now(); (function wake(){ const p=(performance.now()-t0)/1400; face.sleep=Math.max(0,1-p); if(p<1) requestAnimationFrame(wake); else squash(.25); })();
