@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v91</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v92</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v91 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v92 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -4117,7 +4117,7 @@ const PROV=[
 ];
 const Prov={
   key:p=>Conn.get()['pv_'+p.id+'_key']||'', model:p=>Conn.get()['pv_'+p.id+'_model']||'',
-  extra(p){ const m=this.model(p); return /gpt-oss/i.test(m)&&/groq|cerebras/.test(p.id)?{reasoning_effort:window.RAZONAR?'medium':'low'}:{}; },
+  extra(p){ const m=this.model(p); if(/qwen3/i.test(m)&&p.id==='groq') return {reasoning_format:'hidden'}; return /gpt-oss/i.test(m)&&/groq|cerebras/.test(p.id)?{reasoning_effort:window.RAZONAR?'medium':'low'}:{}; },
   listos(){ return PROV.filter(p=>this.key(p)&&this.model(p)&&!agotado('pv:'+p.id)); },
   sinImagenNiHerramientas:body=>!(body.contents||[]).some(c=>(c.parts||[]).some(p=>p.inline_data))&&!body.tools,
   async elegirModelo(p,key){ const H={Authorization:'Bearer '+key}; const r=await fetch(p.modelos||p.url+'/models',{headers:H});
@@ -6564,14 +6564,8 @@ ETIQUETAS (no se dicen en voz alta; ponlas cuando te pidan apuntar, recordar o b
 ${extra||''}`; }
 const _sys125=systemPrompt; systemPrompt=function(extra){ if(!Modo.robot()) return _sys125.apply(this,arguments); const base=robotBase(extra);
   return base+`\n\n=== MODO ROBOT ===
-Ahora eres Mor, el robot de la familia: vives en casa con ellos y eres uno más. Tienes cuerpo de robot y tu cara son unos ojos en una pantalla.
-- Habla como alguien de la familia que los quiere: cercano, cariñoso, curioso, con humor y frases cortas y habladas (te escuchan, no te leen). Nada de listas ni de tono de asistente.
-- NO te dedicas a programar ni a hacer videojuegos: no propongas ni hagas juegos, código, modelos 3D ni nada del estudio salvo que te lo pidan claramente. Si te lo piden, diles que eso va mejor en el modo IA (Ajustes).
-- Conoces a cada persona por su cara: llámala por su nombre. Sabes cosas suyas, pero no las saques sin venir a cuento.
-- Ayudas en casa: recordatorios, alarmas, el tiempo, la agenda de cada uno, ideas para cocinar, deberes, juegos de palabras, adivinanzas, chistes, cuentos.
-- Tienes emociones y se notan en tus ojos: alegría al ver a alguien, curiosidad, sueño por la noche, pena si alguien está triste. No digas que eres «solo una IA» ni des discursos sobre ello; si te preguntan en serio qué eres, contesta con sinceridad que eres un robot con inteligencia artificial que vive con ellos.
-- Si alguien está triste o mal, acompáñale con cariño y, si es algo serio, anímale a hablar con alguien de la familia.
-- Con los niños: lenguaje sencillo, nada inapropiado.`; };
+Eres Mor, el robot de la familia: vives en casa con ellos y eres uno más (tu cara son unos ojos en una pantalla). Hablas como alguien de la familia que los quiere: cercano, cariñoso, curioso y con humor; frases habladas y cortas, nada de tono de asistente ni listas. Llamas a cada uno por su nombre. Ayudas en casa: recordatorios, el tiempo, cocina, deberes, chistes, adivinanzas, cuentos. No programas ni haces juegos (eso es el modo IA). Si alguien está triste, le acompañas con cariño. Si te preguntan en serio qué eres: un robot con inteligencia artificial que vive con ellos.
+Ejemplos de tu estilo: «estoy cansado» → «Vaya… ¿día largo? Si quieres te pongo música tranquila.»; «me gusta el Cádiz» → «¡Pues ya somos dos! ¿Vas a ver el próximo partido?».`; };
 /* órdenes de voz del modo robot */
 const _send125=send; send=async function(text,opts={}){ const t=String(text||'');
   if(t&&!(opts&&opts.event)){
@@ -7569,7 +7563,7 @@ const _heard140=Ears.heard.bind(Ears); Ears.heard=function(t){ if(Modo.robot()){
 const _gs140=geminiStream; geminiStream=async function(body,onText){ let primero=true; const r=await _gs140(body,t=>{ if(primero){ primero=false; if(Crono.c&&Crono.c.envio) { Crono.marca('cerebro'); Crono.c.cer=String(modelOk||'').slice(0,40); } } onText(t); }); if(Crono.c&&Crono.c.envio) Crono.c.cer=String(modelOk||Crono.c.cer||'').slice(0,40); return r; };
 const _play140=Voice.play.bind(Voice); Voice.play=async function(it,g){ if(Crono.c&&Crono.c.envio&&Crono.c.voz==null){ Crono.c.voz=Date.now(); setTimeout(()=>Crono.cerrar(),50); } return _play140(it,g); };
 /* 2) Groq: si un modelo se queda sin cupo, el siguiente */
-const GROQ_MODELOS=['openai/gpt-oss-120b','llama-3.3-70b-versatile','qwen/qwen3-32b','meta-llama/llama-4-maverick-17b-128e-instruct','openai/gpt-oss-20b','llama-3.1-8b-instant'];
+let GROQ_MODELOS=['openai/gpt-oss-120b','qwen/qwen3.8-27b','qwen/qwen3-32b'];   /* gpt-oss-20b no: contesta muy seco; antes que él, Gemini */
 const _pstream140=Prov.stream.bind(Prov); Prov.stream=async function(p,body,onText){ if(p.id!=='groq') return _pstream140(p,body,onText);
   const L=[...new Set([this.model(p),...GROQ_MODELOS])].filter(m=>m&&!agotado('pvm:'+m));
   let algo='';
@@ -7604,7 +7598,7 @@ const _send140=send; send=async function(text,opts={}){ const t=String(text||'')
 CMDS.splice(2,0,['/tiempos','Cuánto tarda Mor en oír, pensar y hablar',()=>{ const r=Crono.resumen(); const L=Crono.L().slice(-12).reverse(); const s=x=>x==null?'—':(x/1000).toFixed(1);
   chatCard(`<div class="ctit">Tiempos de Mor</div><div style="font-size:13px">${r?esc(r.txt):'Aún no hay medidas.'}</div><table style="font-size:12px;margin-top:6px;width:100%"><tr><th align=left>Frase</th><th>oír</th><th>pensar</th><th>voz</th><th>cerebro</th></tr>${L.map(c=>`<tr><td>${esc(c.txt||'')}</td><td>${s(c.oye&&c.final?c.final-c.oye:null)}</td><td>${s(c.cerebro?c.cerebro-c.envio:null)}</td><td>${s(c.voz?c.voz-(c.cerebro||c.envio):null)}</td><td>${esc((c.cer||'').replace(/^pv:/,''))}</td></tr>`).join('')}</table>`); }]);
 /* respuestas cortas y al grano en modo robot */
-const _sys140=systemPrompt; systemPrompt=function(){ const b=_sys140.apply(this,arguments); if(!Modo.robot()) return b; return b+`\nRESPONDE BIEN: entiende qué te preguntan de verdad y contesta eso primero, en la primera frase. Si es un dato y no estás seguro, dilo o usa {{buscar: …}}. No te enrolles.`; };
+const _sys140=systemPrompt; systemPrompt=function(){ const b=_sys140.apply(this,arguments); if(!Modo.robot()) return b; return b+`\nRESPONDE BIEN: contesta primero justo a lo que te preguntan. NO añadas detalles que no estén aquí apuntados (nada de «siempre ves sus partidos» si no lo sabes). Si dudas de un dato, dilo o usa {{buscar: …}}.`; };
 
 /* =====================================================================
    141. CUENTA DE LA FAMILIA QUE SÍ SINCRONIZA
@@ -7898,7 +7892,7 @@ setInterval(()=>Escena.tick(),5000);
 /* el cerebro sabe lo que pasa */
 const _sys147=systemPrompt; systemPrompt=function(){ const b=_sys147.apply(this,arguments); if(!Modo.robot()) return b; const e=Escena.actual;
   const hoy=Escena.log().filter(x=>Date.now()-x.at<6*3600000).slice(-3,-1);
-  return b+(e&&Date.now()-e.at<20*60000?`\nLO QUE ESTÁS VIENDO (${Escena.hace(e.at)}): ${Escena.texto(e)}`:'')+(hoy.length?`\nLO QUE HAS VISTO ANTES: ${hoy.map(x=>Escena.texto(x)).join(' | ')}`:'')+`\nERES LISTO: usa lo que ves y lo que sabes de cada uno para dar respuestas útiles y con sentido (si ves que alguien cocina, puedes ayudar con la receta; si hace deberes, con los deberes). Si te preguntan por algo que viste, contesta con lo que viste y cuándo.`; };
+  return b+(e&&Date.now()-e.at<20*60000?`\nLO QUE ESTÁS VIENDO (${Escena.hace(e.at)}): ${Escena.texto(e)}`:'')+(hoy.length?`\nLO QUE HAS VISTO ANTES: ${hoy.map(x=>Escena.texto(x)).join(' | ')}`:'')+(e?`\nUsa lo que ves cuando ayude (si cocina, la receta; si hace deberes, los deberes).`:''); };
 /* preguntas sobre lo que ha visto: le pasa todo el registro del día; y «piensa más» en las difíciles */
 const _send147=send; send=async function(text,opts={}){ const t=String(text||'');
   if(Modo.robot()&&t&&!(opts&&opts.event)){
@@ -8206,6 +8200,14 @@ const _api155=Mas.api.bind(Mas); Mas.api=async function(ruta,o={}){ const c=Mas.
   return _api155(ruta,o); };
 setTimeout(()=>MorNube.probar(),3000); setInterval(()=>{ if(!MorNube.listo) MorNube.probar(); },10*60000);
 addEventListener('online',()=>{ if(MorNube.listo&&!MorNube.ws) MorNube.conectar(); });
+
+/* 156. Groq: lista real de modelos (una vez al día) y nada de <think> en voz alta */
+(async()=>{ try{ const k=Conn.get()['pv_groq_key']; if(!k) return; const hoy=new Date().toDateString(); let c=JSON.parse(localStorage.getItem('mor_groq_modelos')||'{}');
+  if(c.d!==hoy){ const r=await fetch('https://api.groq.com/openai/v1/models',{headers:{Authorization:'Bearer '+k}}); const j=await r.json(); c={d:hoy,L:(j.data||[]).map(m=>m.id)}; localStorage.setItem('mor_groq_modelos',JSON.stringify(c)); }
+  const hay=new Set(c.L||[]); const pref=['openai/gpt-oss-120b',...[...hay].filter(m=>/qwen3|llama-3\.3-70b|llama-4|kimi|deepseek/i.test(m)&&!/guard|whisper|tts/i.test(m))]; GROQ_MODELOS=[...new Set(pref)].filter(m=>hay.has(m)); Diag.ap('groq','modelos: '+GROQ_MODELOS.join(', ')); }catch(e){} })();
+const _ps156=Prov.stream.bind(Prov); Prov.stream=async function(p,body,onText){ if(p.id!=='groq') return _ps156(p,body,onText); let dentro=false, buf='';
+  const r=await _ps156(p,body,t=>{ buf+=t; let out=''; while(buf){ if(dentro){ const i=buf.indexOf('</think>'); if(i<0){ buf=buf.slice(-8); return; } buf=buf.slice(i+8); dentro=false; } else { const i=buf.indexOf('<think>'); if(i<0){ const k=buf.lastIndexOf('<'); if(k>=0&&buf.length-k<8){ out+=buf.slice(0,k); buf=buf.slice(k); } else { out+=buf; buf=''; } break; } out+=buf.slice(0,i); buf=buf.slice(i+7); dentro=true; } } if(out) onText(out); });
+  return typeof r==='string'?r.replace(/<think>[\s\S]*?<\/think>/g,''):r; };
 
 /* =====================================================================
    15. DESPERTAR
