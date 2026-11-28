@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v85</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v86</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v85 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v86 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -8041,6 +8041,51 @@ const _send149=send; send=async function(text,opts={}){ const t=String(text||'')
 /* 150. mensajes «a todos»: «diles a todos que…», «di en casa que…», «dile a quien esté que…» */
 const _send150=send; send=async function(text,opts={}){ let t=String(text||''); const m=t.match(/^(?:mor[, ]+)?(?:d[ií]les a todos|di(?:le)? en casa|avisa en casa|d[ií]le a quien (?:est[eé]|haya)(?: en casa)?|d[ií]selo a quien (?:est[eé]|haya))\s*,?\s+que\s+(.{2,200})$/i);
   if(m&&t&&!(opts&&opts.event)) text='dile a todos que '+m[1]; return _send150(text,opts); };
+
+/* =====================================================================
+   151. RESOLVER PROBLEMAS DE VERDAD: OBSTÁCULOS (p. ej. un montón de ropa)
+   Cuando va a chocar (sensor a menos de 45 cm) o se lo preguntas, mira
+   con la cámara: qué es, si puede pasar por encima (sube como mucho
+   1–2 cm), si hay hueco a un lado. Decide y lo hace él solo: seguir,
+   rodear por la izquierda o la derecha, o darse la vuelta. Apunta el
+   obstáculo en el mapa del sitio.
+   Sin ruedas también se puede probar: «Mor, ¿puedes pasar?» / «¿qué
+   hay delante?» → te dice qué ve y qué haría.
+   ===================================================================== */
+const Navegar={ ocupado:false, plan:null,
+  SCHEMA:{type:'OBJECT',properties:{hay_obstaculo:{type:'BOOLEAN'},que:{type:'STRING'},distancia_cm:{type:'NUMBER'},por_encima:{type:'BOOLEAN'},hueco_izquierda:{type:'BOOLEAN'},hueco_derecha:{type:'BOOLEAN'},peligro:{type:'STRING'},explica:{type:'STRING'}},required:['hay_obstaculo']},
+  gasto(){ const hoy=new Date().toDateString(); let g=JSON.parse(localStorage.getItem('mor_nav_n')||'{}'); if(g.d!==hoy) g={d:hoy,n:0}; return g; },
+  async mirar(){ const g=this.gasto(); if(g.n>=200) throw new Error('hoy ya he mirado mucho'); const img=Cam.snapshot(512); if(!img) throw new Error('no veo nada por la cámara'); g.n++; localStorage.setItem('mor_nav_n',JSON.stringify(g));
+    return await geminiJSON(`Eres los ojos de Mor, un robot pequeño con 4 ruedas (unos 25 cm de ancho, sube como mucho 1–2 cm). Esta foto es lo que tiene justo delante, a la altura del suelo o un poco más arriba.${Cuerpo.on?' Su sensor mide '+Cuerpo.dist+' cm hasta lo que tiene delante.':''}
+Di: si hay un obstáculo en su camino; qué es (en pocas palabras: «un montón de ropa», «una zapatilla», «la pata de una silla», «una pared», «un escalón», «un cable»); a cuántos cm aprox.; si podría pasar POR ENCIMA sin quedarse atascado (solo cosas planas: alfombra fina, papel; ropa, zapatos o juguetes NO); si hay hueco libre para rodearlo por la izquierda y por la derecha (al menos 30 cm libres); peligro si lo hay (escalón o escalera hacia abajo, agua, cable que se puede enredar, una mascota, cristales); explica: una frase corta y natural de lo que ve y lo que va a hacer.`,this.SCHEMA,[{inline_data:{mime_type:'image/jpeg',data:img}}],ESC_MOD,15000); },
+  decidir(o){ if(!o.hay_obstaculo) return 'seguir'; if(/escal|agua|cristal|mascota|perro|gato/i.test(o.peligro||'')) return 'vuelta'; if(o.por_encima) return 'encima';
+    if(o.hueco_derecha&&o.hueco_izquierda) return Math.random()<.5?'izq':'der'; if(o.hueco_derecha) return 'der'; if(o.hueco_izquierda) return 'izq'; return 'vuelta'; },
+  TXT:{seguir:'No hay nada en medio: sigo.',encima:'Es plano: paso por encima con cuidado.',izq:'No cabe por encima: lo rodeo por la izquierda.',der:'No cabe por encima: lo rodeo por la derecha.',vuelta:'Por aquí no puedo pasar: me doy la vuelta.'},
+  apuntar(o){ const s=Mapa.aqui(); if(!s||!o.hay_obstaculo||!o.que) return; s.obstaculos=(s.obstaculos||[]).filter(x=>Date.now()-x.at<864e5&&Vida.norm(x.que)!==Vida.norm(o.que)); s.obstaculos.push({que:String(o.que).slice(0,60),at:Date.now()}); saveMem&&saveMem(); try{ Mapa.guardar&&Mapa.guardar(); }catch(e){} },
+  async paso(l,r,ms){ Cuerpo.modo='nav'; Cuerpo.mover(l,r,ms); const t0=Date.now(); while(Date.now()-t0<ms){ await sleep(100); if(Cuerpo.seguro()||(l>0&&r>0&&Cuerpo.dist<18)){ Cuerpo.mover(0,0); return false; } } Cuerpo.mover(0,0); await sleep(250); return true; },
+  async ejecutar(d){ if(!Cuerpo.on) return; const prev=Cuerpo.modo; try{
+      if(d==='encima'){ await this.paso(35,35,1500); }
+      else if(d==='izq'||d==='der'){ const s=d==='izq'?-1:1; await this.paso(40*s,-40*s,450); await this.paso(40,40,1300); await this.paso(-40*s,40*s,450); await this.paso(40,40,1300); await this.paso(-40*s,40*s,450); await this.paso(40,40,900); await this.paso(40*s,-40*s,450); }
+      else if(d==='vuelta'){ await this.paso(-35,-35,600); await this.paso(45,-45,1500); }
+    } finally{ Cuerpo.modo=prev==='nav'?null:prev; } },
+  async resolver(hablar){ if(this.ocupado) return; this.ocupado=true; const prev=Cuerpo.modo; Cuerpo.mover(0,0);
+    try{ const o=await this.mirar(), d=this.decidir(o); this.apuntar(o); Diag.ap('navegar',(o.que||'nada')+' → '+d);
+      const frase=(o.explica&&o.explica.length<160?o.explica+' ':'')+(Cuerpo.on?this.TXT[d]:'Si tuviera ruedas: '+this.TXT[d].charAt(0).toLowerCase()+this.TXT[d].slice(1));
+      if(hablar||d!=='seguir') Casa.decir(frase,d==='vuelta'?'pensativo':'curioso');
+      if(Cuerpo.on&&d!=='seguir'){ await sleep(400); await this.ejecutar(d); if(prev==='seguir'||prev==='ir') Cuerpo.modo=prev; }
+      return {o,d}; }
+    catch(e){ if(hablar) Casa.decir('No he podido mirarlo bien: '+e.message,'triste'); Cuerpo.parar(); }
+    finally{ this.ocupado=false; this.ult=Date.now(); } } };
+/* si va hacia delante y algo se acerca, para y piensa */
+setInterval(()=>{ if(!Cuerpo.on||Navegar.ocupado||Cuerpo.modo==='nav'||Date.now()-(Navegar.ult||0)<3000) return; const avanza=Cuerpo.l>0&&Cuerpo.r>0||Cuerpo.modo==='seguir'||Cuerpo.modo==='ir'||Cuerpo.modo==='paso';
+  if(avanza&&Cuerpo.dist<45&&!(Vista.persona&&Date.now()-Vista.persona.at<1500&&Vista.persona.tam>.25)) Navegar.resolver(false); },300);
+/* el obstáculo de las rodillas de alguien no es un obstáculo: es que ya ha llegado */
+const _send151=send; send=async function(text,opts={}){ const t=String(text||''); if(Modo.robot()&&t&&!(opts&&opts.event)&&t.length<80){ const n=Vida.norm(t);
+    if(/\b(puedes pasar|cabes( por ahi)?|que hay delante( de ti)?|mira si (puedes pasar|cabes)|que tienes delante|hay algo en medio)\b/.test(n)){ logChat('u',t); await Navegar.resolver(true); return; } }
+  return _send151(text,opts); };
+/* el mapa recuerda los obstáculos del día */
+const _sys151=systemPrompt; systemPrompt=function(){ const b=_sys151.apply(this,arguments); if(!Modo.robot()) return b; const s=Mapa.aqui(), L=(s&&s.obstaculos||[]).filter(x=>Date.now()-x.at<864e5);
+  return b+(L.length?`\nOBSTÁCULOS QUE HAS VISTO HOY EN ${String(s.nombre).toUpperCase()}: ${L.map(x=>x.que+' ('+Escena.hace(x.at)+')').join(', ')}.`:''); };
 
 /* =====================================================================
    15. DESPERTAR
