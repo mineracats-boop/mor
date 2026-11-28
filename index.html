@@ -1276,7 +1276,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v58</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v59</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1440,7 +1440,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v58 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v59 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6555,6 +6555,75 @@ const _send125=send; send=async function(text,opts={}){ const t=String(text||'')
 CMDS.splice(2,0,['/modo','Ajustes: modo robot (familia) o modo IA (estudio)',()=>Modo.ajustes()],['/ajustes','Ajustes de Mor',()=>Modo.ajustes()]);
 SIDE.find(g=>g[0]==='CREAR')[1].unshift(['Ajustes: modo robot o IA',()=>Modo.ajustes()]);
 setTimeout(()=>{ if(!Modo.get()) Modo.elegir(); else if(Modo.robot()) Modo.aplicar(false); },2500);
+
+/* =====================================================================
+   126. SENTIDOS DEL ROBOT (modo robot)
+   Con los sensores del móvil que lleva dentro:
+   - si lo levantan o lo llevan en brazos, si cae, si se vuelca o lo
+     ponen de pie otra vez, si va dando botes (baches);
+   - al dejarlo en el suelo mira con la cámara de atrás: qué superficie
+     es (madera, baldosa, alfombra, hierba, tierra, arena, grava…), si le
+     gusta, y si delante hay un borde (mesa, escalón) o un obstáculo.
+   Todo queda en Robot.sentidos para que, cuando tenga motores, no avance
+   hacia un borde, un obstáculo o un terreno que no le gusta.
+   ===================================================================== */
+const Sentidos={ estado:'quieto', a:[], base:null, volcado:false, ultimo:{}, suelo:null,
+  NO_GUSTA:/tierra|barro|hierba|c[eé]sped|arena|agua|charco|grava|piedras|baches|nieve|hojas/i,
+  sentidos(){ return {estado:this.estado,volcado:this.volcado,suelo:this.suelo,puedeAvanzar:!this.volcado&&!(this.suelo&&(this.suelo.borde||this.suelo.obstaculo||!this.suelo.gusta))}; },
+  reaccion(tipo,frase,emo,cada=30000){ const t=Date.now(); if(t-(this.ultimo[tipo]||0)<cada) return; this.ultimo[tipo]=t; if(!Modo.robot()) return; Robot.decir(frase,emo); try{ Life.touch(); }catch(e){} },
+  movimiento(e){ if(!Modo.robot()) return; const g=e.accelerationIncludingGravity; if(!g||g.x==null) return; const t=performance.now();
+    const m=Math.hypot(g.x,g.y,g.z); this.a.push({t,m,x:g.x,y:g.y,z:g.z}); while(this.a.length&&t-this.a[0].t>1600) this.a.shift(); if(this.a.length<10) return;
+    /* caída libre */
+    const ult=this.a.filter(p=>t-p.t<160); if(ult.length>3&&ult.every(p=>p.m<3)) this.reaccion('cae',rnd(['¡Aaaay, que me caigo!','¡Uoooh!','¡Cuidado, cuidado!']),'asustado',5000);
+    /* cuánto se mueve (sin la gravedad) */
+    const media=this.a.reduce((s,p)=>s+p.m,0)/this.a.length, varz=Math.sqrt(this.a.reduce((s,p)=>s+(p.m-media)**2,0)/this.a.length);
+    const picos=this.a.filter((p,i)=>i&&Math.abs(p.m-this.a[i-1].m)>4).length;
+    if(varz>1.4&&this.estado!=='llevado'){ this.estado='llevado'; this.desde=t; this.reaccion('arriba',rnd(['¡Eh! ¿Adónde vamos?','¡Uy, que me levantas!','¡Qué alto se ve todo desde aquí!']),'sorprendido',20000); }
+    else if(this.estado==='llevado'&&varz<.18&&t-this.desde>1500){ this.estado='quieto'; this.reaccion('abajo','Ya estoy en el suelo. A ver dónde estoy…','curioso',15000); setTimeout(()=>this.mirarSuelo(),900); }
+    else if(this.estado!=='llevado'&&picos>=6) this.reaccion('baches',rnd(['¡Bru-bru-bru! ¡Cuántos baches!','Uf, este suelo me hace temblar entero.']),'enfadado',25000);
+    /* volcado: comparado con cómo está de pie */
+    const gx=this.a.slice(-8).reduce((s,p)=>s+p.x,0)/8, gy=this.a.slice(-8).reduce((s,p)=>s+p.y,0)/8, gz=this.a.slice(-8).reduce((s,p)=>s+p.z,0)/8, gm=Math.hypot(gx,gy,gz)||1;
+    if(varz<.25){ if(!this.base){ this.base=[gx/gm,gy/gm,gz/gm]; return; }
+      const ang=Math.acos(Math.max(-1,Math.min(1,(gx*this.base[0]+gy*this.base[1]+gz*this.base[2])/gm)))*180/Math.PI;
+      if(!this.volcado&&ang>55){ this.volcadoT=this.volcadoT||t; if(t-this.volcadoT>2000){ this.volcado=true; this.reaccion('volcado','Me he caído… ¿me ayudas a ponerme de pie?','triste',15000); } }
+      else if(ang<25){ this.volcadoT=0; if(this.volcado){ this.volcado=false; this.reaccion('depie','¡Gracias! Ya estoy de pie otra vez.','feliz',5000); } } } },
+  recalibrar(){ this.base=null; this.volcado=false; toast('Postura de pie apuntada: así está derecho'); },
+  async fotoTrasera(){ let s=null, frontal=false;
+    try{ s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:'environment'},width:640,height:480},audio:false}); }
+    catch(e){ if(Cam.on){ frontal=true; Cam.stop(); try{ s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:'environment'},width:640,height:480},audio:false}); }catch(x){ s=null; } } }
+    if(!s){ if(frontal) await Cam.start(); throw new Error('este aparato no tiene cámara trasera o no deja usarla'); }
+    const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.srcObject=s; await v.play(); await sleep(700);
+    const c=document.createElement('canvas'); c.width=480; c.height=360; c.getContext('2d').drawImage(v,0,0,480,360); s.getTracks().forEach(t=>t.stop()); if(frontal) await Cam.start();
+    return c; },
+  pistas(c){ const x=c.getContext('2d'), d=x.getImageData(0,0,c.width,c.height).data; let r=0,g=0,b=0,n=0,tex=0;
+    for(let y=0;y<c.height;y+=4) for(let k=0;k<c.width;k+=4){ const i=(y*c.width+k)*4; r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; if(k>=4){ tex+=Math.abs(d[i]-d[i-16])+Math.abs(d[i+1]-d[i-15]); } }
+    r/=n; g/=n; b/=n; tex/=n; return {verde:g>r*1.12&&g>b*1.1, marron:r>g&&g>b&&r-b>25, oscuro:(r+g+b)/3<35, rugoso:tex>38, liso:tex<12}; },
+  async mirarSuelo(){ if(!Modo.robot()) return null;
+    try{ const c=await this.fotoTrasera(), p=this.pistas(c);
+      if(p.oscuro){ this.suelo={superficie:'no se ve (oscuro)',gusta:true,borde:false,obstaculo:false,at:Date.now()}; return this.suelo; }
+      let j=null; try{ j=JSON.parse(String(await gemini({contents:[{role:'user',parts:[{text:`Foto de la cámara de un robot pequeño de casa, mirando al suelo que tiene delante. Responde SOLO JSON: {"superficie":"madera|baldosa|alfombra|mesa|hierba|tierra|arena|grava|barro|agua|asfalto|otro","borde":true|false (¿hay un borde de mesa, escalón o caída justo delante?),"obstaculo":true|false (¿hay algo justo delante que le cortaría el paso?),"que":"lo que hay delante en 4-6 palabras"}`},{inline_data:{mime_type:'image/jpeg',data:c.toDataURL('image/jpeg',.7).split(',')[1]}}]}],generationConfig:{temperature:0,responseMimeType:'application/json'}},MODELOS_MEMORIA.concat(MODELOS_LISTOS),20000)).replace(/^[^{]*/,'').replace(/[^}]*$/,'')); }
+      catch(e){ j={superficie:p.verde?'hierba':p.marron&&p.rugoso?'tierra':p.liso?'suelo liso':p.rugoso?'grava':'otro',borde:false,obstaculo:false,que:''}; }
+      const gusta=!this.NO_GUSTA.test(j.superficie||'')&&!(p.rugoso&&/otro/.test(j.superficie||''));
+      this.suelo={superficie:j.superficie,gusta,borde:!!j.borde,obstaculo:!!j.obstaculo,que:j.que||'',at:Date.now()};
+      if(j.borde) this.reaccion('borde','¡Uy! Aquí delante hay un borde. Mejor no me acerco, que me caigo.','asustado',8000);
+      else if(!gusta) this.reaccion('terreno',rnd([`Uf, esto es ${j.superficie}. No me gusta nada, se me ensucian las ruedas.`,`¿${j.superficie}? Prefiero el suelo de casa, la verdad.`]),'enfadado',8000);
+      else if(j.obstaculo) this.reaccion('obst',`Tengo ${j.que||'algo'} delante. Tendré que rodearlo.`,'pensativo',8000);
+      else this.reaccion('ok',rnd([`Qué bien, ${j.superficie}. Aquí estoy a gusto.`,'Buen sitio. Me gusta este suelo.']),'feliz',8000);
+      return this.suelo; }
+    catch(e){ this.reaccion('nocam','No puedo mirar el suelo: '+e.message,'triste',600000); return null; } }
+};
+addEventListener('devicemotion',e=>Sentidos.movimiento(e));
+Robot.sentidos=()=>Sentidos.sentidos();
+const _send126=send; send=async function(text,opts={}){ const t=String(text||'');
+  if(Modo.robot()&&t&&!(opts&&opts.event)&&t.length<80){
+    if(/\b(mira el suelo|d[oó]nde est[aá]s|qu[eé] (suelo|terreno) (es|hay)|te gusta (este|el) suelo)\b/i.test(t)){ logChat('u',t); Sentidos.mirarSuelo(); return; }
+    if(/\b(as[ií] est[aá]s (de pie|derecho)|esta es tu postura)\b/i.test(t)){ logChat('u',t); Sentidos.recalibrar(); Robot.decir('Vale, así estoy derecho.','feliz'); return; } }
+  return _send126(text,opts); };
+const _sys126=systemPrompt; systemPrompt=function(){ const b=_sys126.apply(this,arguments); if(!Modo.robot()) return b; const S=Sentidos.sentidos();
+  return b+`\nLO QUE SIENTE TU CUERPO AHORA: ${S.estado==='llevado'?'te llevan en brazos':'estás quieto'}${S.volcado?', estás volcado (tumbado)':''}${S.suelo?`; el suelo que tienes delante es ${S.suelo.superficie}${S.suelo.gusta?'':' (no te gusta)'}${S.suelo.borde?', hay un borde delante':''}${S.suelo.obstaculo?', hay un obstáculo delante':''}`:''}.`; };
+CMDS.splice(2,0,['/suelo','Modo robot: que mire el suelo que tiene delante (superficie, bordes, obstáculos)',()=>Sentidos.mirarSuelo()]);
+/* en iPhone hay que pedir permiso para los sensores de movimiento */
+document.addEventListener('click',function pedir(){ try{ if(Modo.robot()&&typeof DeviceMotionEvent!=='undefined'&&DeviceMotionEvent.requestPermission) DeviceMotionEvent.requestPermission().catch(()=>{}); }catch(e){} document.removeEventListener('click',pedir); });
 
 /* =====================================================================
    15. DESPERTAR
