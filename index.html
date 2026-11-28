@@ -654,7 +654,7 @@ try{ const d=JSON.parse(localStorage.getItem(MKEY)); if(d) MEM=Object.assign(bla
 let saveMem=()=>{ try{ localStorage.setItem(MKEY,JSON.stringify(MEM)); }catch(e){} };
 function addFacts(list){ (list||[]).forEach(f=>{ f=String(f).trim(); if(!f) return;
   const low=f.toLowerCase(); if(MEM.facts.some(x=>x.toLowerCase()===low)) return; MEM.facts.push(f); });
-  if(MEM.facts.length>150) MEM.facts=MEM.facts.slice(-150); }
+  if(MEM.facts.length>400) MEM.facts=MEM.facts.slice(-400); }
 function forgetFacts(list){ (list||[]).forEach(f=>{ const low=String(f).toLowerCase().slice(0,40); if(!low) return; MEM.facts=MEM.facts.filter(x=>!x.toLowerCase().includes(low)); }); }
 function addExams(list){ (list||[]).forEach(x=>{ if(!x||!x.fecha||!/^\d{4}-\d{2}-\d{2}$/.test(x.fecha)) return;
   const a=(x.asignatura||'examen').trim(); const i=MEM.exams.findIndex(e=>e.asignatura.toLowerCase()===a.toLowerCase());
@@ -1286,7 +1286,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v70</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v71</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1450,7 +1450,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v70 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v71 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6549,7 +6549,7 @@ NO INVENTAR: nunca digas que alguien dijo o hizo algo que no está aquí. Las l�
 VISIÓN: si recibes una imagen, es lo que ven tus ojos ahora mismo. Coméntala solo si viene al caso o te preguntan.
 AHORA: ${fecha}. Batería ${Math.round(energy*100)}%${charging?' (cargando)':''}.${MEM.ciudad?' Vivís en '+MEM.ciudad+'.':''}
 LO QUE SABES DE LA FAMILIA (úsalo solo cuando venga a cuento, no lo saques porque sí):
-${MEM.facts.slice(-30).map(f=>'- '+f).join('\n')||'(nada todavía)'}
+${(()=>{ let t='',L=MEM.facts.slice().reverse(); for(const f of L){ if(t.length>3500) break; t='- '+f+'\n'+t; } return t.trim()||'(nada todavía)'; })()}
 ${Faces.forPrompt()}
 ${Agenda.forPrompt()}
 ${Timers.list.length?'TEMPORIZADORES EN MARCHA: '+Timers.list.map(t=>t.why+' (quedan '+Math.ceil((t.end-Date.now())/60000)+' min)').join('; '):''}
@@ -6800,7 +6800,7 @@ Vida.quieto=localStorage.getItem('mor_quieto')==='1';
 const _desc128=Faces.describe.bind(Faces); Faces.describe=async function(src){ const r=await _desc128(src); this._ult=r||[];
   /* afina las caras conocidas con muestras nuevas */
   for(const f of r||[]){ let best=null,bd=1; for(const p of this.people) for(const d of p.descs){ let s=0; for(let i=0;i<128;i++){ const x=f.descriptor[i]-d[i]; s+=x*x; } const dist=Math.sqrt(s); if(dist<bd){ bd=dist; best=p; } }
-    if(best&&bd>.36&&bd<.47&&best.descs.length<12&&Date.now()-(best._af||0)>60000){ best._af=Date.now(); best.descs.push(Array.from(f.descriptor)); DB.put('people',best); } }
+    if(best&&bd>.3&&bd<.47&&best.descs.length<30&&Date.now()-(best._af||0)>60000){ best._af=Date.now(); best.descs.push(Array.from(f.descriptor)); DB.put('people',best); } }
   return r; };
 /* cada pocos segundos, en modo robot */
 setInterval(()=>{ if(!Modo.robot()) return; Vida.iniciarVoz(); Vida.vigilarTick();
@@ -7360,6 +7360,71 @@ const _send135=send; send=async function(text,opts={}){ const r=await _send135(t
 const _iv135=Vida.iniciarVoz.bind(Vida); Vida.iniciarVoz=async function(){ if(MOVIL){ this.voz.tried=true; return; } return _iv135(); };
 /* si el oído se cae, que vuelva solo */
 setInterval(()=>{ if(Modo.robot()&&SR&&!Ears.running){ Ears.on=true; Ears.run(); } },4000);
+
+/* =====================================================================
+   136. MEMORIA DE CADA PERSONA (modo robot)
+   Mor guarda una ficha de cada persona de la familia: quién es, qué le
+   gusta, sus cosas, planes, cumpleaños, lo que habéis hablado. Sabe quién
+   le habla (cara y voz) y apunta cada dato en la ficha de esa persona;
+   si habláis de otra («mi hermana Lucía tiene examen»), en la de ella.
+   Al hablar con alguien, tiene delante TODA su ficha. No se borra sola:
+   solo si le dices «olvida que…». Va con la cuenta de la familia.
+   ===================================================================== */
+const Personas={
+  todas(){ return MEM.personas=(MEM.personas||{}); },
+  k(n){ return Vida.norm(String(n||'').trim()).replace(/[^a-zñ0-9 ]/g,'').replace(/\s+/g,' '); },
+  ficha(n,crear){ const P=this.todas(), k=this.k(n); if(!k) return null; if(!P[k]&&crear) P[k]={nombre:String(n).trim().replace(/^./,c=>c.toUpperCase()),rel:'',datos:[],charlas:[],veces:0,desde:Date.now()}; return P[k]||null; },
+  /* alias: «mamá», «papá»… apuntan a la ficha de quien tenga esa relación */
+  buscar(n){ let k=this.k(n); const P=this.todas(); if(P[k]) return P[k]; k=({mama:'madre',mami:'madre',papa:'padre',papi:'padre',abuelito:'abuelo',abuelita:'abuela',yaya:'abuela',yayo:'abuelo'})[k]||k; return Object.values(P).find(f=>f.rel&&(this.k(f.rel)===k||this.k(f.rel).includes(k)&&k.length>3))||null; },
+  quien(){ const q=Vida.ultimoQuien&&Date.now()-Vida.ultimoQuien.at<30000?Vida.ultimoQuien.n:null; if(q) return q; const c=(Faces.now||[]).filter(n=>n&&n!=='desconocido'); return c.length===1?c[0]:null; },
+  apuntar(n,dato){ const f=this.buscar(n)||this.ficha(n,true); if(!f) return; dato=String(dato).trim(); if(!dato) return; const low=Vida.norm(dato);
+    if(f.datos.some(d=>Vida.norm(d.t)===low)) return; f.datos.push({t:dato,at:Date.now()}); if(f.datos.length>150) f.datos=f.datos.slice(-150); },
+  olvidar(n,dato){ const f=this.buscar(n); if(!f) return; const low=Vida.norm(dato).slice(0,30); f.datos=f.datos.filter(d=>!Vida.norm(d.t).includes(low)); },
+  texto(f,completo){ const fecha=t=>new Date(t).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+    if(!completo) return `- ${f.nombre}${f.rel?' ('+f.rel+')':''}${f.datos.length?': '+f.datos.slice(-3).map(d=>d.t).join('; '):''}`;
+    return `«${f.nombre}»${f.rel?' ('+f.rel+')':''}:\n${f.datos.map(d=>'  · '+d.t).join('\n')||'  (aún no sabes nada)'}${f.charlas.length?'\n  Últimas veces que hablasteis: '+f.charlas.slice(-5).map(c=>fecha(c.at)+': '+c.t).join(' | '):''}`; },
+  forPrompt(ultimo){ const P=Object.values(this.todas()); if(!P.length) return ''; const quien=this.quien(), vistos=(Faces.now||[]).filter(n=>n&&n!=='desconocido'), txt=Vida.norm(ultimo||'');
+    const cerca=new Set(); [quien,...vistos].forEach(n=>{ const f=n&&this.buscar(n); if(f) cerca.add(f); });
+    P.forEach(f=>{ if(txt&&(txt.includes(this.k(f.nombre))||(f.rel&&txt.includes(this.k(f.rel))))) cerca.add(f); });
+    const otros=P.filter(f=>!cerca.has(f));
+    return `\nFICHAS DE LA FAMILIA (lo que sabes de cada uno; úsalo con naturalidad cuando venga a cuento, sin recitarlo):\n${[...cerca].map(f=>this.texto(f,true)).join('\n')}${otros.length?'\nOtras personas que conoces: \n'+otros.map(f=>this.texto(f,false)).join('\n'):''}\n${quien?'TE ESTÁ HABLANDO '+quien.toUpperCase()+'.':'No sabes seguro quién te habla: si no ves a nadie conocido y hace falta, pregunta «¿quién eres?».'}`; },
+  SCHEMA:{type:'OBJECT',properties:{
+    datos:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},dato:{type:'STRING'}},required:['persona','dato']}},
+    olvidar:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},dato:{type:'STRING'}},required:['persona','dato']}},
+    relaciones:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},relacion:{type:'STRING'}},required:['persona','relacion']}},
+    cumples:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},fecha:{type:'STRING'}},required:['persona','fecha']}},
+    charla:{type:'STRING'}},required:['datos']},
+  async aprender(texto,respuesta){ const quien=this.quien()||'', hoy=new Date();
+    const fq=quien&&this.buscar(quien), conocidos=Object.values(this.todas()).map(f=>f.nombre+(f.rel?' ('+f.rel+')':'')).join(', ');
+    try{ const o=await geminiJSON(`Eres la memoria de Mor, el robot de una familia. Hoy es ${hoy.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
+QUIÉN HABLA: ${quien||'no se sabe (pon "HABLANTE")'}. Personas que Mor conoce: ${conocidos||'ninguna'}.
+${fq?'Lo que ya sabe de '+quien+':\n'+fq.datos.map(d=>'- '+d.t).join('\n'):''}
+Lo que acaba de decir: "${texto}"
+Respuesta de Mor: "${String(respuesta||'').slice(0,300)}"
+Devuelve:
+- datos: hechos NUEVOS y duraderos que la persona haya dicho EXPLÍCITAMENTE (gustos, comida, colegio, trabajo, amigos, mascotas, aficiones, miedos, planes con fecha, cosas importantes que le pasan). "persona" = de quién es el dato: ${quien?'«'+quien+'» si habla de sí mismo («me gusta», «tengo», «voy a»)':'«HABLANTE» si habla de sí mismo'}, o el nombre de otra persona si habla de ella («mi hermana Lucía…» → Lucía). Cada dato en una frase corta en tercera persona («Le encanta la pizza»). Nada de lo que dijo Mor, nada deducido, nada que ya esté apuntado.
+- olvidar: datos que ya no son ciertos o que pide olvidar.
+- relaciones: si dice qué es alguien de la familia («soy el padre», «Lucía es mi hermana»: relación respecto a ${quien||'quien habla'}, p. ej. «hermana de ${quien||'quien habla'}»).
+- cumples: si dice un cumpleaños (fecha MM-DD).
+- charla: si la conversación ha tenido algo que merezca recordarse, una frase corta de qué hablasteis; si no, vacío.
+Si dudas, no lo apuntes.`,this.SCHEMA,[],MODELOS_MEMORIA);
+      const nom=p=>(/^hablante$/i.test(p)||!p)?quien:p;
+      for(const d of o.datos||[]){ const n=nom(d.persona); if(n) this.apuntar(n,d.dato); else addFacts([d.dato]); }
+      for(const d of o.olvidar||[]){ const n=nom(d.persona); if(n) this.olvidar(n,d.dato); else forgetFacts([d.dato]); }
+      for(const r of o.relaciones||[]){ const n=nom(r.persona); if(n){ const f=this.buscar(n)||this.ficha(n,true); f.rel=String(r.relacion).slice(0,60); } }
+      for(const c of o.cumples||[]){ const n=nom(c.persona); if(n&&/^\d{2}-\d{2}$/.test(c.fecha)){ try{ Mas.cumples()[n]=c.fecha; }catch(e){} this.apuntar(n,'Su cumpleaños es el '+c.fecha.split('-').reverse().join('/')); } }
+      if(quien&&o.charla){ const f=this.buscar(quien)||this.ficha(quien,true); f.charlas.push({t:String(o.charla).slice(0,160),at:Date.now()}); if(f.charlas.length>40) f.charlas=f.charlas.slice(-40); f.veces++; }
+      saveMem(); }catch(e){ console.warn('Personas:',e); } },
+  panel(){ const P=Object.values(this.todas()); const c=chatCard(`<div class="ctit">Lo que Mor sabe de cada persona</div>${P.length?P.map(f=>`<details><summary><b>${esc(f.nombre)}</b>${f.rel?' · '+esc(f.rel):''} <small>(${f.datos.length} datos)</small></summary><ul style="margin:4px 0 6px 18px;font-size:13px">${f.datos.map((d,i)=>`<li>${esc(d.t)} <a href="#" data-b="${esc(this.k(f.nombre))}|${i}" style="color:#f88">✕</a></li>`).join('')}</ul></details>`).join(''):'<small>Todavía no tiene fichas: se hacen solas hablando con él en modo robot.</small>'}`);
+    c.querySelectorAll('[data-b]').forEach(a=>a.onclick=e=>{ e.preventDefault(); const [k,i]=a.dataset.b.split('|'); const f=this.todas()[k]; if(f){ f.datos.splice(+i,1); saveMem(); a.parentElement.remove(); } }); }
+};
+/* las caras que ya conoce tienen su ficha */
+setTimeout(()=>{ try{ (Faces.people||[]).forEach(p=>{ const f=Personas.ficha(p.name,true); if(p.rel&&!f.rel) f.rel=p.rel; }); saveMem(); }catch(e){} },8000);
+const _apr136=Vida.aprender.bind(Vida); Vida.aprender=async function(n){ const r=await _apr136(n); if(r){ Personas.ficha(n,true); saveMem(); } return r; };
+/* en modo robot, la memoria va por personas (no todo mezclado como si fuera una sola) */
+const _um136=updateMemory; updateMemory=async function(t,r){ if(typeof Modo!=='undefined'&&Modo.robot()&&t&&!/^\[/.test(t)) return Personas.aprender(t,r); return _um136(t,r); };
+const _sys136=systemPrompt; systemPrompt=function(){ const b=_sys136.apply(this,arguments); if(!Modo.robot()) return b; return b+Personas.forPrompt(ultimoTexto); };
+CMDS.splice(2,0,['/personas','Lo que Mor sabe de cada persona de la familia',()=>Personas.panel()]);
 
 /* =====================================================================
    15. DESPERTAR
