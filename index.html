@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v88</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v89</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v88 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v89 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -8122,6 +8122,20 @@ const _send152=send; send=async function(text,opts={}){
 
 /* «¿quién eres?» como mucho cada media hora */
 const _send152b=send; send=async function(text,opts={}){ const r=await _send152b(text,opts); if(Quien.pend&&Date.now()-Quien.pend.at<2000) Quien.ultimaPregunta=Date.now()+20*60000; return r; };
+
+/* =====================================================================
+   153. QUE NO SE DUERMA EL MÓVIL Y QUE AHORRE BATERÍA
+   - En modo robot la pantalla no se apaga sola (si se apagara, Chrome
+     dejaría a Mor sordo y sin mensajes).
+   - Si lleva 10 min sin ver a nadie, la vista mira mucho más despacio
+     (menos calor y batería); en cuanto ve a alguien, vuelve a ir normal.
+   ===================================================================== */
+const Pantalla={ lock:null, async pedir(){ if(!Modo.robot()||document.hidden||this.lock||!navigator.wakeLock) return; try{ this.lock=await navigator.wakeLock.request('screen'); this.lock.addEventListener('release',()=>{ this.lock=null; }); Diag.ap('pantalla','siempre encendida'); }catch(e){ Diag.ap('pantalla-error',e.message); } } };
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) Pantalla.pedir(); });
+setInterval(()=>{ if(Modo.robot()) Pantalla.pedir(); else if(Pantalla.lock){ try{ Pantalla.lock.release(); }catch(e){} Pantalla.lock=null; } },5000);
+addEventListener('touchstart',()=>Pantalla.pedir(),{passive:true});
+let _ultGente=Date.now();
+const _vtick153=Vista.tick.bind(Vista); Vista.tick=function(){ if((Faces.now||[]).length||Vista.hecho) _ultGente=Date.now(); const ahorro=Date.now()-_ultGente>10*60000; if(ahorro&&(this._sk=(this._sk||0)+1)%8) return; return _vtick153(); };
 
 /* =====================================================================
    15. DESPERTAR
