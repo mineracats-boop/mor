@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v92</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v93</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v92 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v93 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7827,7 +7827,7 @@ const NO_NOMBRE=/^(que|qué|quien|como|cuando|donde|jugar|hola|vale|si|sí|no|bi
 Vida.nombreDe=function(t){ const lim=String(t).replace(/[.,!¡¿?]/g,' ').trim();
   const m=lim.match(/(?:^|\s)(?:me llamo|yo soy|soy|mi nombre es|ll[aá]mame)\s+([A-Za-zÁÉÍÓÚÑáéíóúñ]{2,20})(?=\s|$)/i); if(m&&!NO_NOMBRE.test(m[1])) return m[1];
   const y=lim.match(/(?:^|\s)(?:yo|aqu[ií])\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{1,19})(?=\s|$)/); if(y&&!NO_NOMBRE.test(y[1])) return y[1];
-  const w=lim.split(/\s+/).filter(x=>x&&!/^(hola|buenas|pues|yo|mor|oye|vale|bueno|eh|soy)$/i.test(x)); if(w.length>=1&&w.length<=2&&/^[A-Za-zÁÉÍÓÚÑáéíóúñ]{2,20}$/.test(w[0])&&!NO_NOMBRE.test(w[0])) return w[0];
+  const w=lim.split(/\s+/).filter(x=>x&&!/^(hola|buenas|pues|yo|mor|oye|vale|bueno|eh|soy)$/i.test(x)); if(((w.length===1&&w[0].length>=3)||(w.length===2&&/^[A-ZÁÉÍÓÚÑ]/.test(w[0])))&&/^[A-Za-zÁÉÍÓÚÑáéíóúñ]{2,20}$/.test(w[0])&&!NO_NOMBRE.test(w[0])&&!/^(me|te|se|lo|le|les|nos|mi|tu|su|ni|sé|se|ya|uf|ay)$/i.test(w[0])) return w[0];
   return null; };
 /* limpiar caras y fichas con nombres que no son nombres */
 setTimeout(async()=>{ try{ let n=0; for(const p of [...(Faces.people||[])]) if(NO_NOMBRE.test(p.name)){ Faces.people=Faces.people.filter(x=>x!==p); try{ await DB.del('people',p.id); }catch(e){ try{ const db=await DB.open(); db.transaction('people','readwrite').objectStore('people').delete(p.id); }catch(x){} } n++; }
