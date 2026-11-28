@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v87</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v88</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v87 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v88 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6688,7 +6688,7 @@ const Mapa={ sitios:[], actual:null, novedad:0, cv:document.createElement('canva
     const f=this.huella(); if(!f||f.luz<.12) return; const {s,p}=this.mejor(f);
     if(s&&p>.8){ this.novedad=0; if(p<.9&&s.fps.length<8) s.fps.push(f);
       if(this.actual!==s.id){ const antes=this.actual; this.unir(antes,s.id); this.actual=s.id; s.visto=Date.now(); this.guardar();
-        if(antes&&Date.now()-(this.ultimoAviso||0)>3*60000){ this.ultimoAviso=Date.now(); Robot.decir(rnd([`Ah, estamos en ${s.nombre}.`,`¡${s.nombre[0].toUpperCase()+s.nombre.slice(1)}! Ya me acuerdo de este sitio.`]),'feliz'); } }
+        if(antes&&Date.now()-(this.ultimoAviso||0)>3*60000){ this.ultimoAviso=Date.now(); void 0; } }
       return; }
     if(++this.novedad<2) return; this.novedad=0; this.ocupado=true;
     try{ const img=this.foto(), n=await this.nombrar(img), id='s'+Date.now().toString(36);
@@ -6710,7 +6710,7 @@ Mapa.cargar(); setInterval(()=>Mapa.tick(),20000);
 const _send127=send; send=async function(text,opts={}){ const t=String(text||'');
   if(Modo.robot()&&t&&!(opts&&opts.event)&&t.length<90){
     const m=t.match(/^(?:mor[, ]+)?(?:esto|este sitio|aqu[ií]) es (?:el |la )?(.{3,40})$/i);
-    if(m&&!/\b(un|una)\b/i.test(m[1].split(' ')[0])&&Mapa.aqui()){ logChat('u',t); const n=t.match(/es ((?:el |la ).+)$/i)?.[1]||m[1]; Mapa.renombrar(n.trim()); Robot.decir(`Apuntado: esto es ${n.trim()}.`,'feliz'); return; }
+    if(m&&!/\b(un|una)\b/i.test(m[1].split(' ')[0])&&Mapa.aqui()){ logChat('u',t); const n=t.match(/es ((?:el |la ).+)$/i)?.[1]||m[1]; Mapa.renombrar(n.trim()); Robot.decir('Vale.','feliz'); return; }
     if(/\b(d[oó]nde estamos|en qu[eé] sitio estamos|qu[eé] sitio es este)\b/i.test(t)){ logChat('u',t); const s=Mapa.aqui(); Robot.decir(s?`Estamos en ${s.nombre}.`:'Aún no conozco este sitio. Déjame mirar un poco y lo apunto.','curioso'); return; }
     if(/\b(ens[eé]ñame|muestra|abre) (tu|el) mapa\b/i.test(t)){ logChat('u',t); modoVoz(false); Mapa.open(); return; } }
   return _send127(text,opts); };
@@ -6837,7 +6837,7 @@ const _send128=send; send=async function(text,opts={}){ const t=String(text||'')
     const rc=t.match(/recu[eé]rd(?:a|ale)(?:le)?\s+a\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+)\s+(?:que\s+)?(.{3,120}?)(?:\s+cuando (?:le|la|lo) veas.*)?$/i);
     if(rc){ logChat('u',t); const L=Vida.recados(); const de=Vida.quienHabla(); L.push({para:rc[1],que:rc[2].replace(/\s+cuando.*$/i,''),de,at:Date.now()}); Vida.guardarRecados(L); Robot.decir(`Hecho. Cuando vea a ${rc[1]} se lo digo.`,'feliz'); return; }
     /* ¿responde a «cómo te llamas»? */
-    if(Vida.pendiente){ const nm=Vida.nombreDe(t); if(nm){ const N=nm[0].toUpperCase()+nm.slice(1).toLowerCase(); logChat('u',t); const ok=await Vida.aprender(N); if(ok){ Robot.decir(rnd([`¡Encantado, ${N}! Ya me quedo con tu cara.`,`¡Hola, ${N}! Ya sé quién eres, no se me olvida.`]),'feliz'); return; } return _send128(t,Object.assign({},opts,{event:null})); } }
+    if(Vida.pendiente){ const nm=Vida.nombreDe(t); if(nm){ const N=nm[0].toUpperCase()+nm.slice(1).toLowerCase(); logChat('u',t); const ok=await Vida.aprender(N); if(ok){ Robot.decir(rnd([`¡Encantado, ${N}!`,`¡Hola, ${N}!`]),'feliz'); return; } return _send128(t,Object.assign({},opts,{event:null})); } }
     /* quién habla */
     const q=Vida.quienHabla(); if(q) Vida.ultimoQuien={n:q,at:Date.now()}; }
   return _send128(text,opts); };
@@ -7068,7 +7068,7 @@ const _send130=send; send=async function(text,opts={}){ const t=String(text||'')
       if(Mas.radio&&/\bmas (alto|fuerte)\b/.test(n)){ Mas.radio.volume=Math.min(1,Mas.radio.volume+.2); return; } if(Mas.radio&&/\bmas (bajo|flojo)\b/.test(n)){ Mas.radio.volume=Math.max(.05,Mas.radio.volume-.2); return; }
       const em=t.match(/estamos en (?:la |el )?(casa de \S+|casa \d|casa|calle|el hotel|hotel|el cole|colegio|la playa|playa|\S+)(?:[.!]|$)/i);
       if(em&&t.length<60){ logChat('u',t); const nombre=em[1].replace(/^el |^la /i,''); let id=Mas.mapaPorNombre(nombre); if(!id){ id='m'+Date.now().toString(36); Mas.mapas.lista[id]={nombre:nombre[0].toUpperCase()+nombre.slice(1),sitios:[],actual:null}; }
-        Mas.cambiarMapa(id,true); Robot.decir(`Vale, estamos en ${Mas.mapas.lista[id].nombre}. Voy apuntando los sitios.`,'curioso'); return; } } }
+        Mas.cambiarMapa(id,true); Robot.decir(`Vale, estamos en ${Mas.mapas.lista[id].nombre}.`,'curioso'); return; } } }
   return _send130(text,opts); };
 const _sys130=systemPrompt; systemPrompt=function(){ const b=_sys130.apply(this,arguments); if(!Modo.robot()) return b; const dorm=Object.keys(Mas.dormidos);
   return b+`\nTU ÁNIMO AHORA: ${Mas.textoAnimo()} (que se note un poco al hablar, sin exagerar ni quejarte).${dorm.length?' HAY ALGUIEN DURMIENDO ('+dorm.join(', ')+'): habla bajito y poco, no le despiertes.':''}${Object.keys(Mas.cumples()).length?' CUMPLEAÑOS QUE SABES: '+Object.entries(Mas.cumples()).map(([k,v])=>k+' '+v.split('-').reverse().join('/')).join(', ')+'.':''} MAPA ACTUAL: ${Mas.mapas.lista[Mas.mapas.actual].nombre}.${Mas.radio?' Está sonando música.':''}`; };
@@ -7314,7 +7314,7 @@ const _send134=send; send=async function(text,opts={}){ opts=opts||{}; const t=S
         MEM.history.push({r:'m',t:r,at:Date.now()}); logChat('m',r); try{ Mas.alHablarle(); }catch(e){} Robot.decir(r,'feliz'); return; } } }
   return _send134(text,opts); };
 /* si alguien nuevo no ha dicho su nombre, se lo pregunta otra vez (una vez) */
-setInterval(()=>{ if(!Modo.robot()||!Vida.pendiente||busy) return; const P=Vida.pendiente; if(!P.repetida&&Date.now()-P.at>45000&&(Faces.now||[]).includes('desconocido')){ P.repetida=true; Robot.decir(rnd(['Perdona, no te he oído bien. ¿Cómo te llamas?','Oye, ¿cómo te llamas? Así me acuerdo de ti.']),'curioso'); } },5000);
+setInterval(()=>{ if(!Modo.robot()||!Vida.pendiente||busy) return; const P=Vida.pendiente; if(!P.repetida&&Date.now()-P.at>45000&&(Faces.now||[]).includes('desconocido')){ P.repetida=true; Robot.decir(rnd(['Perdona, no te he oído bien. ¿Cómo te llamas?','Oye, ¿cómo te llamas?']),'curioso'); } },5000);
 
 /* =====================================================================
    135. VOZ BONITA EN LA NUBE (UNA SOLA) Y QUE OIGA SIEMPRE
@@ -7493,7 +7493,7 @@ const _send138=send; send=async function(text,opts={}){ const t=String(text||'')
     if(m&&!/\b(a las|mañana a|el (lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo) a las|recu[eé]rdame)\b/i.test(t)){ const q=Personas.quien(), dato=m[1].replace(/[.!]+$/,'').trim();
       logChat('u',t); MEM.history.push({r:'u',t,at:Date.now()});
       if(q) Personas.apuntar(q,'Dijo: «'+dato+'»'); else addFacts(['Dijo: «'+dato+'»']); saveMem(); MemCola.dia().push({t,r:'(apuntado)',q:q||'',at:Date.now()});
-      const r=rnd(['Apuntado. No se me olvida.','Hecho, me lo guardo.','Vale, me acordaré.']); MEM.history.push({r:'m',t:r,at:Date.now()}); logChat('m',r);
+      const r=rnd(['Apuntado.','Vale.']); MEM.history.push({r:'m',t:r,at:Date.now()}); logChat('m',r);
       if(Modo.robot()) Robot.decir(r,'carinoso'); else localSay(r,'carinoso'); return; } }
   return _send138(text,opts); };
 /* que el navegador no borre sus datos */
@@ -7521,10 +7521,10 @@ const _send139=send; send=async function(text,opts={}){ const t=String(text||'')
     if(Quien.pend&&Date.now()-Quien.pend.at<150000){ const nm=Vida.nombreDe(t); if(nm&&t.length<60){ Quien.pend=null; const N=nm[0].toUpperCase()+nm.slice(1).toLowerCase();
         Quien.sesion={n:N,hasta:Date.now()+15*60000}; Vida.ultimoQuien={n:N,at:Date.now()}; Personas.ficha(N,true);
         const desde=Date.now()-15*60000; MemCola.L().forEach(it=>{ if(!it.q&&it.at>desde) it.q=N; }); MemCola.dia().forEach(it=>{ if(!it.q&&it.at>desde) it.q=N; }); saveMem(); MemCola.procesar();
-        logChat('u',t); const f=Personas.buscar(N), conocido=f&&f.datos.length; Robot.decir(conocido?`¡Ah, ${N}! Ya decía yo. Perdona, no te veía bien.`:`¡Encantado, ${N}! Ya me acuerdo de lo que me cuentes.`,'feliz'); return; } } }
+        logChat('u',t); const f=Personas.buscar(N), conocido=f&&f.datos.length; Robot.decir(conocido?`¡Ah, hola ${N}!`:`¡Encantado, ${N}!`,'feliz'); return; } } }
   const r=await _send139(text,opts);
   if(Modo.robot()&&t&&!(opts&&opts.event)&&!Personas.quien()&&!Vida.pendiente&&!Quien.pend&&Date.now()-Quien.ultimaPregunta>10*60000&&t.split(/\s+/).length>=3){
-    Quien.ultimaPregunta=Date.now(); Quien.pend={at:Date.now()}; setTimeout(()=>{ if(!busy) Robot.decir(rnd(['Por cierto, ¿quién eres? No te veo bien y quiero acordarme de lo que me cuentas.','Oye, ¿quién me habla? Así lo apunto en tu ficha.']),'curioso'); },400); }
+    Quien.ultimaPregunta=Date.now(); Quien.pend={at:Date.now()}; setTimeout(()=>{ if(!busy) Robot.decir(rnd(['Por cierto, ¿quién eres?','Oye, ¿quién me habla?']),'curioso'); },400); }
   return r; };
 /* juntar memoria de varios aparatos sin perder fichas */
 const _unir139=Sync.unir.bind(Sync); Sync.unir=async function(R){ const P0=JSON.parse(JSON.stringify(MEM.personas||{})), C0=MEM.colaMem||[], D0=MEM.diaMem||[], cum0=Object.assign({},MEM.cumples||{});
@@ -8101,9 +8101,9 @@ const _sys151=systemPrompt; systemPrompt=function(){ const b=_sys151.apply(this,
 const TT=x=>String(x||'').trim().toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
 const _send152=send; send=async function(text,opts={}){
   if(!text&&opts&&opts.event&&Modo.robot()){ const e=String(opts.event); let m; const D=(t,emo)=>{ Casa.decir(t,emo||'feliz'); };
-    if(/LLEVÁIS UN RATO SIN HABLAR/.test(e)) return;   // no habla por hablar
-    if((m=e.match(/^ACABAS DE APRENDER LA CARA DE ([^.(]+)/))) return D(`¡Ya me quedo con tu cara, ${TT(m[1])}!`);
-    if((m=e.match(/^VES A ALGUIEN CUYA CARA NO CONOCES/))) return D(rnd(['¡Hola! No te conozco. ¿Cómo te llamas?','¡Hola! ¿Quién eres? Así me acuerdo de ti.']),'curioso');
+    if(/LLEVÁIS UN RATO SIN HABLAR/.test(e)){ if(Date.now()-(window._charla152||0)<45*60000) return; window._charla152=Date.now(); }   // charla por su cuenta, como mucho cada 45 min
+    if(/^ACABAS DE APRENDER LA CARA DE/.test(e)) return;
+    if((m=e.match(/^VES A ALGUIEN CUYA CARA NO CONOCES/))) return D(rnd(['¡Hola! ¿Cómo te llamas?','¡Hola! ¿Quién eres?']),'curioso');
     if((m=e.match(/^VES POR LA CÁMARA A ([^.(]+)/))){ const n=TT(m[1]); const f=Personas.buscar(n); const r=await Casa.buenosDias(f?f.nombre:n); return D(r||rnd([`¡Hola, ${n}!`,`¡Hey, ${n}!`])); }
     if((m=e.match(/^PRIMERA VEZ QUE VES HOY A ([^ ]+(?: [^ ]+)?) Y ES POR LA MAÑANA/))){ const n=TT(m[1]); const r=await Casa.buenosDias(n); return D(r||`¡Buenos días, ${n}!`); }
     if((m=e.match(/^ACABAS DE VER A ([^.]+)\. Salúdale por su nombre y dale este recado de parte de ([^:]+): «(.+)»\./))) return D(`¡Hola, ${TT(m[1])}! ${m[2]} me ha dicho que te diga: ${m[3]}.`,'carinoso');
@@ -8116,10 +8116,10 @@ const _send152=send; send=async function(text,opts={}){
   }
   return _send152(text,opts); };
 /* lo de por dentro, sin decirlo */
-const _reac152=Sentidos.reaccion.bind(Sentidos); Sentidos.reaccion=function(tipo,...r){ if(/^(arriba|abajo|baches|depie)$/.test(tipo)){ try{ setEmotion(tipo==='baches'?'enfadado':'sorprendido',1500); }catch(e){} return; } return _reac152(tipo,...r); };
-const _vr152=Vista.reaccion.bind(Vista); Vista.reaccion=function(k,hecho,frase,emo,cada){ if(!/^(saluda|Thumb_Up|ILoveYou)$/.test(k)){ this.hecho=hecho; try{ setEmotion(emo,2500); }catch(e){} return; } return _vr152(k,hecho,frase,emo,cada); };
+
+
 /* la escena solo habla si pasa algo importante */
-const _mirar152=Escena.mirar.bind(Escena); Escena.mirar=function(m){ this.ultComentario=Date.now(); return _mirar152(m); };
+
 /* «¿quién eres?» como mucho cada media hora */
 const _send152b=send; send=async function(text,opts={}){ const r=await _send152b(text,opts); if(Quien.pend&&Date.now()-Quien.pend.at<2000) Quien.ultimaPregunta=Date.now()+20*60000; return r; };
 
