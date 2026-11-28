@@ -1276,7 +1276,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v64</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v65</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1440,7 +1440,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v64 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v65 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7044,7 +7044,7 @@ const _sys130=systemPrompt; systemPrompt=function(){ const b=_sys130.apply(this,
 /* el mapa con selector de mapas */
 const _open130=Mapa.open.bind(Mapa); Mapa.open=function(){ _open130(); const c=[...document.querySelectorAll('.ctit')].filter(x=>x.textContent==='Mapa de Mor').pop().parentElement;
   const d=document.createElement('div'); d.className='row'; d.style.cssText='gap:6px;flex-wrap:wrap;margin:6px 0';
-  d.innerHTML=Object.entries(Mas.mapas.lista).map(([id,m])=>`<button class="tbtn${id===Mas.mapas.actual?' on':''}" data-m="${id}">${esc(m.nombre)} (${m.sitios.length})</button>`).join('')+'<button class="tbtn" data-m="+">+ Mapa nuevo</button>';
+  d.innerHTML=Object.entries(Mas.mapas.lista).map(([id,m])=>`<button class="tbtn${id===Mas.mapas.actual?' on':''}" data-m="${id}">${esc(m.nombre)} (${(m.lugares||[]).length||m.sitios.length})</button>`).join('')+'<button class="tbtn" data-m="+">+ Mapa nuevo</button>';
   c.querySelector('small').after(d);
   d.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ if(b.dataset.m==='+'){ const n=prompt('Nombre del mapa (casa de Retama, hotel, calle…)'); if(!n) return; const id='m'+Date.now().toString(36); Mas.mapas.lista[id]={nombre:n,sitios:[],actual:null}; Mas.cambiarMapa(id); } else Mas.cambiarMapa(b.dataset.m); c.remove(); Mapa.open(); }); };
 CMDS.splice(2,0,['/familia','Cuenta de la familia (misma cuenta en todos los aparatos) y mensajes a través de Mor',()=>Mas.panelFamilia()]);
@@ -7121,6 +7121,51 @@ const _pf131=Mas.panelFamilia.bind(Mas); Mas.panelFamilia=function(){ _pf131(); 
   d.innerHTML=`<b style="font-size:13px">Todo Mor en todos los aparatos</b><small style="display:block">Chats, memoria, apuntes, personas y proyectos se guardan cifrados en tu DatabasePro. Pon la MISMA contraseña en todos los aparatos (no se guarda en ningún sitio: si la olvidas, no se puede recuperar).</small>
     <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><input class="inp" type="password" placeholder="${localStorage.getItem('mor_synckey')?'Contraseña puesta (escribe otra para cambiarla)':'Contraseña de sincronizar'}" style="flex:1;min-width:140px;border-radius:10px;padding:6px 10px"><button class="tbtn on">Sincronizar ahora</button></div><div class="se" style="font-size:13px;margin-top:4px">${esc(Sync.ult||'')}</div>`;
   k.appendChild(d); d.querySelector('button').onclick=async()=>{ const p=d.querySelector('input').value; if(p){ await Sync.clave(p); d.querySelector('input').value=''; } const se=d.querySelector('.se'); const old=Sync.estado.bind(Sync); Sync.estado=t=>{ old(t); se.textContent=t; }; await Sync.ahora(); Sync.estado=old; }; };
+
+/* =====================================================================
+   132. MAPAS DE FUERA (calle, parque, playa…) CON GPS Y MAPA DE VERDAD
+   Dentro de casa, Mor usa sus mapas de sitios. Fuera, usa el GPS del
+   móvil y un mapa real de calles (OpenStreetMap, gratis): apunta por
+   dónde vais y pone nombre a los sitios según la calle o el lugar
+   («Calle Ancha», «Parque Genovés»). Desde el mapa se puede abrir
+   cualquier sitio en Google Maps.
+   ===================================================================== */
+const Fuera={ watch:null, ult:null,
+  esExterior(id){ const m=Mas.mapas.lista[id||Mas.mapas.actual]; return !!(m&&(m.exterior||/calle|parque|playa|ciudad|pueblo|paseo|fuera|campo|monte|excursi/i.test(m.nombre))); },
+  mapa(){ const m=Mas.mapas.lista[Mas.mapas.actual]; m.ruta=m.ruta||[]; m.lugares=m.lugares||[]; return m; },
+  iniciar(){ if(this.watch||!navigator.geolocation) return; this.watch=navigator.geolocation.watchPosition(p=>this.pos(p),()=>{},{enableHighAccuracy:true,maximumAge:15000,timeout:30000}); },
+  parar(){ if(this.watch!=null){ navigator.geolocation.clearWatch(this.watch); this.watch=null; } },
+  dist(a,b){ const R=6371000, r=x=>x*Math.PI/180, dLat=r(b.lat-a.lat), dLon=r(b.lon-a.lon); const h=Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(h)); },
+  async pos(p){ if(!this.esExterior()) return; const q={lat:+p.coords.latitude.toFixed(6),lon:+p.coords.longitude.toFixed(6),t:Date.now(),acc:Math.round(p.coords.accuracy)}; if(q.acc>80) return;
+    const m=this.mapa(); const last=m.ruta[m.ruta.length-1]; if(!last||this.dist(last,q)>15){ m.ruta.push(q); if(m.ruta.length>2000) m.ruta=m.ruta.slice(-2000); }
+    this.ult=q; const cerca=m.lugares.find(l=>this.dist(l,q)<60);
+    if(!cerca&&(!this.ultGeo||Date.now()-this.ultGeo>20000)){ this.ultGeo=Date.now(); try{ const j=await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&accept-language=es&lat=${q.lat}&lon=${q.lon}`)).json();
+        const a=j.address||{}, nombre=j.name||a.amenity||a.leisure||a.park||a.road||a.pedestrian||a.neighbourhood||'un sitio';
+        if(!m.lugares.some(l=>l.nombre===nombre&&this.dist(l,q)<150)){ m.lugares.push({...q,nombre,barrio:a.suburb||a.neighbourhood||'',ciudad:a.city||a.town||a.village||''}); Vida.apuntar('Pasamos por '+nombre+(a.city?' ('+a.city+')':'')); } }catch(e){} }
+    Mas.guardarMapas(); },
+  aqui(){ if(!this.ult) return null; const m=this.mapa(); let best=null,bd=1e9; for(const l of m.lugares){ const d=this.dist(l,this.ult); if(d<bd){ bd=d; best=l; } } return best&&bd<120?best:null; },
+  gmaps(l){ return `https://www.google.com/maps/search/?api=1&query=${l.lat},${l.lon}`; },
+  async cargarLeaflet(){ if(window.L&&window.L.map) return true; try{ const css=document.createElement('link'); css.rel='stylesheet'; css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css);
+      await new Promise((ok,ko)=>{ const sc=document.createElement('script'); sc.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; sc.onload=ok; sc.onerror=ko; document.head.appendChild(sc); }); return true; }catch(e){ return false; } },
+  async panel(contenedor){ const m=this.mapa(); const d=document.createElement('div'); d.style.cssText='height:260px;border-radius:12px;overflow:hidden;margin:8px 0;background:#0b1a33'; contenedor.appendChild(d);
+    const lista=document.createElement('div'); contenedor.appendChild(lista);
+    lista.innerHTML=(m.lugares||[]).slice().reverse().slice(0,20).map(l=>`<div class="row" style="gap:6px;align-items:center;margin-top:4px"><span style="flex:1;font-size:13px">${esc(l.nombre)}${l.ciudad?' · '+esc(l.ciudad):''}</span><a class="tbtn" target="_blank" rel="noopener" href="${this.gmaps(l)}">Google Maps</a></div>`).join('')||'<small>Aún no hay sitios: activa el GPS y salid a dar una vuelta.</small>';
+    if(!(await this.cargarLeaflet())){ d.innerHTML='<small style="padding:8px;display:block">No se ha podido cargar el mapa de calles.</small>'; return; }
+    const c=m.ruta.length?m.ruta[m.ruta.length-1]:(this.ult||{lat:36.5297,lon:-6.2925}); const mp=L.map(d).setView([c.lat,c.lon],16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(mp);
+    if(m.ruta.length>1) L.polyline(m.ruta.map(p=>[p.lat,p.lon]),{color:'#ff8a3d',weight:4}).addTo(mp);
+    for(const l of m.lugares) L.circleMarker([l.lat,l.lon],{radius:6,color:'#7fd8ff'}).addTo(mp).bindPopup(`${esc(l.nombre)}<br><a href="${this.gmaps(l)}" target="_blank">Abrir en Google Maps</a>`);
+    if(this.ult) L.circleMarker([this.ult.lat,this.ult.lon],{radius:8,color:'#ff8a3d',fillOpacity:.9}).addTo(mp).bindPopup('Mor está aquí');
+    setTimeout(()=>mp.invalidateSize(),200); }
+};
+/* en mapas de fuera: GPS en vez de cámara */
+setInterval(()=>{ if(!Modo.robot()) return; if(Fuera.esExterior()) Fuera.iniciar(); else Fuera.parar(); },10000);
+const _tickMapa132=Mapa.tick.bind(Mapa); Mapa.tick=async function(){ if(Fuera.esExterior()) return; return _tickMapa132(); };
+const _aqui132=Mapa.aqui.bind(Mapa); Mapa.aqui=function(){ if(Fuera.esExterior()){ const l=Fuera.aqui(); return l?{nombre:l.nombre,tipo:'calle',con:[]}:null; } return _aqui132(); };
+const _open132=Mapa.open.bind(Mapa); Mapa.open=function(){ _open132(); if(!Fuera.esExterior()) return; const c=[...document.querySelectorAll('.ctit')].filter(x=>x.textContent==='Mapa de Mor').pop().parentElement;
+  c.querySelectorAll('svg,[data-s]').forEach(e=>e.remove()); const sm=c.querySelector('small'); if(sm) sm.textContent='Mapa de fuera: el GPS del móvil va apuntando por dónde vais y los sitios por los que pasáis.'; Fuera.panel(c); };
+const _sys132=systemPrompt; systemPrompt=function(){ const b=_sys132.apply(this,arguments); if(!Modo.robot()||!Fuera.esExterior()) return b; const l=Fuera.aqui();
+  return b+`\nESTÁIS FUERA (mapa ${Mas.mapas.lista[Mas.mapas.actual].nombre}).${l?' Ahora estáis por '+l.nombre+(l.ciudad?' ('+l.ciudad+')':'')+'.':''} Sitios por los que habéis pasado: ${(Fuera.mapa().lugares||[]).slice(-10).map(x=>x.nombre).join(', ')||'ninguno todavía'}.`; };
 
 /* =====================================================================
    15. DESPERTAR
