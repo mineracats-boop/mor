@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v82</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v83</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v82 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v83 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -4117,7 +4117,7 @@ const PROV=[
 ];
 const Prov={
   key:p=>Conn.get()['pv_'+p.id+'_key']||'', model:p=>Conn.get()['pv_'+p.id+'_model']||'',
-  extra(p){ const m=this.model(p); return /gpt-oss/i.test(m)&&/groq|cerebras/.test(p.id)?{reasoning_effort:'low'}:{}; },
+  extra(p){ const m=this.model(p); return /gpt-oss/i.test(m)&&/groq|cerebras/.test(p.id)?{reasoning_effort:window.RAZONAR?'medium':'low'}:{}; },
   listos(){ return PROV.filter(p=>this.key(p)&&this.model(p)&&!agotado('pv:'+p.id)); },
   sinImagenNiHerramientas:body=>!(body.contents||[]).some(c=>(c.parts||[]).some(p=>p.inline_data))&&!body.tools,
   async elegirModelo(p,key){ const H={Authorization:'Bearer '+key}; const r=await fetch(p.modelos||p.url+'/models',{headers:H});
@@ -7848,6 +7848,62 @@ const _heard146=Ears.heard.bind(Ears); Ears.heard=function(t){ if(Modo.robot()){
   return _heard146(t); };
 /* tocar mientras habla: se calla */
 addEventListener('touchstart',()=>{ if(Modo.robot()&&hablando()&&!$('morSalir')){ Voice.stop(); try{ speechSynthesis.cancel(); }catch(e){} Diag.ap('oído','le tocas: se calla'); } },{passive:true,capture:true});
+
+/* =====================================================================
+   147. MOR LISTO DE VERDAD: ENTIENDE LO QUE PASA A SU ALREDEDOR
+   - Escena: cuando lo que ve cambia (o cada 5 min si hay alguien), mira
+     con el cerebro ligero de Gemini y apunta qué está pasando: quién
+     está, qué hace cada uno, qué hay y si hay algo en lo que ayudar.
+     Así, aunque hable con Groq (que no ve), sabe lo que pasa.
+   - Recuerda lo que ha visto hoy: «¿has visto mis gafas?», «¿qué hacía
+     Carmen antes?», «¿dónde dejé las llaves?».
+   - A veces ayuda solo: si ve que cocinas, que haces deberes o que algo
+     va mal, lo dice (con cuidado de no agobiar).
+   - Piensa más en las preguntas difíciles.
+   - Gasta como mucho 250 miradas al día.
+   ===================================================================== */
+const ESC_MOD=['gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3.1-flash-lite-preview'];
+const Escena={ actual:null, ultEmb:null, ult:0, ocupado:false, ultComentario:0,
+  log(){ try{ return JSON.parse(localStorage.getItem('mor_escenas')||'[]'); }catch(e){ return []; } },
+  guardar(e){ const L=this.log(); L.push(e); try{ localStorage.setItem('mor_escenas',JSON.stringify(L.slice(-250))); }catch(x){ localStorage.setItem('mor_escenas',JSON.stringify(L.slice(-80))); } },
+  gasto(){ const hoy=new Date().toDateString(); let g=JSON.parse(localStorage.getItem('mor_esc_n')||'{}'); if(g.d!==hoy) g={d:hoy,n:0}; return g; },
+  SCHEMA:{type:'OBJECT',properties:{escena:{type:'STRING'},personas:{type:'ARRAY',items:{type:'OBJECT',properties:{quien:{type:'STRING'},haciendo:{type:'STRING'},animo:{type:'STRING'}},required:['quien','haciendo']}},
+    objetos:{type:'ARRAY',items:{type:'STRING'}},ayuda:{type:'STRING'},importante:{type:'BOOLEAN'}},required:['escena']},
+  async mirar(motivo){ if(this.ocupado||!Cam.on||busy) return; const g=this.gasto(); if(g.n>=250) return; const img=Cam.snapshot(512); if(!img) return;
+    this.ocupado=true; g.n++; localStorage.setItem('mor_esc_n',JSON.stringify(g));
+    const conocidos=(Faces.now||[]).filter(n=>n&&n!=='desconocido'), sitio=Mapa.aqui();
+    try{ const o=await geminiJSON(`Eres los ojos de Mor, el robot de una familia. Mira esta foto de su cámara y di qué está pasando, en español, breve y concreto.
+${conocidos.length?'Personas que Mor reconoce por la cara ahora: '+conocidos.join(', ')+'. Usa esos nombres (si hay alguien más, «otra persona»).':'Si hay personas, Mor no sabe quiénes son: «una persona», «un niño»…'}
+${sitio?'Está en: '+sitio.nombre+'.':''}${Vista.hecho?' Movimiento detectado: '+Vista.hecho+'.':''}
+Devuelve: escena (una frase), personas (quién y qué hace cada uno: «cocinando», «con el móvil en el sofá», «haciendo deberes», «comiendo», «jugando»…, y su ánimo si se nota), objetos importantes que se ven (llaves, gafas, móvil, mochila, mando, cartera, libros, comida… y dónde están: «llaves encima de la mesa»), ayuda (UNA frase corta y natural que Mor podría decir para ayudar o charlar sobre lo que pasa, solo si viene a cuento; si no, vacío), importante (true solo si pasa algo que merece decir ya: alguien se ha caído, algo peligroso, algo se quema, alguien llora).`,this.SCHEMA,[{inline_data:{mime_type:'image/jpeg',data:img}}],ESC_MOD,15000);
+      const e={at:Date.now(),sitio:sitio&&sitio.nombre||'',escena:String(o.escena||'').slice(0,200),personas:(o.personas||[]).slice(0,5).map(p=>({quien:String(p.quien).slice(0,30),haciendo:String(p.haciendo).slice(0,80),animo:String(p.animo||'').slice(0,30)})),objetos:(o.objetos||[]).slice(0,10).map(x=>String(x).slice(0,60))};
+      this.actual=e; this.guardar(e); Diag.ap('escena',e.escena);
+      /* ayudar solo, sin agobiar */
+      const callado=Date.now()-Math.max(ultimaPalabra,this.ultComentario);
+      if(o.importante&&o.ayuda){ this.ultComentario=Date.now(); Robot.decir(o.ayuda,'asustado'); }
+      else if(o.ayuda&&conocidos.length&&callado>12*60000&&!Mas.silencio()&&Math.random()<.5){ this.ultComentario=Date.now(); Robot.decir(o.ayuda,'curioso'); }
+    }catch(err){ Diag.ap('escena-error',err.message); }
+    finally{ this.ocupado=false; } },
+  tick(){ if(!Modo.robot()||!Cam.on||document.hidden||Robot.linterna) return; const ahora=Date.now(); if(ahora-this.ult<20000) return;
+    const hay=(Faces.now||[]).length>0||!!Vista.hecho; const emb=Vista.huella(); let cambio=!this.ultEmb;
+    if(emb&&this.ultEmb) cambio=Vista.parecido(emb,this.ultEmb)<.82;
+    if((cambio&&(hay||ahora-this.ult>15*60000))||(hay&&ahora-this.ult>5*60000)){ this.ult=ahora; if(emb) this.ultEmb=emb; this.mirar(cambio?'cambio':'rato'); } },
+  hace(t){ const s=Math.round((Date.now()-t)/1000); return s<60?'hace '+s+' s':s<3600?'hace '+Math.round(s/60)+' min':'a las '+new Date(t).toTimeString().slice(0,5); },
+  texto(e){ return `${this.hace(e.at)}${e.sitio?' en '+e.sitio:''}: ${e.escena}${e.personas.length?' ('+e.personas.map(p=>p.quien+' '+p.haciendo+(p.animo?', '+p.animo:'')).join('; ')+')':''}${e.objetos.length?' · se ve: '+e.objetos.join(', '):''}`; }
+};
+setInterval(()=>Escena.tick(),5000);
+/* el cerebro sabe lo que pasa */
+const _sys147=systemPrompt; systemPrompt=function(){ const b=_sys147.apply(this,arguments); if(!Modo.robot()) return b; const e=Escena.actual;
+  const hoy=Escena.log().filter(x=>Date.now()-x.at<6*3600000).slice(-5,-1);
+  return b+(e&&Date.now()-e.at<20*60000?`\nLO QUE ESTÁS VIENDO (${Escena.hace(e.at)}): ${Escena.texto(e)}`:'')+(hoy.length?`\nLO QUE HAS VISTO ANTES: ${hoy.map(x=>Escena.texto(x)).join(' | ')}`:'')+`\nERES LISTO: usa lo que ves y lo que sabes de cada uno para dar respuestas útiles y con sentido (si ves que alguien cocina, puedes ayudar con la receta; si hace deberes, con los deberes). Si te preguntan por algo que viste, contesta con lo que viste y cuándo.`; };
+/* preguntas sobre lo que ha visto: le pasa todo el registro del día; y «piensa más» en las difíciles */
+const _send147=send; send=async function(text,opts={}){ const t=String(text||'');
+  if(Modo.robot()&&t&&!(opts&&opts.event)){
+    const visto=/\b(has visto|viste|d[oó]nde (est[aá]n?|dej[eé]|he dejado|puse)|qu[eé] (hac[ií]a|estaba haciendo)|qui[eé]n (ha|ha estado|estaba|vino|ha venido)|cu[aá]ndo (lleg[oó]|vino|se fue)|has notado)\b/i.test(t);
+    if(visto){ const L=Escena.log().filter(x=>Date.now()-x.at<48*3600000).slice(-60); if(L.length) opts=Object.assign({},opts,{extra:((opts.extra||'')+'\nTODO LO QUE HAS VISTO (últimas 48 h, de más antiguo a más nuevo):\n'+L.map(x=>'- '+Escena.texto(x)).join('\n')+'\nContesta con eso: di dónde y cuándo lo viste. Si no lo viste, dilo.')}); }
+    const dificil=t.split(/\s+/).length>=8&&/\b(por qu[eé]|c[oó]mo|expl[ií]ca|calcula|cu[aá]nto|diferencia|ay[uú]dame|problema|deberes|resuelve|piensa)\b/i.test(t);
+    window.RAZONAR=dificil; try{ return await _send147(text,opts); } finally{ window.RAZONAR=false; } }
+  return _send147(text,opts); };
 
 /* =====================================================================
    15. DESPERTAR
