@@ -1286,7 +1286,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v73</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v74</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1450,7 +1450,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v73 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v74 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7490,6 +7490,41 @@ const _send138=send; send=async function(text,opts={}){ const t=String(text||'')
   return _send138(text,opts); };
 /* que el navegador no borre sus datos */
 try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
+
+/* =====================================================================
+   139. ¿QUIÉN ERES? Y MEMORIA IGUAL EN TODOS LOS APARATOS
+   - Si le hablan y no ve a nadie conocido, al contestar pregunta
+     «¿quién eres?» (como mucho cada 10 min). Con la respuesta sabe quién
+     le habla durante un rato y pasa a su ficha lo que ya le había dicho.
+   - Al juntar la memoria de varios aparatos (cuenta de la familia), las
+     fichas de las personas se suman, no se pisan.
+   - «¿Cuál es el código de la familia?»: lo dice (para poner la misma
+     cuenta en otro aparato).
+   ===================================================================== */
+const Quien={ pend:null, sesion:null, ultimaPregunta:0,
+  activo(){ return this.sesion&&Date.now()<this.sesion.hasta?this.sesion.n:null; } };
+const _quien139=Personas.quien.bind(Personas); Personas.quien=function(){ const c=(Faces.now||[]).filter(n=>n&&n!=='desconocido'); const q=_quien139(); if(q) return q; if(!c.length&&Quien.activo()) return Quien.activo(); return null; };
+const _send139=send; send=async function(text,opts={}){ const t=String(text||'');
+  if(Modo.robot()&&t&&!(opts&&opts.event)){
+    const n=Vida.norm(t);
+    if(/codigo de (la )?familia|codigo familiar|cuenta de (la )?familia/.test(n)&&n.length<80){ logChat('u',t); const c=Mas.codigo();
+      Robot.decir(c?`El código de la familia es: ${c.split('').join(' ')}. Ponlo en el otro aparato, en modo IA, en el panel de la familia.`:'Todavía no tenemos cuenta de la familia. Se crea en modo IA, en el panel de la familia, escribiendo barra familia.','pensativo'); return; }
+    /* contesta a «¿quién eres?» */
+    if(Quien.pend&&Date.now()-Quien.pend.at<150000){ const nm=Vida.nombreDe(t); if(nm&&t.length<60){ Quien.pend=null; const N=nm[0].toUpperCase()+nm.slice(1).toLowerCase();
+        Quien.sesion={n:N,hasta:Date.now()+15*60000}; Vida.ultimoQuien={n:N,at:Date.now()}; Personas.ficha(N,true);
+        const desde=Date.now()-15*60000; MemCola.L().forEach(it=>{ if(!it.q&&it.at>desde) it.q=N; }); MemCola.dia().forEach(it=>{ if(!it.q&&it.at>desde) it.q=N; }); saveMem(); MemCola.procesar();
+        logChat('u',t); const f=Personas.buscar(N), conocido=f&&f.datos.length; Robot.decir(conocido?`¡Ah, ${N}! Ya decía yo. Perdona, no te veía bien.`:`¡Encantado, ${N}! Ya me acuerdo de lo que me cuentes.`,'feliz'); return; } } }
+  const r=await _send139(text,opts);
+  if(Modo.robot()&&t&&!(opts&&opts.event)&&!Personas.quien()&&!Vida.pendiente&&!Quien.pend&&Date.now()-Quien.ultimaPregunta>10*60000&&t.split(/\s+/).length>=3){
+    Quien.ultimaPregunta=Date.now(); Quien.pend={at:Date.now()}; setTimeout(()=>{ if(!busy) Robot.decir(rnd(['Por cierto, ¿quién eres? No te veo bien y quiero acordarme de lo que me cuentas.','Oye, ¿quién me habla? Así lo apunto en tu ficha.']),'curioso'); },400); }
+  return r; };
+/* juntar memoria de varios aparatos sin perder fichas */
+const _unir139=Sync.unir.bind(Sync); Sync.unir=async function(R){ const P0=JSON.parse(JSON.stringify(MEM.personas||{})), C0=MEM.colaMem||[], D0=MEM.diaMem||[], cum0=Object.assign({},MEM.cumples||{});
+  await _unir139(R); const P1=(R&&R.mem&&R.mem.personas)||{}, P=MEM.personas=Object.assign({},P1,P0);
+  for(const k of Object.keys(P1)) if(P0[k]){ const a=P0[k], b=P1[k], ya=new Set(a.datos.map(d=>Vida.norm(d.t)));
+    P[k]=Object.assign({},b,a,{rel:a.rel||b.rel,datos:[...a.datos,...b.datos.filter(d=>!ya.has(Vida.norm(d.t)))].sort((x,y)=>x.at-y.at).slice(-150),
+      charlas:[...a.charlas,...b.charlas.filter(c=>!a.charlas.some(x=>x.at===c.at))].sort((x,y)=>x.at-y.at).slice(-40),veces:Math.max(a.veces||0,b.veces||0)}); }
+  MEM.colaMem=C0; MEM.diaMem=D0; MEM.cumples=Object.assign({},(R&&R.mem&&R.mem.cumples)||{},cum0); localStorage.setItem(MKEY,JSON.stringify(MEM)); };
 
 /* =====================================================================
    15. DESPERTAR
