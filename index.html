@@ -1276,7 +1276,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v59</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v60</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1440,7 +1440,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v59 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v60 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6624,6 +6624,68 @@ const _sys126=systemPrompt; systemPrompt=function(){ const b=_sys126.apply(this,
 CMDS.splice(2,0,['/suelo','Modo robot: que mire el suelo que tiene delante (superficie, bordes, obstáculos)',()=>Sentidos.mirarSuelo()]);
 /* en iPhone hay que pedir permiso para los sensores de movimiento */
 document.addEventListener('click',function pedir(){ try{ if(Modo.robot()&&typeof DeviceMotionEvent!=='undefined'&&DeviceMotionEvent.requestPermission) DeviceMotionEvent.requestPermission().catch(()=>{}); }catch(e){} document.removeEventListener('click',pedir); });
+
+/* =====================================================================
+   127. MAPA MENTAL DE LA CASA (modo robot)
+   Mientras está en modo robot, Mor mira con la cámara cada poco y saca
+   una «huella» de lo que ve. Si es un sitio que no conoce, lo mira con
+   el cerebro (una sola petición), le pone nombre según lo que ve («la
+   cocina», «el salón del sofá azul») y lo apunta en su mapa, unido al
+   sitio de donde venía. Si vuelve a un sitio conocido, lo reconoce.
+   Le puedes cambiar el nombre a un sitio: «esto es el cuarto de Guille».
+   ===================================================================== */
+const Mapa={ sitios:[], actual:null, novedad:0, cv:document.createElement('canvas'),
+  cargar(){ try{ const d=JSON.parse(localStorage.getItem('mor_mapa')||'{}'); this.sitios=d.sitios||[]; this.actual=d.actual||null; }catch(e){ this.sitios=[]; } },
+  guardar(){ try{ localStorage.setItem('mor_mapa',JSON.stringify({sitios:this.sitios,actual:this.actual})); }catch(e){ this.sitios.forEach(x=>{ x.fps=x.fps.slice(-3); }); try{ localStorage.setItem('mor_mapa',JSON.stringify({sitios:this.sitios,actual:this.actual})); }catch(x){} } },
+  huella(){ const v=$('video'); if(!Cam.on||!v.videoWidth) return null; const c=this.cv; c.width=32; c.height=24; const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(v,0,0,32,24);
+    const d=x.getImageData(0,0,32,24).data, g=[], h=new Array(12).fill(0); let m=0;
+    for(let i=0;i<d.length;i+=4){ const r=d[i]/255,gg=d[i+1]/255,b=d[i+2]/255, mx=Math.max(r,gg,b), mn=Math.min(r,gg,b), l=.3*r+.59*gg+.11*b; g.push(l); m+=l;
+      if(mx-mn>.12){ let hu=mx===r?((gg-b)/(mx-mn))%6:mx===gg?(b-r)/(mx-mn)+2:(r-gg)/(mx-mn)+4; hu=(hu<0?hu+6:hu)/6; h[Math.min(11,Math.floor(hu*12))]++; } }
+    m/=g.length; let nrm=0; for(let i=0;i<g.length;i++){ g[i]-=m; nrm+=g[i]*g[i]; } nrm=Math.sqrt(nrm)||1; const hs=h.reduce((a,b)=>a+b,0)||1;
+    return {g:g.map(v=>+(v/nrm).toFixed(3)),h:h.map(v=>+(v/hs).toFixed(3)),luz:m}; },
+  parecido(a,b){ let c=0; for(let i=0;i<a.g.length;i++) c+=a.g[i]*b.g[i]; let hi=0; for(let i=0;i<12;i++) hi+=Math.min(a.h[i],b.h[i]); return .55*Math.max(0,c)+.45*hi; },
+  mejor(f){ let best=null, bs=0; for(const s of this.sitios) for(const q of s.fps){ const p=this.parecido(f,q); if(p>bs){ bs=p; best=s; } } return {s:best,p:bs}; },
+  foto(){ const v=$('video'), c=document.createElement('canvas'); c.width=320; c.height=240; c.getContext('2d').drawImage(v,0,0,320,240); return c.toDataURL('image/jpeg',.7); },
+  async nombrar(img){ try{ const j=JSON.parse(String(await gemini({contents:[{role:'user',parts:[{text:`Foto de la cámara de un robot que vive en una casa. ¿Qué sitio es? Responde SOLO JSON: {"tipo":"cocina|salón|dormitorio|baño|pasillo|entrada|despacho|terraza|jardín|garaje|comedor|cuarto de juegos|otro","detalle":"un detalle que lo distinga, 2-5 palabras (p. ej. «del sofá azul», «con la ventana grande»)"}`},{inline_data:{mime_type:'image/jpeg',data:img.split(',')[1]}}]}],generationConfig:{temperature:.2,responseMimeType:'application/json'}},MODELOS_MEMORIA.concat(MODELOS_LISTOS),20000)).replace(/^[^{]*/,'').replace(/[^}]*$/,''));
+      const tipo=(j.tipo||'sitio').toLowerCase(), art=/^(cocina|entrada|terraza)$/.test(tipo)?'la':'el', rep=this.sitios.filter(s=>s.tipo===tipo).length;
+      return {tipo,nombre:`${art} ${tipo}${rep&&j.detalle?' '+j.detalle.replace(/^(del|de la|con|de)\s*/i,m=>m):''}`.trim()}; }
+    catch(e){ return {tipo:'sitio',nombre:'sitio '+(this.sitios.length+1)}; } },
+  unir(a,b){ if(!a||!b||a===b) return; const A=this.sitios.find(s=>s.id===a), B=this.sitios.find(s=>s.id===b); if(!A||!B) return;
+    if(!A.con.includes(b)) A.con.push(b); if(!B.con.includes(a)) B.con.push(a); },
+  async tick(){ if(!Modo.robot()||!Cam.on||document.hidden||busy||Robot.linterna||this.ocupado) return;
+    if((Faces.now||[]).length) return;   /* con alguien delante no se ve el sitio */
+    const f=this.huella(); if(!f||f.luz<.12) return; const {s,p}=this.mejor(f);
+    if(s&&p>.8){ this.novedad=0; if(p<.9&&s.fps.length<8) s.fps.push(f);
+      if(this.actual!==s.id){ const antes=this.actual; this.unir(antes,s.id); this.actual=s.id; s.visto=Date.now(); this.guardar();
+        if(antes&&Date.now()-(this.ultimoAviso||0)>3*60000){ this.ultimoAviso=Date.now(); Robot.decir(rnd([`Ah, estamos en ${s.nombre}.`,`¡${s.nombre[0].toUpperCase()+s.nombre.slice(1)}! Ya me acuerdo de este sitio.`]),'feliz'); } }
+      return; }
+    if(++this.novedad<2) return; this.novedad=0; this.ocupado=true;
+    try{ const img=this.foto(), n=await this.nombrar(img), id='s'+Date.now().toString(36);
+      const S={id,tipo:n.tipo,nombre:n.nombre,foto:img,fps:[f],con:[],at:Date.now(),visto:Date.now()}; this.sitios.push(S); this.unir(this.actual,id); this.actual=id; this.guardar();
+      Robot.decir(`¡Un sitio nuevo! Esto debe de ser ${S.nombre}. Lo apunto en mi mapa.`,'curioso'); logChat('m',`[Mapa: sitio nuevo, ${S.nombre}]`); }
+    finally{ this.ocupado=false; } },
+  aqui(){ return this.sitios.find(s=>s.id===this.actual)||null; },
+  renombrar(nombre){ const s=this.aqui(); if(!s) return false; s.nombre=nombre; s.fijo=true; this.guardar(); return true; },
+  open(){ const L=this.sitios; const W=320,H=220, pos={}; L.forEach((s,i)=>{ const a=i/Math.max(1,L.length)*Math.PI*2; pos[s.id]=[W/2+Math.cos(a)*(L.length>1?110:0),H/2+Math.sin(a)*(L.length>1?80:0)]; });
+    const lineas=[]; L.forEach(s=>s.con.forEach(o=>{ if(s.id<o&&pos[o]) lineas.push(`<line x1="${pos[s.id][0]}" y1="${pos[s.id][1]}" x2="${pos[o][0]}" y2="${pos[o][1]}" stroke="#7fd8ff" stroke-opacity=".5" stroke-width="2"/>`); }));
+    const c=chatCard(`<div class="ctit">Mapa de Mor</div><small>${L.length?`Conoce ${L.length} sitio${L.length>1?'s':''} de la casa.`:'Todavía no conoce ningún sitio. En modo robot, cuando lo lleves a una habitación nueva, la apunta sola.'}</small>
+      ${L.length?`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:420px;display:block;margin:8px auto">${lineas.join('')}${L.map(s=>`<g><circle cx="${pos[s.id][0]}" cy="${pos[s.id][1]}" r="${s.id===this.actual?11:8}" fill="${s.id===this.actual?'#ff8a3d':'#7fd8ff'}"/><text x="${pos[s.id][0]}" y="${pos[s.id][1]+22}" fill="#fff" font-size="11" text-anchor="middle">${esc(s.nombre)}</text></g>`).join('')}</svg>`:''}
+      ${L.map(s=>`<div class="row" style="gap:8px;align-items:center;margin-top:6px" data-s="${s.id}"><img src="${s.foto}" style="width:64px;height:48px;object-fit:cover;border-radius:6px"><input class="inp" value="${esc(s.nombre)}" style="flex:1;min-width:0;border-radius:10px;padding:6px 10px"><button class="tbtn" data-a="ok">Guardar</button><button class="tbtn" data-a="del">Olvidar</button></div>`).join('')}`);
+    c.querySelectorAll('[data-s]').forEach(el=>{ const s=L.find(x=>x.id===el.dataset.s);
+      el.querySelector('[data-a=ok]').onclick=()=>{ s.nombre=el.querySelector('input').value.trim()||s.nombre; s.fijo=true; this.guardar(); toast('Guardado'); };
+      el.querySelector('[data-a=del]').onclick=()=>{ this.sitios=this.sitios.filter(x=>x!==s); this.sitios.forEach(x=>x.con=x.con.filter(o=>o!==s.id)); if(this.actual===s.id) this.actual=null; this.guardar(); c.remove(); this.open(); }; }); }
+};
+Mapa.cargar(); setInterval(()=>Mapa.tick(),20000);
+const _send127=send; send=async function(text,opts={}){ const t=String(text||'');
+  if(Modo.robot()&&t&&!(opts&&opts.event)&&t.length<90){
+    const m=t.match(/^(?:mor[, ]+)?(?:esto|este sitio|aqu[ií]) es (?:el |la )?(.{3,40})$/i);
+    if(m&&!/\b(un|una)\b/i.test(m[1].split(' ')[0])&&Mapa.aqui()){ logChat('u',t); const n=t.match(/es ((?:el |la ).+)$/i)?.[1]||m[1]; Mapa.renombrar(n.trim()); Robot.decir(`Apuntado: esto es ${n.trim()}.`,'feliz'); return; }
+    if(/\b(d[oó]nde estamos|en qu[eé] sitio estamos|qu[eé] sitio es este)\b/i.test(t)){ logChat('u',t); const s=Mapa.aqui(); Robot.decir(s?`Estamos en ${s.nombre}.`:'Aún no conozco este sitio. Déjame mirar un poco y lo apunto.','curioso'); return; }
+    if(/\b(ens[eé]ñame|muestra|abre) (tu|el) mapa\b/i.test(t)){ logChat('u',t); modoVoz(false); Mapa.open(); return; } }
+  return _send127(text,opts); };
+const _sys127=systemPrompt; systemPrompt=function(){ const b=_sys127.apply(this,arguments); if(!Modo.robot()||!Mapa.sitios.length) return b; const a=Mapa.aqui();
+  return b+`\nTU MAPA DE LA CASA (lo has ido descubriendo tú): ${Mapa.sitios.map(s=>s.nombre+(s.con.length?' (se llega a '+s.con.map(o=>(Mapa.sitios.find(x=>x.id===o)||{}).nombre).filter(Boolean).join(', ')+')':'')).join('; ')}.${a?' AHORA ESTÁS EN '+a.nombre.toUpperCase()+'.':''}`; };
+CMDS.splice(2,0,['/mapa','Mapa mental de la casa que va haciendo Mor en modo robot',()=>Mapa.open()]);
 
 /* =====================================================================
    15. DESPERTAR
