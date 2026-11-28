@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v90</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v91</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v90 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v91 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7631,7 +7631,7 @@ SyncDBP.subir=async function(estado){ const hoy=new Date().toDateString(); let g
   const orden=Object.keys(partes).sort((a,b)=>prio(a)-prio(b)||(b>a?1:-1));
   for(const nombre of orden){ const c=await this.cifrar(partes[nombre]), h=await this.hash(c), n=Math.ceil(c.length/this.TROZO);
     if(idxR.partes[nombre]&&idxR.partes[nombre].h===h){ idx.partes[nombre]={h,n}; continue; }
-    if(gas.n+n+1>TOPE){ faltan++; if(idxR.partes[nombre]) idx.partes[nombre]=idxR.partes[nombre]; continue; }
+    if(!MorNube.listo&&gas.n+n+1>TOPE){ faltan++; if(idxR.partes[nombre]) idx.partes[nombre]=idxR.partes[nombre]; continue; }
     estado('Subiendo '+nombre+'…'); for(let i=0;i<n;i++){ await this.escribir('sync_'+nombre+'_'+i,c.slice(i*this.TROZO,(i+1)*this.TROZO)); escritos++; gas.n++; }
     idx.partes[nombre]={h,n}; localStorage.setItem('mor_dbp_gasto',JSON.stringify(gas)); }
   for(const [nombre,v] of Object.entries(idxR.partes||{})) if(!idx.partes[nombre]) idx.partes[nombre]=v;
@@ -8179,6 +8179,33 @@ const _send154=send; send=async function(text,opts={}){ const t=String(text||'')
     if(/\b(desactiva|quita|apaga) (el )?modo (ninos|infantil)\b/.test(n)){ logChat('u',t); if(!adulto()){ Casa.decir('Eso solo lo puede quitar un adulto de la familia. Que se ponga delante de mí y me lo pida.','pensativo'); return; } localStorage.removeItem('mor_ninos'); Casa.decir('Modo niños desactivado.','neutral'); return; }
     if(Ninos.on()&&/\b(sexo|porno|desnud|drogas?|matar|armas?|pistola|apuestas|casino|alcohol|borrach)\b/.test(n)){ logChat('u',t); Casa.decir('Eso es mejor que se lo preguntes a papá o a mamá.','carinoso'); return; } }
   return _send154(text,opts); };
+
+/* =====================================================================
+   155. DATABASEPRO MEJORADO: ALMACÉN PRIVADO DE LA FAMILIA
+   Si tu DatabasePro ya tiene /api/mor (Durable Object por familia):
+   - Todo va ahí: privado (solo entra quien tiene la contraseña de la
+     familia), sin el tope de 1000 escrituras al día del KV (que ya no
+     se gasta y queda entero para MDG 27) y en trozos de hasta 700 KB.
+   - Mensajes al instante: el robot se entera en el momento (sin esperar
+     30 s) y tu móvil sabe al instante cuándo se ha entregado.
+   Si no lo tiene (versión vieja), sigue como antes.
+   ===================================================================== */
+const MorNube={ listo:false, tok:null, ws:null, fallos:0,
+  async llave(){ const k=localStorage.getItem('mor_synckey'), c=Mas.codigo(); if(!k||!c) return null; const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('mor-llave|'+c+'|'+k)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); },
+  async probar(){ const c=Mas.codigo(); if(!c){ this.listo=false; return false; } try{ const r=await fetch(Mas.base()+`/api/mor/${c}/ping`); const j=await r.json().catch(()=>null); this.tok=await this.llave(); this.listo=!!(r.ok&&j&&j.ok&&this.tok); }catch(e){ this.listo=false; }
+    if(this.listo){ SyncDBP.TROZO=700000; Diag.ap('nube','almacén privado de la familia listo'); this.conectar(); } return this.listo; },
+  async api(ruta,o={}){ const r=await fetch(Mas.base()+ruta,Object.assign({},o,{headers:Object.assign({'Content-Type':'application/json','X-Mor-Token':this.tok},o.headers||{})})); const j=await r.json().catch(()=>null); if(!r.ok) throw new Error((j&&j.error)||('DatabasePro '+r.status)); return j; },
+  conectar(){ if(this.ws||!this.listo) return; const c=Mas.codigo(); try{ const u=Mas.base().replace(/^http/,'ws')+`/api/mor/${c}/ws?t=${this.tok}`; const w=new WebSocket(u); this.ws=w;
+      w.onopen=()=>{ this.fallos=0; Diag.ap('nube','aviso al instante conectado'); this.pi=setInterval(()=>{ try{ w.send('ping'); }catch(e){} },30000); };
+      w.onmessage=e=>{ if(e.data==='pong') return; try{ const m=JSON.parse(e.data); if(m.tipo==='msg') Mas.revisarMensajes(); }catch(x){} };
+      w.onclose=()=>{ clearInterval(this.pi); this.ws=null; this.fallos++; setTimeout(()=>this.conectar(),Math.min(60000,2000*this.fallos)); }; }catch(e){ this.ws=null; } } };
+const _api155=Mas.api.bind(Mas); Mas.api=async function(ruta,o={}){ const c=Mas.codigo(); if(MorNube.listo&&c){ let m;
+    if((m=String(ruta).match(new RegExp('^/api/estado/'+c+'/([^/?]+)$')))) return MorNube.api(`/api/mor/${c}/k/${m[1]}`,o.method&&o.method!=='GET'?Object.assign({},o,{method:o.method==='DELETE'?'DELETE':'POST'}):{});
+    if((m=String(ruta).match(new RegExp('^/api/datos/'+c+'/mensajes/([^/?]+)$')))) return MorNube.api(`/api/mor/${c}/msg/${m[1]}`,Object.assign({},o,{method:o.method==='DELETE'?'DELETE':'POST'}));
+    if(new RegExp('^/api/datos/'+c+'/mensajes(\\?|$)').test(ruta)) return MorNube.api(`/api/mor/${c}/msg`,o.method==='POST'?o:{}); }
+  return _api155(ruta,o); };
+setTimeout(()=>MorNube.probar(),3000); setInterval(()=>{ if(!MorNube.listo) MorNube.probar(); },10*60000);
+addEventListener('online',()=>{ if(MorNube.listo&&!MorNube.ws) MorNube.conectar(); });
 
 /* =====================================================================
    15. DESPERTAR
