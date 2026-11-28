@@ -1286,7 +1286,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v72</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v73</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1450,7 +1450,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v72 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v73 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7394,12 +7394,12 @@ const Personas={
     relaciones:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},relacion:{type:'STRING'}},required:['persona','relacion']}},
     cumples:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},fecha:{type:'STRING'}},required:['persona','fecha']}},
     charla:{type:'STRING'}},required:['datos']},
-  async aprender(texto,respuesta){ const quien=this.quien()||'', hoy=new Date();
+  async aprender(texto,respuesta,quienFijo,ctx){ const quien=(quienFijo!==undefined?quienFijo:this.quien())||'', hoy=new Date();
     const fq=quien&&this.buscar(quien), conocidos=Object.values(this.todas()).map(f=>f.nombre+(f.rel?' ('+f.rel+')':'')).join(', ');
     try{ const o=await geminiJSON(`Eres la memoria de Mor, el robot de una familia. Hoy es ${hoy.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.
 QUIÉN HABLA: ${quien||'no se sabe (pon "HABLANTE")'}. Personas que Mor conoce: ${conocidos||'ninguna'}.
 ${fq?'Lo que ya sabe de '+quien+':\n'+fq.datos.map(d=>'- '+d.t).join('\n'):''}
-Lo que acaba de decir: "${texto}"
+${ctx?'Conversación justo antes (para entender a qué se refiere):\n'+ctx+'\n':''}Lo que acaba de decir: "${texto}"
 Respuesta de Mor: "${String(respuesta||'').slice(0,300)}"
 Devuelve:
 - datos: hechos NUEVOS y duraderos que la persona haya dicho EXPLÍCITAMENTE (gustos, comida, colegio, trabajo, amigos, mascotas, aficiones, miedos, planes con fecha, cosas importantes que le pasan). "persona" = de quién es el dato: ${quien?'«'+quien+'» si habla de sí mismo («me gusta», «tengo», «voy a»)':'«HABLANTE» si habla de sí mismo'}, o el nombre de otra persona si habla de ella («mi hermana Lucía…» → Lucía). Cada dato en una frase corta en tercera persona («Le encanta la pizza»). Nada de lo que dijo Mor, nada deducido, nada que ya esté apuntado.
@@ -7407,14 +7407,14 @@ Devuelve:
 - relaciones: si dice qué es alguien de la familia («soy el padre», «Lucía es mi hermana»: relación respecto a ${quien||'quien habla'}, p. ej. «hermana de ${quien||'quien habla'}»).
 - cumples: si dice un cumpleaños (fecha MM-DD).
 - charla: si la conversación ha tenido algo que merezca recordarse, una frase corta de qué hablasteis; si no, vacío.
-Si dudas, no lo apuntes.`,this.SCHEMA,[],MODELOS_MEMORIA);
+Apunta TODO lo personal y duradero que diga (mejor apuntar de más que olvidar); lo pasajero («tengo hambre») no.`,this.SCHEMA,[],MODELOS_MEMORIA);
       const nom=p=>(/^hablante$/i.test(p)||!p)?quien:p;
       for(const d of o.datos||[]){ const n=nom(d.persona); if(n) this.apuntar(n,d.dato); else addFacts([d.dato]); }
       for(const d of o.olvidar||[]){ const n=nom(d.persona); if(n) this.olvidar(n,d.dato); else forgetFacts([d.dato]); }
       for(const r of o.relaciones||[]){ const n=nom(r.persona); if(n){ const f=this.buscar(n)||this.ficha(n,true); f.rel=String(r.relacion).slice(0,60); } }
       for(const c of o.cumples||[]){ const n=nom(c.persona); if(n&&/^\d{2}-\d{2}$/.test(c.fecha)){ try{ Mas.cumples()[n]=c.fecha; }catch(e){} this.apuntar(n,'Su cumpleaños es el '+c.fecha.split('-').reverse().join('/')); } }
       if(quien&&o.charla){ const f=this.buscar(quien)||this.ficha(quien,true); f.charlas.push({t:String(o.charla).slice(0,160),at:Date.now()}); if(f.charlas.length>40) f.charlas=f.charlas.slice(-40); f.veces++; }
-      saveMem(); }catch(e){ console.warn('Personas:',e); } },
+      saveMem(); return true; }catch(e){ console.warn('Personas:',e); return false; } },
   panel(){ const P=Object.values(this.todas()); const c=chatCard(`<div class="ctit">Lo que Mor sabe de cada persona</div>${P.length?P.map(f=>`<details><summary><b>${esc(f.nombre)}</b>${f.rel?' · '+esc(f.rel):''} <small>(${f.datos.length} datos)</small></summary><ul style="margin:4px 0 6px 18px;font-size:13px">${f.datos.map((d,i)=>`<li>${esc(d.t)} <a href="#" data-b="${esc(this.k(f.nombre))}|${i}" style="color:#f88">✕</a></li>`).join('')}</ul></details>`).join(''):'<small>Todavía no tiene fichas: se hacen solas hablando con él en modo robot.</small>'}`);
     c.querySelectorAll('[data-b]').forEach(a=>a.onclick=e=>{ e.preventDefault(); const [k,i]=a.dataset.b.split('|'); const f=this.todas()[k]; if(f){ f.datos.splice(+i,1); saveMem(); a.parentElement.remove(); } }); }
 };
@@ -7440,6 +7440,56 @@ const Ojos={ fallos:0, ultimo:0, async revisar(){ if(!Modo.robot()||document.hid
 setInterval(()=>Ojos.revisar(),3000);
 const _send137=send; send=async function(text,opts={}){ if(Modo.robot()&&text&&!(opts&&opts.event)){ Mas.dormidos={}; ultimaPalabra=Date.now(); } return _send137(text,opts); };
 const _decir137=Robot.decir; Robot.decir=function(t,e){ if(Date.now()-(Ears.ultimaCharla||0)<8000) Mas.dormidos={}; return _decir137.call(Robot,t,e); };
+
+/* =====================================================================
+   138. MEMORIA QUE NO SE PIERDE
+   - Cola: si el cerebro de la memoria falla (sin cupo, sin internet), lo
+     que le han dicho se guarda y se apunta más tarde. Nada se tira.
+   - Contexto: la memoria lee también las frases de antes («sí, el azul»).
+   - «Acuérdate de que…», «apunta que…», «no te olvides de…»: se guarda al
+     momento, tal cual, en la ficha de quien lo dice.
+   - Repaso diario: cuando está tranquilo, relee todo lo que se habló hoy
+     y apunta lo que se le escapó.
+   - Pide al navegador que no borre nunca sus datos.
+   ===================================================================== */
+const MemCola={
+  L(){ return MEM.colaMem=(MEM.colaMem||[]); }, dia(){ return MEM.diaMem=(MEM.diaMem||[]); },
+  ctx(){ return MEM.history.slice(-8,-2).map(h=>(h.r==='u'?'Persona':'Mor')+': '+String(h.t).slice(0,200)).join('\n'); },
+  meter(t,r){ const it={t,r:String(r||'').slice(0,400),q:Personas.quien()||'',ctx:this.ctx(),at:Date.now()}; this.L().push(it); this.dia().push({t,r:it.r.slice(0,200),q:it.q,at:it.at});
+    if(this.L().length>200) MEM.colaMem=this.L().slice(-200); if(this.dia().length>400) MEM.diaMem=this.dia().slice(-400); saveMem(); this.procesar(); },
+  ocupado:false,
+  async procesar(){ if(this.ocupado||!navigator.onLine) return; this.ocupado=true;
+    try{ let n=0; while(this.L().length&&n<4){ const it=this.L()[0]; const ok=await Personas.aprender(it.t,it.r,it.q,it.ctx); if(!ok) break; this.L().shift(); saveMem(); n++; } }
+    finally{ this.ocupado=false; } },
+  /* repaso del día: relee las charlas y apunta lo que faltó */
+  async repaso(){ const hoy=new Date().toDateString(); if(MEM.repasoDia===hoy||busy) return; const D=this.dia().filter(x=>new Date(x.at).toDateString()!==hoy||new Date().getHours()>=22);
+    if(D.length<3){ return; } MEM.repasoDia=hoy; saveMem();
+    const fichas=Object.values(Personas.todas()).map(f=>Personas.texto(f,true)).join('\n');
+    for(let i=0;i<D.length;i+=40){ const trozo=D.slice(i,i+40).map(x=>`[${new Date(x.at).toLocaleString('es-ES',{weekday:'short',hour:'2-digit',minute:'2-digit'})}] ${x.q||'¿?'}: ${x.t}\n   Mor: ${x.r}`).join('\n');
+      try{ const o=await geminiJSON(`Eres la memoria de Mor, el robot de una familia. Repasa estas conversaciones y saca TODOS los datos personales y duraderos que no estén ya en las fichas (gustos, planes, fechas, personas, cosas que les pasan, lo que les preocupa). "persona" = de quién es el dato (el nombre de quien habla si habla de sí mismo; «¿?» si no se sabe quién). Frases cortas en tercera persona. Nada de lo que dijo Mor ni deducido.
+FICHAS ACTUALES:\n${fichas||'(vacías)'}\n\nCONVERSACIONES:\n${trozo}`,Personas.SCHEMA,[],[...MODELOS_MEMORIA].reverse());
+        for(const d of o.datos||[]){ if(d.persona&&d.persona!=='¿?') Personas.apuntar(d.persona,d.dato); else addFacts([d.dato]); }
+        for(const r of o.relaciones||[]){ if(r.persona&&r.persona!=='¿?'){ const f=Personas.buscar(r.persona)||Personas.ficha(r.persona,true); if(!f.rel) f.rel=String(r.relacion).slice(0,60); } }
+      }catch(e){ MEM.repasoDia=''; saveMem(); return; } }
+    MEM.diaMem=this.dia().filter(x=>new Date(x.at).toDateString()===hoy&&new Date().getHours()<22); saveMem(); }
+};
+/* la memoria del modo robot pasa por la cola */
+const _um138=updateMemory; updateMemory=async function(t,r){ if(typeof Modo!=='undefined'&&Modo.robot()&&t&&!/^\[/.test(t)) return MemCola.meter(t,r); return _um138(t,r); };
+setInterval(()=>{ if(MemCola.L().length) MemCola.procesar(); },90000);
+addEventListener('online',()=>MemCola.procesar());
+/* repaso: de noche o cuando lleva un rato tranquilo */
+setInterval(()=>{ const h=new Date().getHours(); if(Date.now()-ultimaPalabra>20*60000&&(h>=22||h<8||MemCola.dia().some(x=>new Date(x.at).toDateString()!==new Date().toDateString()))) MemCola.repaso(); },5*60000);
+/* «acuérdate de que…» se guarda al momento */
+const _send138=send; send=async function(text,opts={}){ const t=String(text||'');
+  if(t&&!(opts&&opts.event)){ const m=t.match(/^\s*(?:mor[,\s]+)?(?:acu[eé]rdate de que|recuerda que|apunta que|ap[uú]ntate que|no te olvides de que|que no se te olvide que|que sepas que)\s+(.{3,300})$/i);
+    if(m&&!/\b(a las|mañana a|el (lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo) a las|recu[eé]rdame)\b/i.test(t)){ const q=Personas.quien(), dato=m[1].replace(/[.!]+$/,'').trim();
+      logChat('u',t); MEM.history.push({r:'u',t,at:Date.now()});
+      if(q) Personas.apuntar(q,'Dijo: «'+dato+'»'); else addFacts(['Dijo: «'+dato+'»']); saveMem(); MemCola.dia().push({t,r:'(apuntado)',q:q||'',at:Date.now()});
+      const r=rnd(['Apuntado. No se me olvida.','Hecho, me lo guardo.','Vale, me acordaré.']); MEM.history.push({r:'m',t:r,at:Date.now()}); logChat('m',r);
+      if(Modo.robot()) Robot.decir(r,'carinoso'); else localSay(r,'carinoso'); return; } }
+  return _send138(text,opts); };
+/* que el navegador no borre sus datos */
+try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
 
 /* =====================================================================
    15. DESPERTAR
