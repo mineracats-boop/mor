@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v81</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v82</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v81 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v82 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7569,9 +7569,10 @@ const _play140=Voice.play.bind(Voice); Voice.play=async function(it,g){ if(Crono
 const GROQ_MODELOS=['openai/gpt-oss-120b','llama-3.3-70b-versatile','qwen/qwen3-32b','meta-llama/llama-4-maverick-17b-128e-instruct','openai/gpt-oss-20b','llama-3.1-8b-instant'];
 const _pstream140=Prov.stream.bind(Prov); Prov.stream=async function(p,body,onText){ if(p.id!=='groq') return _pstream140(p,body,onText);
   const L=[...new Set([this.model(p),...GROQ_MODELOS])].filter(m=>m&&!agotado('pvm:'+m));
+  let algo='';
   for(const m of L){ const c=Conn.get(), antes=c['pv_groq_model']; Conn.set({pv_groq_model:m}); let r=null;
-    try{ r=await _pstream140(p,body,onText); } finally{ Conn.set({pv_groq_model:antes}); }
-    if(r) return r; if(agotado('pv:groq')){ localStorage.removeItem('mor_agotado_pv:groq'); marcarAgotado('pvm:'+m,'rate limit'); } }
+    try{ r=await _pstream140(p,body,t=>{ algo+=t; onText(t); }); } finally{ Conn.set({pv_groq_model:antes}); }
+    if(r) return r; if(algo) return algo;   /* ya había dicho algo: no empezar otra vez con otro modelo */ if(agotado('pv:groq')){ localStorage.removeItem('mor_agotado_pv:groq'); marcarAgotado('pvm:'+m,'rate limit'); } }
   return null; };
 /* 4) reflejos: sin cerebro */
 const Reflejos={ hora(){ const d=new Date(); const h=d.getHours(), m=d.getMinutes(); const hh=h%12||12; const parte=h<6?'de la madrugada':h<13?'de la mañana':h<21?'de la tarde':'de la noche';
@@ -7813,6 +7814,40 @@ setInterval(()=>{ if(!Modo.robot()) return; if(busy) Punto.poner('piensa'); else
 const _salirM145=Salir.mostrar.bind(Salir); Salir.mostrar=function(){ _salirM145(); const d=$('morSalir'); if(!d||d.querySelector('[data-inf]')) return; const b=document.createElement('button'); b.dataset.inf=1; b.textContent='Ver informe (para Claude)';
   b.style.cssText='min-width:240px;padding:12px;border-radius:18px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#cfefff;font-size:15px'; b.onclick=()=>{ d.remove(); Diag.panel(); }; d.appendChild(b); };
 CMDS.splice(2,0,['/informe','Ver y copiar el informe de lo que pasa por dentro (para Claude)',()=>Diag.panel()]);
+
+/* =====================================================================
+   146. QUE NO SE OIGA A SÍ MISMO Y NOMBRES BIEN (sacado del informe)
+   - Mientras habla, el oído se apaga; vuelve en cuanto termina. Así no
+     mezcla su propia voz con lo que le dices (pasaba: «mira estás
+     moviéndote genial… yo Guille»).
+   - Si aun así se cuela su voz al principio de lo que oye, la quita.
+   - Tocar la pantalla mientras habla: se calla y te escucha.
+   - Nombres: solo «me llamo X», «soy X», «yo soy X», «mi nombre es X» o
+     una respuesta de una o dos palabras; nunca palabras normales
+     (había aprendido a «Qué» y «Jugar»). Borra esas fichas y caras malas.
+   ===================================================================== */
+const NO_NOMBRE=/^(que|qué|quien|como|cuando|donde|jugar|hola|vale|si|sí|no|bien|mal|gracias|nada|nadie|mor|amor|oye|mira|eso|esto|esta|este|yo|tu|tú|el|la|los|las|un|una|de|del|al|y|o|pero|porque|pues|bueno|claro|vamos|venga|ok|okay|hey|eh|ah|uy|ya|aqui|aquí|ahi|ahí|alli|allí|muy|mas|más|menos|todo|toda|algo|alguien|portero|futbol|fútbol|robot|quieres|puedes|tienes|estoy|estas|estás|soy|eres|es|va|voy|ven|dime|perdona|espera|para|calla|hoy|mañana|ayer|papa|papá|mama|mamá)$/i;
+Vida.nombreDe=function(t){ const lim=String(t).replace(/[.,!¡¿?]/g,' ').trim();
+  const m=lim.match(/(?:^|\s)(?:me llamo|yo soy|soy|mi nombre es|ll[aá]mame)\s+([A-Za-zÁÉÍÓÚÑáéíóúñ]{2,20})(?=\s|$)/i); if(m&&!NO_NOMBRE.test(m[1])) return m[1];
+  const y=lim.match(/(?:^|\s)(?:yo|aqu[ií])\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{1,19})(?=\s|$)/); if(y&&!NO_NOMBRE.test(y[1])) return y[1];
+  const w=lim.split(/\s+/).filter(x=>x&&!/^(hola|buenas|pues|yo|mor|oye|vale|bueno|eh|soy)$/i.test(x)); if(w.length>=1&&w.length<=2&&/^[A-Za-zÁÉÍÓÚÑáéíóúñ]{2,20}$/.test(w[0])&&!NO_NOMBRE.test(w[0])) return w[0];
+  return null; };
+/* limpiar caras y fichas con nombres que no son nombres */
+setTimeout(async()=>{ try{ let n=0; for(const p of [...(Faces.people||[])]) if(NO_NOMBRE.test(p.name)){ Faces.people=Faces.people.filter(x=>x!==p); try{ await DB.del('people',p.id); }catch(e){ try{ const db=await DB.open(); db.transaction('people','readwrite').objectStore('people').delete(p.id); }catch(x){} } n++; }
+  const P=MEM.personas||{}; for(const k of Object.keys(P)) if(NO_NOMBRE.test(P[k].nombre)){ delete P[k]; n++; } if(n){ saveMem(); Diag.ap('limpieza',n+' nombres malos borrados'); } }catch(e){} },9000);
+/* oído apagado mientras habla (medio dúplex) */
+const hablando=()=>Voice.playing||!!Voice.cur||(window.speechSynthesis&&speechSynthesis.speaking);
+let _finHabla=0;
+const _run146=Ears.run.bind(Ears); Ears.run=function(){ if(typeof Modo!=='undefined'&&Modo.robot()&&(hablando()||Date.now()-_finHabla<450)) return; return _run146(); };
+setInterval(()=>{ if(!Modo.robot()) return; if(hablando()){ _finHabla=Date.now(); Ears._pausa=true; if(Ears.running&&Ears.rec){ try{ Ears.rec.abort(); }catch(e){} } }
+  else if(Ears._pausa&&Date.now()-_finHabla>=450){ Ears._pausa=false; Ears.running=false; Ears.run(); } },120);
+/* si se cuela su propia voz al principio, quitarla */
+const _heard146=Ears.heard.bind(Ears); Ears.heard=function(t){ if(Modo.robot()){ const rec=norm((Voice.recent||[]).filter(x=>Date.now()-x.at<25000).map(x=>x.t).join(' ')+' '+(Voice.lastSpoken&&Date.now()-Voice.lastSpoken.at<25000?Voice.lastSpoken.t:''));
+    if(rec.trim()){ const R=new Set(rec.split(/\s+/).filter(Boolean)), W=t.trim().split(/\s+/); let i=0, fallos=0; while(i<W.length){ if(R.has(norm(W[i]).trim())){ i++; fallos=0; } else if(fallos<1&&i+1<W.length&&R.has(norm(W[i+1]).trim())){ fallos++; i++; } else break; }
+      if(i>=3){ const resto=W.slice(i).join(' ').trim(); Diag.ap('oído','quito su propia voz: «'+W.slice(0,i).join(' ').slice(0,60)+'»'); if(resto.split(/\s+/).length<1||!resto) return; t=resto; } } }
+  return _heard146(t); };
+/* tocar mientras habla: se calla */
+addEventListener('touchstart',()=>{ if(Modo.robot()&&hablando()&&!$('morSalir')){ Voice.stop(); try{ speechSynthesis.cancel(); }catch(e){} Diag.ap('oído','le tocas: se calla'); } },{passive:true,capture:true});
 
 /* =====================================================================
    15. DESPERTAR
