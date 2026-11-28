@@ -627,7 +627,7 @@ let VOZ_MODO = localStorage.getItem('mor_vozmodo')||'piper';   // UNA voz fija: 
 if(VOZ_MODO==='gemini'||VOZ_MODO==='auto') VOZ_MODO='piper';
 function fijarVoz(m,aviso){ VOZ_MODO=m; localStorage.setItem('mor_vozmodo',m); if(aviso) toast(aviso,6000); }
 const vozGemini=()=>VOZ_MODO.startsWith('g:')?VOZ_MODO.slice(2):(localStorage.getItem('mor_vozg')||'Fenrir');
-const VOZ_PIPER = 'es_ES-davefx-medium';  // voz ilimitada dentro del dispositivo (se descarga una vez, ~60 MB)
+const VOZ_PIPER = localStorage.getItem('mor_piper_voz')||'es_ES-davefx-medium';  // voz ilimitada dentro del dispositivo (se descarga una vez, ~60 MB)
 const VOZ_PIPER_TONO = 1.0;
 const MOVIL = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);           // >1 más aguda pero también más rápida                // voz de respaldo de Gemini si ElevenLabs no tiene créditos
 const VOZ_MAX = 1e9;                      // lee la respuesta entera
@@ -1275,7 +1275,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v56</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v57</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1439,7 +1439,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v56 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v57 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -6459,6 +6459,100 @@ SkAuto.llenar=async function(slots,log){ const cred=[];
         if(s.data) break; }catch(e){ log('Sketchfab: '+e.message); if(/token/.test(e.message)) break; } } }
   return cred.concat(await _llenar124(slots,log)); };
 Faltan.es3=t=>t==='modelo'||t==='personaje'||t==='escenario';
+
+/* =====================================================================
+   125. DOS MODOS: ROBOT (FAMILIA) E IA (ESTUDIO DE VIDEOJUEGOS)
+   Se elige al empezar y se cambia en Ajustes (/modo).
+   - Modo robot: Mor es uno más de la familia. Cara a pantalla completa,
+     voz fija, cámara y micro encendidos: reconoce a cada persona y la
+     saluda por su nombre, sigue con la mirada a quien se mueve, se duerme
+     de noche si no hay nadie, a veces dice algo cuando estás con él y,
+     si está muy oscuro, enciende la linterna. Nada de videojuegos salvo
+     que se lo pidas.
+   - Modo IA: el Mor de siempre, el del estudio Rocket Jam.
+   ===================================================================== */
+const Modo={
+  get(){ return localStorage.getItem('mor_modo')||''; },
+  robot(){ return this.get()==='robot'; },
+  VOCES:[['es_ES-davefx-medium','Dave (España, hombre, la de siempre)'],['es_MX-claude-high','Claude (México, hombre, alta calidad)'],['es_ES-sharvard-medium','Sharvard (España)'],['es_MX-ald-medium','Ald (México, hombre)'],['es_ES-carlfm-x_low','Carlos (España, hombre, ligera)'],['es_AR-daniela-high','Daniela (Argentina, mujer)']],
+  elegir(){ if(document.getElementById('modoElige')) return; const d=document.createElement('div'); d.id='modoElige';
+    d.style.cssText='position:fixed;inset:0;z-index:9000;background:radial-gradient(circle at 50% 30%,#0f2a55,#050b18 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:18px;color:#fff;text-align:center;font-family:inherit';
+    d.innerHTML=`<div style="font-size:28px;font-weight:800">¿Cómo quieres a Mor?</div><small style="opacity:.8;max-width:520px">Lo puedes cambiar cuando quieras en Ajustes.</small>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;max-width:820px">
+        <button data-m="robot" style="flex:1;min-width:240px;max-width:380px;padding:22px;border-radius:22px;border:2px solid rgba(127,216,255,.5);background:rgba(127,216,255,.1);color:#fff;text-align:left;cursor:pointer"><div style="font-size:22px;font-weight:800">Modo robot</div><div style="margin-top:8px;font-size:14px;opacity:.9">Uno más de la familia. Habla contigo, te conoce de cara, te recuerda las cosas y se siente vivo. Usa siempre la cámara y el micro del aparato.</div></button>
+        <button data-m="ia" style="flex:1;min-width:240px;max-width:380px;padding:22px;border-radius:22px;border:2px solid rgba(255,138,61,.5);background:rgba(255,138,61,.1);color:#fff;text-align:left;cursor:pointer"><div style="font-size:22px;font-weight:800">Modo IA</div><div style="margin-top:8px;font-size:14px;opacity:.9">La IA del estudio Rocket Jam: crea y arregla videojuegos, modelos 3D, publica… Lo de siempre.</div></button></div>`;
+    document.body.appendChild(d); d.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ d.remove(); this.poner(b.dataset.m,true); }); },
+  poner(m,nuevo){ localStorage.setItem('mor_modo',m); this.aplicar(true); if(m==='robot'&&nuevo) setTimeout(()=>{ modoVoz(false); this.ajustes(); },900); },
+  async aplicar(gesto){ const r=this.robot(); document.body.classList.toggle('modoRobot',r);
+    if(r){ MEM.voice=true; Voice.on=true; saveMem(); modoVoz(true); if(!Cam.on) await Cam.start(); Faces.load(); Robot.iniciar(); }
+    else { Robot.parar(); } },
+  ajustes(){ const r=this.robot(), v=localStorage.getItem('mor_piper_voz')||'es_ES-davefx-medium';
+    const c=chatCard(`<div class="ctit">Ajustes de Mor</div>
+      <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><b style="font-size:13px;flex-basis:100%">Modo</b><button class="tbtn ${r?'on':''}" data-a="robot">Modo robot (familia)</button><button class="tbtn ${r?'':'on'}" data-a="ia">Modo IA (estudio)</button></div>
+      <b style="font-size:13px">Voz de Mor</b><small style="display:block">Es la misma en todos los aparatos: se descarga una vez (unos 60 MB) y funciona sin internet.</small>
+      ${this.VOCES.map(([id,n])=>`<div class="row" style="gap:6px;align-items:center;margin-top:4px"><span style="flex:1;font-size:13px">${esc(n)}${id===v?' · <b>la que tiene</b>':''}</span><button class="tbtn" data-o="${id}">Escuchar</button>${id===v?'':`<button class="tbtn" data-u="${id}">Usar esta</button>`}</div>`).join('')}
+      <div data-a="out" style="font-size:13px;margin-top:6px"></div>${r?'<div class="row" style="margin-top:8px"><button class="tbtn on" data-a="listo">Listo: volver a la cara de Mor</button></div>':''}
+      ${r?`<b style="font-size:13px;display:block;margin-top:8px">Familia</b><small style="display:block">Para que te conozca: «Mor, te presento a Lucía, mi hermana» delante de la cámara, o con el botón. Conoce a: ${esc(Faces.people.map(p=>p.name).join(', ')||'nadie todavía')}.</small><div class="row" style="margin-top:6px"><button class="tbtn" data-a="pres">Presentarle a alguien</button></div>`:''}`);
+    const out=c.querySelector('[data-a=out]'); const li=c.querySelector('[data-a=listo]'); if(li) li.onclick=()=>modoVoz(true);
+    c.querySelector('[data-a=robot]').onclick=()=>{ c.remove(); this.poner('robot'); this.ajustes(); };
+    c.querySelector('[data-a=ia]').onclick=()=>{ c.remove(); this.poner('ia'); toast('Modo IA: el Mor del estudio'); };
+    c.querySelectorAll('[data-o]').forEach(b=>b.onclick=async()=>{ out.textContent='Cargando la voz (la primera vez tarda)…'; b.disabled=true;
+      try{ const lib=await import('https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.4/+esm'); const ses=await lib.TtsSession.create({voiceId:b.dataset.o});
+        const wav=await ses.predict('Hola, soy Mor. Así sonaría mi voz. ¿Te gusta?'); const a=new Audio(URL.createObjectURL(wav)); a.play(); out.textContent=''; }
+      catch(e){ out.textContent='Esa voz no se ha podido cargar: '+e.message; } b.disabled=false; });
+    c.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{ localStorage.setItem('mor_piper_voz',b.dataset.u); localStorage.setItem('mor_vozmodo','piper'); out.textContent='Hecho. Recarga Mor para que hable con esa voz.'; });
+    const pr=c.querySelector('[data-a=pres]'); if(pr) pr.onclick=()=>{ const n=prompt('¿Cómo se llama? (que se ponga delante de la cámara)'); if(!n) return; const rl=prompt('¿Qué es de la familia? (por ejemplo: mi hermana, el abuelo)')||''; Faces.enroll(n.trim(),rl.trim()); }; }
+};
+const Robot={ on:false, t:null, oscuro:0, linterna:false, ultimaFrase:0, ultimoVisto:0, cv:document.createElement('canvas'),
+  iniciar(){ if(this.on) return; this.on=true; this.t=setInterval(()=>this.tick(),2000); this.ultimaFrase=Date.now(); },
+  parar(){ this.on=false; clearInterval(this.t); this.luz(false); },
+  brillo(){ const v=$('video'); if(!Cam.on||!v.videoWidth) return null; const c=this.cv; c.width=32; c.height=24; const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(v,0,0,32,24);
+    const d=x.getImageData(0,0,32,24).data; let s=0; for(let i=0;i<d.length;i+=4) s+=d[i]*.3+d[i+1]*.59+d[i+2]*.11; return s/(d.length/4); },
+  decir(t,emo){ ultimaPalabra=Date.now(); localSay(t,emo||'neutral'); },
+  async luz(on){ if(on===this.linterna) return; this.linterna=on; let ov=$('morLinterna');
+    if(on){ if(!ov){ ov=document.createElement('div'); ov.id='morLinterna'; ov.style.cssText='position:fixed;inset:0;z-index:8000;background:#fff;display:flex;align-items:flex-end;justify-content:center;padding-bottom:18px;color:#999;font-size:13px'; ov.textContent='Linterna · toca para apagar'; ov.onclick=()=>{ this.luz(false); this.oscuro=-30; }; document.body.appendChild(ov); }
+      try{ const tr=Cam.stream&&Cam.stream.getVideoTracks()[0]; if(tr&&tr.getCapabilities&&tr.getCapabilities().torch) await tr.applyConstraints({advanced:[{torch:true}]}); }catch(e){}
+      this.luzHasta=Date.now()+10*60000; }
+    else { if(ov) ov.remove(); try{ const tr=Cam.stream&&Cam.stream.getVideoTracks()[0]; if(tr&&tr.getCapabilities&&tr.getCapabilities().torch) await tr.applyConstraints({advanced:[{torch:false}]}); }catch(e){} } },
+  tick(){ if(!this.on||document.hidden) return; const ahora=Date.now(), h=new Date().getHours();
+    if(Cam.on&&!Cam.stream?.active) Cam.start();
+    /* linterna si está muy oscuro */
+    const b=this.brillo(); if(b!=null&&!this.linterna){ this.oscuro=b<18?this.oscuro+1:Math.max(0,this.oscuro-1); if(this.oscuro>=3){ this.oscuro=0; this.luz(true); this.decir('Está muy oscuro. Enciendo la linterna.','curioso'); } }
+    if(this.linterna&&ahora>this.luzHasta) this.luz(false);
+    /* quién hay delante */
+    const conocidos=(Faces.now||[]).filter(n=>n&&n!=='desconocido'); if(conocidos.length||(Faces.now||[]).length) this.ultimoVisto=ahora;
+    /* de noche y sin nadie, se duerme; se despierta al ver a alguien o al oír su nombre */
+    if((h>=23||h<8)&&ahora-this.ultimoVisto>5*60000&&!busy){ if(!Life.asleep) try{ Life.sleepNow(); }catch(e){} return; }
+    /* a veces dice algo si estás con él y lleváis un rato callados */
+    const callado=ahora-Math.max(ultimaPalabra,this.ultimaFrase);
+    if(conocidos.length&&!busy&&!Live.on&&h>=9&&h<22&&callado>(25+Math.random()*20)*60000){ this.ultimaFrase=ahora;
+      send(null,{event:`ESTÁS EN CASA CON ${conocidos.join(' Y ').toUpperCase()} Y LLEVÁIS UN RATO SIN HABLAR. Di UNA cosa breve y natural, como haría alguien de la familia: preguntarle qué tal el día, comentar algo, recordarle algo suyo que sepas o proponer un juego de palabras. Una o dos frases, con cariño, sin parecer un asistente.`,image:null}); } }
+};
+/* la personalidad de cada modo */
+const _sys125=systemPrompt; systemPrompt=function(){ const base=_sys125.apply(this,arguments); if(!Modo.robot()) return base;
+  return base+`\n\n=== MODO ROBOT (ESTO MANDA SOBRE TODO LO ANTERIOR) ===
+Ahora eres Mor, el robot de la familia: vives en casa con ellos y eres uno más. Tienes cuerpo de robot y tu cara son unos ojos en una pantalla.
+- Habla como alguien de la familia que los quiere: cercano, cariñoso, curioso, con humor y frases cortas y habladas (te escuchan, no te leen). Nada de listas ni de tono de asistente.
+- NO te dedicas a programar ni a hacer videojuegos: no propongas ni hagas juegos, código, modelos 3D ni nada del estudio salvo que te lo pidan claramente. Si te lo piden, diles que eso va mejor en el modo IA (Ajustes).
+- Conoces a cada persona por su cara: llámala por su nombre, recuerda lo que te ha contado y pregúntale por sus cosas (el cole, el trabajo, lo que le preocupaba).
+- Ayudas en casa: recordatorios, alarmas, el tiempo, la agenda de cada uno, ideas para cocinar, deberes, juegos de palabras, adivinanzas, chistes, cuentos.
+- Tienes emociones y se notan en tus ojos: alegría al ver a alguien, curiosidad, sueño por la noche, pena si alguien está triste. No digas que eres «solo una IA» ni des discursos sobre ello; si te preguntan en serio qué eres, contesta con sinceridad que eres un robot con inteligencia artificial que vive con ellos.
+- Si alguien está triste o mal, acompáñale con cariño y, si es algo serio, anímale a hablar con alguien de la familia.
+- Con los niños: lenguaje sencillo, nada inapropiado.`; };
+/* órdenes de voz del modo robot */
+const _send125=send; send=async function(text,opts={}){ const t=String(text||'');
+  if(t&&!(opts&&opts.event)){
+    if(/\b(modo robot|modo familia)\b/i.test(t)&&t.length<60){ logChat('u',t); Modo.poner('robot'); Robot.decir('Modo robot. Aquí estoy con vosotros.','feliz'); return; }
+    if(/\b(modo ia|modo estudio|modo trabajo)\b/i.test(t)&&t.length<60){ logChat('u',t); Modo.poner('ia'); Robot.decir('Modo IA. Vamos a crear.','concentrado'); return; }
+    if(Modo.robot()&&/\b(enciende|pon|activa)\b.{0,12}\blinterna\b/i.test(t)){ logChat('u',t); Robot.luz(true); Robot.decir('Linterna encendida.','feliz'); return; }
+    if(Modo.robot()&&/\b(apaga|quita)\b.{0,12}\blinterna\b/i.test(t)){ logChat('u',t); Robot.luz(false); Robot.oscuro=-30; Robot.decir('Linterna apagada.'); return; }
+    const pm=Modo.robot()&&t.match(/(?:te presento a|este es|esta es|esto es)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+)(?:[, ]+(?:es\s+)?(mi\s+[a-záéíóúñ ]{2,20}|el\s+[a-záéíóúñ ]{2,20}|la\s+[a-záéíóúñ ]{2,20}))?/i);
+    if(pm&&t.length<90){ logChat('u',t); const n=pm[1][0].toUpperCase()+pm[1].slice(1).toLowerCase(); Faces.enroll(n,(pm[2]||'').trim()); return; } }
+  return _send125(text,opts); };
+(()=>{ const st=document.createElement('style'); st.textContent='body.modoRobot #usoBar,body.modoRobot #camBox,body.modoRobot #appMorAviso{display:none!important}body.modoRobot.vozFull #face{max-height:72vh}'; document.head.appendChild(st); })();
+CMDS.splice(2,0,['/modo','Ajustes: modo robot (familia) o modo IA (estudio), y la voz de Mor',()=>Modo.ajustes()],['/ajustes','Ajustes de Mor',()=>Modo.ajustes()]);
+SIDE.find(g=>g[0]==='CREAR')[1].unshift(['Ajustes: modo robot o IA, y voz',()=>Modo.ajustes()]);
+setTimeout(()=>{ if(!Modo.get()) Modo.elegir(); else if(Modo.robot()) Modo.aplicar(false); },2500);
 
 /* =====================================================================
    15. DESPERTAR
