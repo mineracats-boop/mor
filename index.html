@@ -1287,7 +1287,7 @@ async function send(text,opts={}){
     if(!raw && / 40[013] /.test(e.message)){ setEmotion('triste'); showSub('Google no aceptar la llave de Mor… ¿pegarla otra vez?'); askKey('La llave guardada en este aparato no funciona ('+GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+', '+GEMINI_KEY.length+' letras). Pégala de nuevo.'); busy=false; $('bSend').disabled=false; return; }
     if(!raw){ toast('Gemini no responde ('+e.message+'). Revisa la conexión.',5000);
       await localSay(rnd(['Mor cabeza llena de niebla… probar otra vez en un ratito.','Ups. Cerebro de Mor muy ocupado. ¿Repetir luego?']),'cansado');
-      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v83</small>'); }
+      $('sub').insertAdjacentHTML('beforeend','<br><small style="color:#ff8fa3">Motivo: '+esc(e.message)+' · '+(navigator.onLine?'con internet':'SIN internet')+' · v84</small>'); }
     else { Voice.end(); await Voice.flush(); }
   }
   busy=false; $('bSend').disabled=false; Life.touch();
@@ -1451,7 +1451,7 @@ if('serviceWorker' in navigator && location.protocol==='https:') navigator.servi
 $('bKey').onclick=()=>{ $('sheetMore').classList.remove('open'); askKey(); };
 $('bDiag').onclick=async()=>{
   const el=$('installNote'); const L=[]; const show=()=>el.innerHTML=L.map(esc).join('<br>');
-  L.push('Versión: v83 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
+  L.push('Versión: v84 · '+(navigator.userAgent.match(/(Android|iPhone|iPad|Windows|Mac OS X|Linux)/)||['?'])[0]+' · '+(standalone?'app instalada':'navegador'));
   L.push('Llave Gemini: '+(GEMINI_KEY?GEMINI_KEY.slice(0,6)+'…'+GEMINI_KEY.slice(-3)+' ('+GEMINI_KEY.length+' letras)':'NO')); show();
   for(const m of MODELOS){ const ac=new AbortController(), t=setTimeout(()=>ac.abort(),15000), t0=performance.now();
     try{ const r=await fetch(API+m+':generateContent',{signal:ac.signal,method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
@@ -7398,6 +7398,7 @@ const Personas={
     olvidar:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},dato:{type:'STRING'}},required:['persona','dato']}},
     relaciones:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},relacion:{type:'STRING'}},required:['persona','relacion']}},
     cumples:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},fecha:{type:'STRING'}},required:['persona','fecha']}},
+    seguimiento:{type:'ARRAY',items:{type:'OBJECT',properties:{persona:{type:'STRING'},evento:{type:'STRING'},fecha:{type:'STRING'}},required:['persona','evento','fecha']}},
     charla:{type:'STRING'}},required:['datos']},
   async aprender(texto,respuesta,quienFijo,ctx){ const quien=(quienFijo!==undefined?quienFijo:this.quien())||'', hoy=new Date();
     const fq=quien&&this.buscar(quien), conocidos=Object.values(this.todas()).map(f=>f.nombre+(f.rel?' ('+f.rel+')':'')).join(', ');
@@ -7411,6 +7412,7 @@ Devuelve:
 - olvidar: datos que ya no son ciertos o que pide olvidar.
 - relaciones: si dice qué es alguien de la familia («soy el padre», «Lucía es mi hermana»: relación respecto a ${quien||'quien habla'}, p. ej. «hermana de ${quien||'quien habla'}»).
 - cumples: si dice un cumpleaños (fecha MM-DD).
+- seguimiento: cosas con fecha por las que conviene preguntar después (examen, partido, médico, entrevista, viaje, cumpleaños de alguien): persona, evento corto («el examen de mates»), fecha AAAA-MM-DD (calcula «el lunes», «mañana» desde hoy).
 - charla: si la conversación ha tenido algo que merezca recordarse, una frase corta de qué hablasteis; si no, vacío.
 Apunta TODO lo personal y duradero que diga (mejor apuntar de más que olvidar); lo pasajero («tengo hambre») no.`,this.SCHEMA,[],MODELOS_MEMORIA);
       const nom=p=>(/^hablante$/i.test(p)||!p)?quien:p;
@@ -7418,6 +7420,7 @@ Apunta TODO lo personal y duradero que diga (mejor apuntar de más que olvidar);
       for(const d of o.olvidar||[]){ const n=nom(d.persona); if(n) this.olvidar(n,d.dato); else forgetFacts([d.dato]); }
       for(const r of o.relaciones||[]){ const n=nom(r.persona); if(n){ const f=this.buscar(n)||this.ficha(n,true); f.rel=String(r.relacion).slice(0,60); } }
       for(const c of o.cumples||[]){ const n=nom(c.persona); if(n&&/^\d{2}-\d{2}$/.test(c.fecha)){ try{ Mas.cumples()[n]=c.fecha; }catch(e){} this.apuntar(n,'Su cumpleaños es el '+c.fecha.split('-').reverse().join('/')); } }
+      for(const x of o.seguimiento||[]){ const n=nom(x.persona); if(n&&/^\d{4}-\d{2}-\d{2}$/.test(x.fecha)){ const L=MEM.seguir=(MEM.seguir||[]); if(!L.some(y=>y.persona===n&&Vida.norm(y.evento)===Vida.norm(x.evento))) L.push({persona:n,evento:String(x.evento).slice(0,80),fecha:x.fecha,hecho:false}); if(L.length>60) MEM.seguir=L.slice(-60); } }
       if(quien&&o.charla){ const f=this.buscar(quien)||this.ficha(quien,true); f.charlas.push({t:String(o.charla).slice(0,160),at:Date.now()}); if(f.charlas.length>40) f.charlas=f.charlas.slice(-40); f.veces++; }
       saveMem(); return true; }catch(e){ console.warn('Personas:',e); return false; } },
   panel(){ const P=Object.values(this.todas()); const c=chatCard(`<div class="ctit">Lo que Mor sabe de cada persona</div>${P.length?P.map(f=>`<details><summary><b>${esc(f.nombre)}</b>${f.rel?' · '+esc(f.rel):''} <small>(${f.datos.length} datos)</small></summary><ul style="margin:4px 0 6px 18px;font-size:13px">${f.datos.map((d,i)=>`<li>${esc(d.t)} <a href="#" data-b="${esc(this.k(f.nombre))}|${i}" style="color:#f88">✕</a></li>`).join('')}</ul></details>`).join(''):'<small>Todavía no tiene fichas: se hacen solas hablando con él en modo robot.</small>'}`);
@@ -7708,7 +7711,7 @@ const Vista={ estado:'off', gest:null, pose:null, emb:null, obj:null, hecho:'', 
     const nariz=P[0], mi=P[15], md=P[16], hi=P[23], hd=P[24], hom=[P[11],P[12]];
     /* los ojos siguen a la persona */
     try{ face.tx=-(nariz.x*2-1)*1.1; face.ty=(nariz.y*2-1)*.8; face.lastInput=performance.now(); }catch(e){}
-    const centro={x:(hi.x+hd.x)/2,y:(hi.y+hd.y)/2,t:ahora,tam:Math.abs(hom[0].x-hom[1].x)}; this.pc.push(centro); this.pc=this.pc.filter(p=>ahora-p.t<4000);
+    const centro={x:(hi.x+hd.x)/2,y:(hi.y+hd.y)/2,t:ahora,tam:Math.abs(hom[0].x-hom[1].x)}; this.persona={x:nariz.x,tam:centro.tam,at:ahora}; this.pc.push(centro); this.pc=this.pc.filter(p=>ahora-p.t<4000);
     let hecho='';
     const arriba=mi.y<nariz.y-.05&&md.y<nariz.y-.05&&mi.visibility>.5&&md.visibility>.5;
     if(arriba){ hecho='tiene los brazos arriba'; if(this.estable('arriba')) this.reaccion('arriba',hecho,()=>rnd(['¡Bieeen!','¡Toma ya!','¡Hurraaa!']),'feliz',60000); }
@@ -7904,6 +7907,136 @@ const _send147=send; send=async function(text,opts={}){ const t=String(text||'')
     const dificil=t.split(/\s+/).length>=8&&/\b(por qu[eé]|c[oó]mo|expl[ií]ca|calcula|cu[aá]nto|diferencia|ay[uú]dame|problema|deberes|resuelve|piensa)\b/i.test(t);
     window.RAZONAR=dificil; try{ return await _send147(text,opts); } finally{ window.RAZONAR=false; } }
   return _send147(text,opts); };
+
+/* =====================================================================
+   148. MOR EN CASA: COMPRA, RECORDATORIOS PARA CADA UNO, DÓNDE ESTÁN LAS
+        COSAS, BUENOS DÍAS, «¿QUÉ TAL FUE…?», SIN INTERNET Y EL CÁDIZ
+   ===================================================================== */
+const Casa={
+  compra(){ return MEM.compra=(MEM.compra||[]); }, cosas(){ return MEM.cosas=(MEM.cosas||{}); }, avisos(){ return MEM.avisosP=(MEM.avisosP||[]); },
+  hace(t){ const m=Math.round((Date.now()-t)/60000); return m<2?'ahora mismo':m<60?'hace '+m+' minutos':m<1440?'hace '+Math.round(m/60)+' horas':'hace '+Math.round(m/1440)+' días'; },
+  items(t){ return t.replace(/\b(a|en|de) la lista( de la compra)?\b/gi,'').replace(/\b(por favor|tambi[eé]n)\b/gi,'').split(/,|\s+y\s+|\s+e\s+/).map(x=>x.replace(/^(un|una|unos|unas|el|la|los|las|de|del)\s+/i,'').trim()).filter(x=>x&&x.length<40); },
+  /* «a las 6», «a las 18:30», «a las 7 y media», «en 10 minutos», «mañana a las 9» */
+  hora(t){ const n=Vida.norm(t); let m=n.match(/(?:dentro de|en) (\d+|un|una|media) (minutos?|horas?|hora)/); const num=x=>({un:1,una:1,media:.5})[x]??+x;
+    if(m){ const v=num(m[1]); return Date.now()+(/hora/.test(m[2])?v*60:v)*60000; }
+    m=n.match(/a las? (\d{1,2})(?:(?::| y | )(\d{2}|media|cuarto))?( de la (?:tarde|noche|manana))?/); if(!m) return null;
+    let h=+m[1], mi=m[2]==='media'?30:m[2]==='cuarto'?15:m[2]?+m[2]:0; if(m[3]&&/tarde|noche/.test(m[3])&&h<12) h+=12;
+    const d=new Date(); if(/\bmanana\b/.test(n.replace(/de la manana/,''))) d.setDate(d.getDate()+1); d.setHours(h,mi,0,0);
+    if(!m[3]&&h<12&&d.getTime()<Date.now()&&d.getDate()===new Date().getDate()){ d.setHours(h+12); } if(d.getTime()<Date.now()-60000) d.setDate(d.getDate()+1); return d.getTime(); },
+  decir(t,emo){ if(Modo.robot()) Robot.decir(t,emo||'feliz'); else { logChat('m',t); localSay(t,emo||'feliz'); } },
+  /* buenos días: la primera vez que ve a cada uno por la mañana */
+  async buenosDias(n){ const hoy=Vida.hoy(), B=MEM.buenosDias=(MEM.buenosDias||{}); if(B[n]===hoy) return null; B[n]=hoy; saveMem();
+    const h=new Date().getHours(); const saludo=h<12?`¡Buenos días, ${n}!`:h<21?`¡Buenas tardes, ${n}!`:`¡Buenas noches, ${n}!`; const partes=[saludo];
+    if(h<12){ try{ const w=await withTimeout(Weather.get(MEM.ciudad),3000); if(w){ const m=String(w).match(/(-?\d+)\s*°/); const est=String(w).match(/(despejado|soleado|nublado|lluvia|llovizna|tormenta|niebla|nieve|cubierto|sol)/i); if(m||est) partes.push(`Hoy ${est?'está '+est[1].toLowerCase():'hace bueno'}${m?' y hace unos '+m[1]+' grados':''}.`); } }catch(e){} }
+    const hoyR=(MEM.reminders||[]).filter(r=>!r.fired&&new Date(r.when).toDateString()===new Date().toDateString()); if(hoyR.length) partes.push('Hoy tienes: '+hoyR.slice(0,3).map(r=>r.t+' a las '+new Date(r.when).toTimeString().slice(0,5)).join(', ')+'.');
+    const C=Mas.cumples(), hoyMD=new Date(); for(const [q,f] of Object.entries(C)){ const [mm,dd]=f.split('-').map(Number); const d=new Date(hoyMD.getFullYear(),mm-1,dd); const dias=Math.round((d-new Date(hoyMD.toDateString()))/864e5); if(dias>0&&dias<=7&&q!==n){ partes.push(`¡Ojo! El cumple de ${q} es ${dias===1?'mañana':'dentro de '+dias+' días'}.`); break; } }
+    const seg=this.pendientes(n)[0]; if(seg){ seg.hecho=true; saveMem(); partes.push(`Por cierto, ¿qué tal ${/^(el|la|los|las) /i.test(seg.evento)?'fue '+seg.evento:seg.evento}?`); }
+    return partes.join(' '); },
+  pendientes(n){ const hoy=Vida.hoy(); return (MEM.seguir||[]).filter(x=>!x.hecho&&x.persona===n&&x.fecha<=hoy&&x.fecha>=new Date(Date.now()-4*864e5).toISOString().slice(0,10)); },
+  /* recordatorios para alguien: a su hora le busca */
+  tick(){ const A=this.avisos(), ahora=Date.now(); let cambio=false; const vistos=(Faces.now||[]).filter(n=>n&&n!=='desconocido');
+    for(const a of A){ if(a.hecho||a.at>ahora) continue;
+      const f=Personas.buscar(a.para), nom=f?f.nombre:a.para, aqui=vistos.some(v=>Vida.norm(v)===Vida.norm(nom));
+      if(aqui){ a.hecho=true; cambio=true; this.decir(`${nom}, ${a.de&&a.de!==nom?a.de+' me ha pedido que te recuerde':'te recuerdo'}: ${a.txt}.`,'pensativo'); break; }
+      if(!a.avisado&&!busy){ a.avisado=true; cambio=true; this.decir(vistos.length?`Estoy buscando a ${nom} para recordarle ${a.txt}. Si lo veis, decídselo, por favor.`:`¡${nom}! ${a.txt}.`,'pensativo');
+        try{ Mas.mandar(nom,a.txt).catch(()=>{}); }catch(e){} }
+      if(ahora-a.at>3*3600000){ a.hecho=true; cambio=true; } }
+    if(cambio){ MEM.avisosP=A.filter(a=>!a.hecho||ahora-a.at<864e5); saveMem(); }
+    /* «¿qué tal fue…?» cuando ve a alguien */
+    if(Modo.robot()&&!busy&&!Voice.playing&&Date.now()-ultimaPalabra>60000) for(const n of vistos){ const s=this.pendientes(n)[0]; if(s&&Date.now()-(this._preg||0)>20*60000){ this._preg=Date.now(); s.hecho=true; saveMem(); this.decir(`Oye ${n}, ¿qué tal ${/^(el|la|los|las) /i.test(s.evento)?'fue '+s.evento:s.evento}?`,'curioso'); break; } } }
+};
+setInterval(()=>Casa.tick(),15000);
+const _send148=send; send=async function(text,opts={}){ const t=String(text||'');
+  /* buenos días en vez del saludo normal */
+  if(opts&&opts.event){ const m=String(opts.event).match(/^VES POR LA CÁMARA A ([A-ZÁÉÍÓÚÑ ]+?)(?: \(|\.)/); if(m){ const n=m[1].trim().toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase()); const f=Personas.buscar(n); const r=await Casa.buenosDias(f?f.nombre:n); if(r){ Casa.decir(r,'feliz'); return; } } return _send148(text,opts); }
+  if(!t) return _send148(text,opts);
+  const n=Vida.norm(t).replace(/[¿?¡!.]/g,'').trim(), q=Personas.quien()||'';
+  const hecho=r=>{ logChat('u',t); MEM.history.push({r:'u',t,at:Date.now()}); MEM.history.push({r:'m',t:r,at:Date.now()}); saveMem(); Casa.decir(r,'feliz'); };
+  /* ---- lista de la compra ---- */
+  let m=t.match(/^(?:mor[, ]+)?(?:apunta|a[ñn]ade|pon|mete)\s+(.+?)\s+(?:a|en)\s+la\s+lista(?:\s+de\s+la\s+compra)?\s*[.!]*$/i)||t.match(/^(?:mor[, ]+)?(?:hay que comprar|tenemos que comprar|nos hemos quedado sin|se ha acabado (?:el|la)?|se han acabado (?:los|las)?)\s+(.+?)[.!]*$/i);
+  if(m){ const L=Casa.compra(), nuevos=Casa.items(m[1]).filter(x=>!L.some(y=>Vida.norm(y.t)===Vida.norm(x))); nuevos.forEach(x=>L.push({t:x,quien:q,at:Date.now()})); return hecho(nuevos.length?`Apuntado: ${nuevos.join(', ')}. Ya hay ${L.length} cosas en la lista.`:'Eso ya estaba en la lista.'); }
+  if(/\b(que (hay|tenemos|falta|pone) en la lista|que (hay que|tengo que|tenemos que) comprar|lista de la compra|que falta por comprar)\b/.test(n)&&!/(apunta|anade|quita|borra)/.test(n)){ const L=Casa.compra(); return hecho(L.length?`En la lista hay: ${L.map(x=>x.t).join(', ')}.`:'La lista de la compra está vacía.'); }
+  m=t.match(/(?:quita|borra|tacha)\s+(.+?)\s+de la lista/i)||t.match(/^(?:mor[, ]+)?ya (?:he|hemos) comprado\s+(.+?)[.!]*$/i);
+  if(m){ const fuera=Casa.items(m[1]).map(Vida.norm); const L=Casa.compra(), antes=L.length; MEM.compra=L.filter(x=>!fuera.some(f=>Vida.norm(x.t).includes(f)||f.includes(Vida.norm(x.t)))); return hecho(MEM.compra.length<antes?`Quitado. Quedan ${MEM.compra.length} cosas.`:'Eso no estaba en la lista.'); }
+  if(/\b(borra|vacia|limpia) (toda )?la lista( de la compra)?\b|\bya (he|hemos) hecho la compra\b/.test(n)){ MEM.compra=[]; return hecho('Lista de la compra vacía.'); }
+  /* ---- recordatorio para otra persona con hora ---- */
+  m=t.match(/^(?:mor[, ]+)?(?:recu[eé]rdale|recordarle|dile|av[ií]sale|av[ií]sa a)\s+(?:a\s+)?(?:mi\s+\w+\s+)?([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\s+(.+?)\s+que\s+(.+)$/i);
+  if(m&&Casa.hora(m[2])){ const cuando=Casa.hora(m[2]), para=m[1], txt=m[3].replace(/[.!]+$/,''); Casa.avisos().push({para,txt,at:cuando,de:q,hecho:false}); saveMem();
+    const d=new Date(cuando); return hecho(`Vale. ${d.toDateString()===new Date().toDateString()?'Hoy':'Mañana'} a las ${d.toTimeString().slice(0,5)} buscaré a ${para} para recordárselo.`); }
+  /* ---- dónde están las cosas ---- */
+  m=t.match(/^(?:mor[, ]+)?(?:he dejado|he puesto|he guardado|dejo|pongo|guardo|las? he dejado|los? he dejado)\s+(?:las?|los?|mis?|el|tus?)?\s*([a-záéíóúñ ]{2,30}?)\s+(en|encima de|debajo de|dentro de|detr[aá]s de|al lado de|junto a)\s+(.{2,60}?)[.!]*$/i);
+  if(m){ const cosa=m[1].trim(), donde=m[2]+' '+m[3]; Casa.cosas()[Vida.norm(cosa).trim()]={cosa,donde,quien:q,at:Date.now()}; return hecho(`Vale, ${cosa}: ${donde}. Me acuerdo.`); }
+  m=n.match(/donde (?:estan|esta|he dejado|deje|puse|he puesto|tengo|habia dejado) (?:las?|los?|mis?|el|tus?)?\s*([a-zñ ]{2,30})$/);
+  if(m){ const k=m[1].trim(), C=Casa.cosas(), hit=C[k]||Object.values(C).find(x=>Vida.norm(x.cosa).includes(k)||k.includes(Vida.norm(x.cosa).trim()));
+    if(hit) return hecho(`${hit.cosa[0].toUpperCase()+hit.cosa.slice(1)}: ${hit.donde}${hit.quien?' (lo dijo '+hit.quien:' ('}, ${Casa.hace(hit.at)}).`); }
+  /* ---- sin internet ---- */
+  if(!navigator.onLine&&!(typeof Reflejos!=='undefined'&&Reflejos.probar(t))){ return hecho('Ahora mismo no tengo internet. Puedo decirte la hora, poner temporizadores, la lista de la compra y dónde están las cosas, pero para charlar necesito conexión.'); }
+  /* ---- fútbol, noticias y tiempo: buscar siempre en internet ---- */
+  if(/\b(como ha quedado|ha ganado|ha perdido|resultado|cuando juega|contra quien juega|clasificacion|quien ha marcado|como va el partido|noticias de hoy|que ha pasado hoy)\b/.test(n)){ window.__comprobar=true; try{ return await _send148(text,opts); } finally{ window.__comprobar=false; } }
+  return _send148(text,opts); };
+CMDS.splice(2,0,['/compra','Lista de la compra de la familia',()=>{ const L=Casa.compra(); const c=chatCard(`<div class="ctit">Lista de la compra</div>${L.length?'<ul style="margin:4px 0 0 18px">'+L.map((x,i)=>`<li>${esc(x.t)} <small style="opacity:.6">${esc(x.quien||'')}</small> <a href="#" data-i="${i}" style="color:#f88">✕</a></li>`).join('')+'</ul>':'<small>Vacía. Dile a Mor «apunta leche a la lista».</small>'}`);
+  c.querySelectorAll('[data-i]').forEach(a=>a.onclick=e=>{ e.preventDefault(); Casa.compra().splice(+a.dataset.i,1); saveMem(); a.parentElement.remove(); }); }]);
+
+/* =====================================================================
+   149. EL CUERPO: RUEDAS POR BLUETOOTH (ESP32, ver lib/cuerpo)
+   «Mor, ven», «sígueme», «adelante», «atrás», «gira a la izquierda»,
+   «date una vuelta», «baila», «para». Se para solo ante obstáculos, si le
+   levantan, si está «quieto» o si se pierde la conexión.
+   ===================================================================== */
+const Cuerpo={ dev:null, rx:null, on:false, dist:400, mv:0, l:0, r:0, hasta:0, modo:null, VMAX:60,
+  inv(){ try{ return JSON.parse(localStorage.getItem('mor_cuerpo_inv')||'{}'); }catch(e){ return {}; } },
+  async conectar(){ if(!navigator.bluetooth){ Casa.decir('Este navegador no tiene Bluetooth para el cuerpo. Usa Chrome en el móvil.','triste'); return; }
+    try{ const S='6e400001-b5a3-f393-e0a9-e50e24dcca9e'; this.dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'MOR'}],optionalServices:[S]});
+      this.dev.addEventListener('gattserverdisconnected',()=>{ this.on=false; Diag.ap('cuerpo','desconectado'); Casa.decir('He perdido la conexión con mis ruedas.','triste'); });
+      const g=await this.dev.gatt.connect(), sv=await g.getPrimaryService(S); this.rx=await sv.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+      const tx=await sv.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); await tx.startNotifications(); let b='';
+      tx.addEventListener('characteristicvaluechanged',e=>{ b+=new TextDecoder().decode(e.target.value); let i; while((i=b.indexOf('\n'))>=0){ const l=b.slice(0,i); b=b.slice(i+1); if(l[0]==='D') this.dist=+l.split(',')[1]||400; if(l[0]==='V') this.mv=+l.split(',')[1]||0; } });
+      this.on=true; localStorage.setItem('mor_cuerpo','1'); Diag.ap('cuerpo','conectado'); Casa.decir('¡Ya tengo ruedas! Dime «Mor, ven» y voy.','feliz'); }
+    catch(e){ Diag.ap('cuerpo-error',e.message); if(!/cancel/i.test(e.message)) Casa.decir('No he podido conectar con mis ruedas.','triste'); } },
+  async enviar(s){ if(!this.on||!this.rx) return; if(this._env) return; this._env=true; try{ await this.rx.writeValueWithoutResponse(new TextEncoder().encode(s+'\n')); }catch(e){} finally{ this._env=false; } },
+  mover(l,r,ms){ this.l=l; this.r=r; this.hasta=ms?Date.now()+ms:0; },
+  parar(){ this.l=this.r=0; this.modo=null; this.hasta=0; this.enviar('S'); },
+  seguro(){ if(Vida.quieto) return 'quieto'; try{ if(Sentidos.volcado) return 'volcado'; if(Date.now()-(Sentidos.ultimo.cae||0)<3000) return 'cae'; if(Sentidos.estado==='llevado'&&!(this.l||this.r||this.modo)) return 'en brazos'; }catch(e){} return ''; },
+  tick(){ if(!this.on) return; const I=this.inv(); let l=this.l, r=this.r;
+    if(this.hasta&&Date.now()>this.hasta){ l=r=0; this.l=this.r=0; this.hasta=0; if(this.modo==='paso') this.modo=null; }
+    const motivo=this.seguro(); if(motivo){ l=r=0; if(this.modo){ this.modo=null; } }
+    /* ir hacia la persona o seguirla */
+    const A=Robot.accion; if(!motivo&&A&&A.tipo==='ir'&&Date.now()-A.at<15000) this.modo=this.modo||'ir';
+    if(!motivo&&A&&A.tipo==='huir'&&Date.now()-A.at<1500){ this.modo='huir'; this._huir=Date.now(); Robot.accion=null; }
+    if(this.modo==='huir'){ const t=Date.now()-this._huir; if(t<900){ l=r=-55; } else if(t<1700){ l=50; r=-50; } else { this.modo=null; l=r=0; } }
+    if(this.modo==='ir'||this.modo==='seguir'){ const P=Vista.persona;
+      if(P&&Date.now()-P.at<1200){ const err=(P.x-.5)*(I.giro?-1:1); const cerca=P.tam>.33||this.dist<45; const base=cerca?0:45; l=base+err*70; r=base-err*70; if(cerca&&Math.abs(err)<.08&&this.modo==='ir'){ this.modo=null; Robot.accion=null; Casa.decir(rnd(['¡Aquí estoy!','¡Ya he llegado!']),'feliz'); } }
+      else { l=25; r=-25; } /* no le veo: giro buscando */
+      if(this.modo==='ir'&&A&&Date.now()-A.at>15000){ this.modo=null; Robot.accion=null; } }
+    if(this.modo==='baile'){ const k=Math.floor((Date.now()-this._baile)/400)%4; [l,r]=[[40,-40],[-40,40],[30,30],[-30,-30]][k]; if(Date.now()-this._baile>6000){ this.modo=null; l=r=0; } }
+    /* obstáculo delante */
+    if((l>0||r>0)&&this.dist<20){ l=Math.min(l,0); r=Math.min(r,0); if(Date.now()-(this._obs||0)>8000){ this._obs=Date.now(); Casa.decir('¡Uy, tengo algo delante!','asustado'); } }
+    const lim=x=>Math.max(-this.VMAX,Math.min(this.VMAX,Math.round(x)));
+    if(l||r) this._mov=Date.now(); l=lim(l)*(I.izq?-1:1); r=lim(r)*(I.der?-1:1); this.enviar(l||r?`M,${l},${r}`:'S'); },
+  panel(){ const I=this.inv(); const c=chatCard(`<div class="ctit">Cuerpo de Mor (ruedas)</div><small>${this.on?'Conectado · obstáculo a '+this.dist+' cm · batería '+(this.mv/1000).toFixed(1)+' V':'Sin conectar. Las piezas y el programa de la placa están en lib/cuerpo del repositorio.'}</small>
+    <div class="row" style="margin-top:6px;flex-wrap:wrap;gap:6px"><button class="tbtn on" data-k="c">${this.on?'Reconectar':'Conectar'}</button><button class="tbtn" data-k="a">⬆ Adelante</button><button class="tbtn" data-k="t">⬇ Atrás</button><button class="tbtn" data-k="i">⬅ Izquierda</button><button class="tbtn" data-k="d">➡ Derecha</button><button class="tbtn" data-k="s">■ Parar</button></div>
+    <div style="margin-top:6px;font-size:13px"><label><input type="checkbox" data-v="izq" ${I.izq?'checked':''}> invertir ruedas izquierdas</label><br><label><input type="checkbox" data-v="der" ${I.der?'checked':''}> invertir ruedas derechas</label><br><label><input type="checkbox" data-v="giro" ${I.giro?'checked':''}> gira al lado contrario al buscarte</label></div>`);
+    const acc={c:()=>this.conectar(),a:()=>this.mover(45,45,700),t:()=>this.mover(-45,-45,700),i:()=>this.mover(-40,40,500),d:()=>this.mover(40,-40,500),s:()=>this.parar()};
+    c.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>acc[b.dataset.k]());
+    c.querySelectorAll('[data-v]').forEach(x=>x.onchange=()=>{ const J=this.inv(); J[x.dataset.v]=x.checked; localStorage.setItem('mor_cuerpo_inv',JSON.stringify(J)); }); }
+};
+setInterval(()=>Cuerpo.tick(),200);
+/* al ir sobre ruedas tiembla: que no crea que le levantan */
+const _reac149=Sentidos.reaccion.bind(Sentidos); Sentidos.reaccion=function(tipo,...r){ if(Cuerpo.on&&(Cuerpo.l||Cuerpo.r||Cuerpo.modo||Date.now()-(Cuerpo._mov||0)<1500)&&/^(arriba|abajo|baches)$/.test(tipo)) return; return _reac149(tipo,...r); };
+CMDS.splice(2,0,['/cuerpo','Conectar y probar las ruedas de Mor (Bluetooth)',()=>Cuerpo.panel()]);
+const _salirM149=Salir.mostrar.bind(Salir); Salir.mostrar=function(){ _salirM149(); const d=$('morSalir'); if(!d||d.querySelector('[data-cu]')) return; const b=document.createElement('button'); b.dataset.cu=1; b.textContent=Cuerpo.on?'Ruedas conectadas ✓':'Conectar el cuerpo (ruedas)';
+  b.style.cssText='min-width:240px;padding:12px;border-radius:18px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#cfefff;font-size:15px'; b.onclick=()=>{ d.remove(); Cuerpo.conectar(); }; d.appendChild(b); };
+const _send149=send; send=async function(text,opts={}){ const t=String(text||''); if(Cuerpo.on&&t&&!(opts&&opts.event)&&t.length<60){ const n=Vida.norm(t).replace(/[^a-zñ ]/g,'').replace(/^mor /,'').trim();
+    const ok=r=>{ logChat('u',t); if(r) Casa.decir(r,'feliz'); };
+    if(/^(para|parate|stop|quieto|alto|frena)( ya)?$/.test(n)){ Cuerpo.parar(); return ok('Parado.'); }
+    if(/^(sigueme|ven conmigo|acompaname)$/.test(n)){ if(Cuerpo.seguro()) return ok('Ahora no puedo moverme.'); Cuerpo.modo='seguir'; return ok('¡Te sigo! Dime «para» cuando quieras.'); }
+    if(/^(adelante|avanza|ve para adelante|tira para adelante)$/.test(n)){ Cuerpo.modo='paso'; Cuerpo.mover(45,45,1200); return ok(''); }
+    if(/^(atras|marcha atras|ve para atras|retrocede)$/.test(n)){ Cuerpo.modo='paso'; Cuerpo.mover(-45,-45,1000); return ok(''); }
+    if(/^gira (a la )?izquierda$/.test(n)){ Cuerpo.modo='paso'; Cuerpo.mover(-40,40,550); return ok(''); }
+    if(/^gira (a la )?derecha$/.test(n)){ Cuerpo.modo='paso'; Cuerpo.mover(40,-40,550); return ok(''); }
+    if(/^(date|da) una vuelta$/.test(n)){ Cuerpo.modo='paso'; Cuerpo.mover(45,-45,2200); return ok('¡Wiiii!'); }
+    if(/^baila$/.test(n)){ Cuerpo.modo='baile'; Cuerpo._baile=Date.now(); return ok('¡Mira cómo bailo!'); } }
+  return _send149(text,opts); };
 
 /* =====================================================================
    15. DESPERTAR
